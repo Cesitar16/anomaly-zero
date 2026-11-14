@@ -16,7 +16,7 @@ from backend.app.data_sources import earthdata_probe, earthdata_samples
 IMERG_FILENAME = "3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5"
 
 
-def write_imerg(path: Path) -> None:
+def write_imerg(path: Path, *, label_axes: bool = True) -> None:
     with h5py.File(path, "w") as h5:
         grid = h5.create_group("Grid")
         time = grid.create_dataset("time", data=np.array([0], dtype=np.int32))
@@ -36,11 +36,13 @@ def write_imerg(path: Path) -> None:
             data=np.array([[[0.0, -9999.9], [1.5, 2.0]]], dtype=np.float32),
         )
         values.dims[0].attach_scale(time)
-        values.dims[0].label = "time"
         values.dims[1].attach_scale(lon)
-        values.dims[1].label = "lon"
         values.dims[2].attach_scale(lat)
-        values.dims[2].label = "lat"
+        if label_axes:
+            values.dims[0].label = "time"
+            values.dims[1].label = "lon"
+            values.dims[2].label = "lat"
+        values.attrs["DimensionNames"] = "time,lon,lat"
         values.attrs["units"] = "mm/hr"
         values.attrs["_FillValue"] = -9999.9
         grid.create_dataset("precipitationQualityIndex", data=np.ones((1, 2, 2)))
@@ -110,6 +112,19 @@ def test_imerg_hdf5_inspection_keeps_group_axis_units_and_fill(tmp_path: Path) -
         2.0,
     ]
     assert "Grid/precipitationQualityIndex" in report["quality_variable_candidates"]
+
+
+
+def test_imerg_dimension_names_recover_axes_without_hdf5_labels(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / IMERG_FILENAME
+    write_imerg(path, label_axes=False)
+
+    report = earthdata_samples.inspect_product(path, "imerg_final")
+
+    assert report["variable"]["dimensions"] == ["time", "lon", "lat"]
+
 
 
 def test_merra_netcdf_axes_units_fill_and_scaling_are_reported_raw(
@@ -207,7 +222,7 @@ def test_spatial_qa_counts_center_cells_and_keeps_zero_distinct_from_fill(
     from backend.app.data_sources.earthdata_spatial import spatial_qa, write_csv
 
     original = tmp_path / IMERG_FILENAME
-    write_imerg(original)
+    write_imerg(original, label_axes=False)
     manifest = tmp_path / f"{IMERG_FILENAME}.manifest.json"
     manifest.write_text(
         json.dumps(
@@ -251,6 +266,11 @@ def test_spatial_qa_counts_center_cells_and_keeps_zero_distinct_from_fill(
     assert result["valid_percent"] == 75.0
     assert len(result["rows"]) == 2
     assert any(row["value"] == 0.0 for row in result["rows"])
+    cell_values = {
+        (round(row["latitude"], 1), round(row["longitude"], 1)): row["value"]
+        for row in spatial_qa(original, manifest, polygon, "imerg_final", max_rows=20)["rows"]
+    }
+    assert cell_values == {(-35.0, 147.0): 0.0, (-35.0, 147.1): 1.5, (-34.9, 147.1): 2.0}
     assert (
         csv_path.read_text(encoding="utf-8")
         .splitlines()[0]
