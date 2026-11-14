@@ -75,4 +75,4 @@ Contribuciones y flujo Git: [CONTRIBUTING.md](CONTRIBUTING.md). Las pull request
 
 ## Estado
 
-Base inicial configurada: plantilla React + TypeScript de Vite, API mínima y estructura documental. Los productos NASA son candidatos no validados. No se han descargado datos ni implementado análisis estadísticos reales. Pendiente validar extracción, definir contratos API, análisis científico y experiencia del explorador.
+Base inicial configurada: plantilla React + TypeScript de Vite, API mínima y estructura documental. FUL-101 incorpora un EDA metodológico de NASA POWER T2M en un punto, con la respuesta cruda excluida de Git. Los productos regionales MERRA-2, GPM IMERG y GLDAS siguen como candidatos no descargados ni validados; el piloto no es un análisis definitivo de tendencia. Pendiente validar extracción, definir contratos API, analizar los productos oficiales y desarrollar la experiencia del explorador.
