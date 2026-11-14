@@ -47,10 +47,14 @@ Esta revisión visual confirma lo que muestra el mapa, no la exactitud geométri
 
 La página del evento local [HackAthlone 2026](https://hackathlone.com/challenges/earth-system-trend-detective) reproduce un listado de 13 recursos atribuido al desafío. Al comparar sus enlaces con R01–R13 de `referencias_work.csv`, doce coinciden exactamente; para R10 la página usa `http://geo.ca/` y Work registra `https://geo.ca/`. La página local presenta cinco recursos en su grupo NASA y ocho de organismos colaboradores; esa clasificación editorial no convierte NOAA u organismos externos en NASA.
 
-Esta página es una fuente secundaria independiente y señala que la página oficial prevalece. La coincidencia respalda el inventario de Work, pero no certifica que la lista corresponda al estado actual de la pestaña oficial ni que los enlaces funcionen o autoricen reutilización. El video original sigue sin transcripción revisada.
+Esta página es una fuente secundaria independiente y señala que la página oficial prevalece. La coincidencia respalda el inventario de Work, pero no certifica que la lista corresponda al estado actual de la pestaña oficial ni que los enlaces funcionen o autoricen reutilización. El video original sigue sin transcripción revisada: YouTube identifica el título, el canal NASA Space Apps Challenge y una duración de 326 segundos; sus pistas automáticas devolvieron un cuerpo vacío en la consulta realizada.
 
 ## Alcance del reto: diferencias entre versiones no oficiales
 
 La [versión de pruebas del sitio](https://staging-web-v2.spaceappschallenge.org/2026/challenges/earth-system-trend-detective2/) y la [reproducción del evento local](https://hackathlone.com/challenges/earth-system-trend-detective) coinciden en identificar variables, obtener datos regionales, visualizar series y examinar cambios y significancia. Sin embargo, difieren en cómo describen el origen de las variables: la versión de pruebas menciona misiones o modelos NASA y la reproducción local también menciona otras agencias. La versión de pruebas no es producción y la página local dice que prevalece la oficial. Por tanto, no usar esta diferencia para establecer un requisito definitivo de elegibilidad.
 
 El texto local presenta la automatización mediante SI como consideración opcional; no se debe convertir una sugerencia de una reproducción en una obligación del reto. La selección de prueba estadística y el tratamiento de estacionalidad, autocorrelación y múltiples comparaciones requieren revisión científica y no quedan aprobados por enumerarse en el texto.
+
+## Video del desafío: metadatos accesibles y subtítulos no recuperados
+
+La página pública del [video C02](https://www.youtube.com/watch?v=Cd9Q48LhNbo) identificó el título del desafío, el canal NASA Space Apps Challenge y una duración de 326 segundos. La respuesta de la página enumera pistas automáticas en varios idiomas, incluidos inglés y español, pero al solicitarlas ambas devolvieron HTTP 200 con cuerpo vacío. Estos metadatos confirman la identificación de la pieza, no su contenido hablado: no se revisó el audiovisual ni se dispone de una transcripción que permita extraer requisitos.
