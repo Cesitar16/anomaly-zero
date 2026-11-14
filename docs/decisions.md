@@ -113,3 +113,56 @@
 **Implicación para P-02:** puede priorizarse una prueba inicial de **MERRA-2 T2M** por continuidad con el análisis de temperatura de FUL-101, pero **no** aprobar esa elección ni declararla funcional hasta que FUL-103/106 pueda abrir un granule auténtico y Lucas valide las variables y unidades. La evidencia de 240 meses es de inventario, no de 240 valores de cuenca.
 
 **Siguen pendientes:** EDL/descarga efectiva, lectura NetCDF/HDF5 y atributos, meses/píxeles válidos dentro del polígono, máscara/pesos y calidad regional, inferencia de tendencias, backend de snapshots, contrato público, mapas y revisión formal de Lucas/Alaín. Conservar el estado global de FUL-99 en **In Review**, no Done.
+
+
+## 7. FUL-99 — Línea base técnica v0.1 para acordar con el equipo (14-11-2026)
+
+**Naturaleza de las decisiones:** César ya eligió como dirección de producto **serie regional primero**, **una variable extensible a tres**, **procesamiento previo por snapshots**. Las especificaciones detalladas aquí son una **propuesta concreta de implementación de esas elecciones**, elaborada para revisión por Lucas y Alaín; **no** constan como aprobadas por los demás integrantes. La línea base define arquitectura, NO la validez científica de un dataset.
+
+### 7.1 Decisiones suficientemente definibles sin descarga de granules
+
+| ID | Decisión técnica propuesta | Regla verificable / alcance |
+| --- | --- | --- |
+| B-01 | **MVP vertical: MERRA-2 `M2TMNXSLV`/T2M como plan A**, antes de sumar IMERG y GLDAS | Elegido para primera prueba por mensualidad, cobertura CMR de 240 meses y continuidad con FUL-101; **sujeto** a abrir gránulo y QA. Si falla la extracción/QA, revisar alternativa con Lucas; no fabricar serie |
+| B-02 | **Región inicial candidata: Murray–Darling** usando GeoJSON MDBA del paquete investigado (EPSG:4326) | Conservar URI/autor/licencia/versionado y **SHA-256 del polígono**, sin tratarlo como máscara QA validada hasta probarlo sobre grilla |
+| B-03 | **Ventana de análisis candidata fija: 2005-01 a 2024-12** | 240 períodos mensuales esperados; gránulo en CMR `!=` píxeles/mes válidos. Contar faltantes reales |
+| B-04 | **Flujo batch → snapshot → API de solo lectura → React** | El request HTTP no descarga archivos históricos ni recalcula toda la cuenca; acceso NASA falla sin afectar `/health` |
+| B-05 | **Un solo conjunto Python con uv** y sin microservicios nuevos | Reutilizar `backend/app/data_sources/`, `backend/app/analysis/`, `backend/app/services/`, `research/` y `docs/` existentes |
+| B-06 | **`raw` inmutable, `processed` derivado versionado, `cache` regenerable** | Archivos voluminosos, sidecars, originales y credenciales fuera de Git. No borrar o sobrescribir `raw` sin decisión explícita |
+| B-07 | **Tabla larga por período mensual y soporte espacial** | Campos mínimos y semántica de la sección 5 de `architecture.md`. Usar `value=null` para faltantes; `0` se conserva como dato válido donde corresponda |
+| B-08 | **Snapshot con manifiesto obligatorio**, hash de entradas y geometría, versión de colección y transformación | Permite reproducir/atribuir datos; no exponer derivados sin QA; publicar `snapshot_id` y `generated_at_utc` |
+| B-09 | **Publicación sin estados intermedios visibles** | Crear en área de trabajo temporal; validar archivos y manifiesto; solo después actualizar referencia al último snapshot válido, sin reemplazar versión anterior válida |
+| B-10 | **Procesamiento científico exclusivamente en Python reutilizable** | `research` explora; análisis validado pertenece al módulo común. React dibuja, no recalcula pendientes, QA o p-values |
+| B-11 | **Primera pantalla: serie mensual y estadística descriptiva** | Fuente, unidad, período, n válidos/esperados, cobertura, fecha del snapshot y advertencias visibles. Tendencias solo si análisis validado existe |
+| B-12 | **Mapas espaciales diferidos**, sin descartar raster derivado | No confundir serie agregada de 240 meses con 240 grillas listas para animar |
+| B-13 | **Pruebas offline obligatorias en cada frontera**, integración real explícita | Fixtures sintéticos solo en tests; un gránulo autenticado real debe abrirse y auditarse antes de afirmar que funciona producción |
+| B-14 | **No incorporar de inicio DB, Redis, workers, nuevos despliegues o endpoints definitivos** | Evaluar solo después de medir archivos y necesidades. Contratos públicos se fijan en FUL-108 |
+| B-15 | **No mezclar productos ni versiones para tapar huecos** | En especial: captura CMR IMERG V07 no incluye oct–dic 2025; se usa 2005–2024 como ventana objetivo. Mantener missing explícitos |
+
+### 7.2 Política del primer producto (decisión de secuenciación, no aceptación científica)
+
+**Plan A:** `M2TMNXSLV` v5.12.4, colección `C1276812859-GES_DISC`, variable `T2M`, escala mensual en Murray–Darling. Catálogo ZIP describe temperatura en K, grilla 0.625° lon × 0.5° lat; **atributos reales aún no inspeccionados**. La salida de visualización sugerida es °C **solo cuando unidad fuente esté comprobada y conversión registrada**.
+
+**Plan B:** no se elige todavía un segundo producto; Lucas y Alaín revisarán la causa concreta si MERRA-2 no es viable. NASA POWER FUL-101 se conserva como **demostración puntual rotulada**, no sustituto silencioso de promedio regional.
+
+**Hito mínimo para pasar a implementación regional:** descargar y abrir un gránulo real; identificar coordenadas, ejes, calendario, fill/QA y unidad; comprobar al menos algunas celdas dentro del polígono; producir una agregación documentada del mes de prueba. Luego probar 12 meses, y solo después escalar a 240. Si falla una puerta, el estado queda `not_ready`, no `validated`.
+
+### 7.3 Contrato interno provisional que sí se puede acordar antes de FastAPI
+
+- **Clave de cada serie:** `snapshot_id + variable_id + region_id + spatial_support + period` (debe ser única para una serie regional; múltiples celdas requieren identificador de celda o grilla separada).
+- **Período:** texto `YYYY-MM` normalizado, conservando en metadatos el intervalo/convención temporal del producto original. No inferir que distintos promedios mensuales son intercambiables.
+- **Valor:** numérico finito o null. Fill, NaN, infinitos y meses ausentes se detectan; el motor no imputa sin decisión científica explícita.
+- **Identidad:** colección CMR, shortname, versión, variable, unidades fuente y derivadas, región y procedencia del granule.
+- **Espacio:** `point`, `grid_cell`, `polygon_aggregate` obligatorios; un valor puntual nunca se presenta como promedio de cuenca.
+- **Calidad:** `valid`, `partial`, `missing`, `rejected`, junto con `coverage_fraction` cuando sea aplicable (0–1). Los umbrales que separan válido/parcial quedan para QA real.
+- **Análisis:** `not_computed`, `insufficient_data`, `completed` o `error`; método, pendiente, incertidumbre, p-value y diagnósticos **opcionales** según evidencia, nunca rellenados artificialmente.
+- **Tiempo de publicación:** `generated_at_utc`, `source_retrieved_at_utc`, `snapshot_id` y fecha del último mes para que el usuario distinga actualización técnica de período cubierto.
+- **Fallas:** error de NASA no corrompe ni borra `last_valid_snapshot`; ausencia de snapshot debe indicar `data_unavailable`, no devolver cero ni mostrar el piloto como cuenca.
+
+Los **nombres exactos en Pydantic, endpoints, códigos HTTP, rutas públicas y formatos finales** se decidirán en FUL-108. Aquí se define semántica compartida para que ninguna área trabaje a ciegas.
+
+### 7.4 Umbral de aprobación de la arquitectura vs. validación de datos
+
+**FUL-99 puede cerrarse sin extracción real** cuando Lucas, César y Alaín ratifiquen B-01–B-15, o documenten disensos/ajustes, y concuerden en las interfaces. La extracción y validación de granules son dependencias de **FUL-103/104/106/105**, no prerequisito para aprobar un diseño provisional. No es aceptable marcar la variable inicial como "científicamente validada" o publicar promedios/p-values sin esas pruebas.
+
+**Pendientes genuinamente dependientes de datos:** máscara espacial y regla definitiva de ponderación (área efectiva), tasa/acumulado y unidades de cada producto, tolerancia de cobertura, missing reales, método inferencial, almacenamiento/raster final y viabilidad de descarga autenticada. Todos tienen dueño y tarjeta en las secciones anteriores.
