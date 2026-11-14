@@ -7,6 +7,7 @@ import calendar
 import hashlib
 import json
 import math
+import os
 import re
 import tempfile
 from collections.abc import Iterator, Mapping
@@ -26,6 +27,7 @@ DEFAULT_LIMIT = 3
 DEFAULT_MAX_MIB = 64.0
 MAX_DISCOVERY_LIMIT = 10
 MAX_DOWNLOAD_MIB = 128.0
+MIB_BYTES = 1024**2
 SAMPLE_RELATIVE_DIR = Path("data/raw/nasa/gldas")
 PREVIEW_LIMIT = 16
 
@@ -131,18 +133,18 @@ def _granule_record(granule: Any) -> dict[str, Any]:
     meta = _value(granule, "meta", {}) or {}
     umm = _value(granule, "umm", {}) or {}
     temporal = umm.get("TemporalExtent", {}).get("RangeDateTime", {})
-    size_mb = _value(granule, "size")
+    size_mib = _value(granule, "size")
     try:
-        size_mb = float(size_mb) if size_mb is not None else None
+        size_mib = float(size_mib) if size_mib is not None else None
     except (TypeError, ValueError):
-        size_mb = None
+        size_mib = None
     return {
         "granule_id": meta.get("concept-id"),
         "producer_granule_id": umm.get("GranuleUR"),
         "collection_id": meta.get("collection-concept-id"),
         "time_start": temporal.get("BeginningDateTime"),
         "time_end": temporal.get("EndingDateTime"),
-        "size_mb": size_mb,
+        "size_mib": size_mib,
     }
 
 
@@ -435,6 +437,45 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _publish_staged_sample(
+    staged_file: Path,
+    staged_manifest: Path,
+    destination: Path,
+    manifest_path: Path,
+) -> None:
+    """Publish validated files without replacing an existing sample.
+
+    Each no-overwrite publication is atomic on its filesystem, but publishing
+    the pair is not. If the manifest publication fails after the data file, try
+    to remove only the data file this call created so a retry is possible.
+    """
+    data_published = False
+    try:
+        _publish_no_replace(staged_file, destination)
+        data_published = True
+        _publish_no_replace(staged_manifest, manifest_path)
+    except OSError as exc:
+        if data_published:
+            try:
+                destination.unlink()
+            except OSError as cleanup_exc:
+                raise ProbeError(
+                    "manifest publication failed and the new sample file could not be removed",
+                    stage="manifest",
+                ) from cleanup_exc
+        raise ProbeError(
+            "could not publish the validated sample and manifest", stage="manifest"
+        ) from exc
+
+
+def _publish_no_replace(source: Path, destination: Path) -> None:
+    """Atomically move/link one staged file without overwriting a destination."""
+    if os.name == "nt":
+        os.rename(source, destination)
+    else:
+        os.link(source, destination)
+
+
 def download_gldas(
     month: str = DEFAULT_MONTH,
     max_mib: float = DEFAULT_MAX_MIB,
@@ -467,10 +508,12 @@ def download_gldas(
                 f"catalog lookup failed ({type(exc).__name__})", stage="catalog"
             ) from exc
         record = _granule_record(granule)
-        expected_mb = record["size_mb"]
-        if expected_mb is None or expected_mb <= 0:
+        expected_size_mib = record["size_mib"]
+        if expected_size_mib is None or expected_size_mib <= 0:
             raise ProbeError("CMR did not report a positive expected file size")
-        if expected_mb * 1_000_000 > max_mib * 1024**2:
+        expected_size_bytes = math.ceil(expected_size_mib * MIB_BYTES)
+        download_limit_bytes = math.floor(max_mib * MIB_BYTES)
+        if expected_size_bytes > download_limit_bytes:
             raise ProbeError("CMR expected size exceeds the configured download limit")
 
         producer_id = record["producer_granule_id"] or ""
@@ -519,7 +562,7 @@ def download_gldas(
                     "downloaded filename does not match the selected granule"
                 )
             byte_count = staged_file.stat().st_size
-            if byte_count <= 0 or byte_count > max_mib * 1024**2:
+            if byte_count <= 0 or byte_count > download_limit_bytes:
                 raise ProbeError(
                     "download size is empty or exceeds the configured limit"
                 )
@@ -562,22 +605,38 @@ def download_gldas(
                     "read": {"status": "succeeded", "format": "NetCDF4"},
                     "inspection": {"status": "succeeded", "variable": GLDAS.variable},
                 },
-                "expected_size_mb": expected_mb,
+                "expected_size_mib": expected_size_mib,
+                "expected_size_bytes": expected_size_bytes,
                 "download_limit_mib": max_mib,
+                "download_limit_bytes": download_limit_bytes,
                 "bytes": byte_count,
                 "sha256": digest,
-                "relative_path": (SAMPLE_RELATIVE_DIR / filename).as_posix(),
+                "relative_path": filename,
                 "inspection": inspection,
             }
-            staged_file.replace(destination)
-            temporary_manifest = manifest_path.with_suffix(
-                manifest_path.suffix + ".tmp"
+            staged_manifest = Path(tmp) / f"{filename}.manifest.json"
+            try:
+                staged_manifest.write_text(
+                    json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+                validated_manifest = json.loads(
+                    staged_manifest.read_text(encoding="utf-8")
+                )
+                if (
+                    validated_manifest["bytes"] != byte_count
+                    or validated_manifest["sha256"] != digest
+                    or validated_manifest["relative_path"] != filename
+                ):
+                    raise ValueError("manifest does not match the staged sample")
+            except (OSError, ValueError, KeyError) as exc:
+                raise ProbeError(
+                    "could not prepare or validate the sample manifest",
+                    stage="manifest",
+                ) from exc
+            _publish_staged_sample(
+                staged_file, staged_manifest, destination, manifest_path
             )
-            temporary_manifest.write_text(
-                json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
-            temporary_manifest.replace(manifest_path)
 
     return {
         "status": "downloaded_and_opened",
@@ -639,3 +698,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
