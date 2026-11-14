@@ -71,6 +71,8 @@ uv run jupyter lab research/notebooks
 
 Tarjeta de Linear: [FUL-98](https://linear.app/fullstack-track/issue/FUL-98).
 
+Contribuciones y flujo Git: [CONTRIBUTING.md](CONTRIBUTING.md). Las pull requests usan la [plantilla del proyecto](.github/PULL_REQUEST_TEMPLATE.md). Este repositorio se distribuye bajo la [licencia MIT](LICENSE).
+
 ## Estado
 
 Base inicial configurada: plantilla React + TypeScript de Vite, API mínima y estructura documental. Los productos NASA son candidatos no validados. No se han descargado datos ni implementado análisis estadísticos reales. Pendiente validar extracción, definir contratos API, análisis científico y experiencia del explorador.
