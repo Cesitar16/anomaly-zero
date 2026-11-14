@@ -211,3 +211,13 @@ Un mismo manifiesto puede referenciar varios granules de entrada; no guardar sec
 ### Cierre propuesto de FUL-99
 
 Este documento, junto a `docs/decisions.md`, constituye **borrador versionado**. Para considerar FUL-99 Done, Lucas, César y Alaín deben revisar su exactitud, resolver o asignar las preguntas esenciales y dejar constancia de conformidad. La existencia de esta PR documental, por sí sola, no cumple el criterio de aprobación de equipo.
+
+## 10. Evidencia incorporada desde la investigación externa (14-11-2026)
+
+Se auditó el paquete `Anomaly_Zero_Evidencia.zip` aportado por el equipo y se registraron sus resultados verificables en **[Inventario de evidencia NASA y geometría](evidence_inventory_2026-11-14.md)** (sin publicar el ZIP original). El manifiesto de 59 archivos internos pasó 59/59 comprobaciones SHA-256 y tamaño.
+
+**Datos ahora sustentados por la captura:** colecciones MERRA-2 `M2TMNXSLV` v5.12.4 (`C1276812859-GES_DISC`), IMERG `GPM_3IMERGM` v07 (`C2723754851-GES_DISC`) y GLDAS `GLDAS_NOAH025_M` v2.1 (`C1342986036-GES_DISC`); para cada una, las respuestas CMR tienen **240 meses inventariados y sin huecos 2005–2024**. También se aportó polígono Murray–Darling de servicio MDBA en EPSG:4326, de geometría válida y con licencia CC BY 4.0 identificada. El punto Wagga Wagga del piloto POWER queda dentro del polígono guardado.
+
+**Límite de validación:** son comprobaciones de **metadatos, gránulos listados y límites geográficos**; ningún `.nc4` o `.HDF5` de producción fue inspeccionado en el ZIP. La máscara, cobertura válida de píxeles, conversiones, método de agregación y serie regional siguen pendientes de FUL-104/106/105. La elección de la primera variable sigue sujeta a viabilidad de descarga/QA y aprobación FUL-107; MERRA-2/T2M es una opción de prueba por continuidad con FUL-101, **no una selección final**.
+
+**Licencias:** el polígono MDBA declara CC BY 4.0, pero NSW ASGS 2026 del paquete declara CC BY-SA 4.0 en su XML específico; no mezclar atribuciones ni utilizar una geometría simplificada solo para dibujo como máscara científica.
