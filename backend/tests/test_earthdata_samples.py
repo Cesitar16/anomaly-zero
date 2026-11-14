@@ -14,6 +14,7 @@ import xarray as xr
 from backend.app.data_sources import earthdata_probe, earthdata_samples
 
 IMERG_FILENAME = "3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5"
+GLDAS_FILENAME = "GLDAS_NOAH025_M.A200501.021.nc4"
 
 
 def write_imerg(path: Path, *, label_axes: bool = True) -> None:
@@ -46,6 +47,28 @@ def write_imerg(path: Path, *, label_axes: bool = True) -> None:
         values.attrs["units"] = "mm/hr"
         values.attrs["_FillValue"] = -9999.9
         grid.create_dataset("precipitationQualityIndex", data=np.ones((1, 2, 2)))
+
+
+def write_gldas(path: Path) -> None:
+    values = np.array([[[0.0, -9999.0], [8.0, 9.0]]], dtype=np.float32)
+    dataset = xr.Dataset(
+        {"SoilMoi0_10cm_inst": (("time", "lat", "lon"), values)},
+        coords={
+            "time": (
+                "time",
+                [1827.0],
+                {"units": "days since 2000-01-01 00:00:00", "calendar": "standard"},
+            ),
+            "lat": ("lat", [-35.0, -34.75], {"units": "degrees_north"}),
+            "lon": ("lon", [147.0, 147.25], {"units": "degrees_east"}),
+        },
+    )
+    dataset["SoilMoi0_10cm_inst"].attrs["units"] = "kg m-2"
+    dataset.to_netcdf(
+        path,
+        engine="netcdf4",
+        encoding={"SoilMoi0_10cm_inst": {"_FillValue": -9999.0}},
+    )
 
 
 class Client:
@@ -276,6 +299,55 @@ def test_spatial_qa_counts_center_cells_and_keeps_zero_distinct_from_fill(
         .splitlines()[0]
         .startswith("period,product,version")
     )
+
+
+
+def test_gldas_netcdf_spatial_qa_uses_the_netcdf_inspector(
+    tmp_path: Path,
+) -> None:
+    from backend.app.data_sources.earthdata_spatial import spatial_qa
+
+    original = tmp_path / GLDAS_FILENAME
+    write_gldas(original)
+    manifest = tmp_path / f"{GLDAS_FILENAME}.manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "period": {"month": "2005-01"},
+                "bytes": original.stat().st_size,
+                "sha256": hashlib.sha256(original.read_bytes()).hexdigest(),
+            }
+        ),
+        encoding="utf-8",
+    )
+    polygon = tmp_path / "polygon.geojson"
+    polygon.write_text(
+        json.dumps(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [146.9, -35.1],
+                        [147.4, -35.1],
+                        [147.4, -34.6],
+                        [146.9, -34.6],
+                        [146.9, -35.1],
+                    ]
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = spatial_qa(original, manifest, polygon, "gldas_noah_monthly")
+
+    assert result["inspection_status"] == "opened"
+    assert result["denominator_center_cells"] == 4
+    assert result["valid_center_cells"] == 3
+    assert result["missing_center_cells"] == 1
+    assert sorted(row["value"] for row in result["rows"]) == [0.0, 8.0, 9.0]
+    assert {row["unit"] for row in result["rows"]} == {"kg m-2"}
+
 
 
 def test_download_preserves_existing_valid_original(tmp_path: Path) -> None:
