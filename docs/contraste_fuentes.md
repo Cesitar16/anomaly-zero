@@ -544,3 +544,9 @@ La respuesta repetida de la fila 34 tiene 944 bytes. Se ensayaron valores del ca
 ## Integridad y apertura de las copias recuperadas
 
 Además de los hashes, se interpretaron sin errores los 28 archivos recuperados con extensión JSON o GeoJSON y el notebook NASA de 17 celdas. El ZIP ABS contiene seis entradas y `ZipFile.testzip()` no detectó errores de CRC. Se abrieron las 34 páginas del manual GLDAS, 66 del manual MERRA-2 y 23 de la guía SMAP L4 y se extrajo texto no vacío de cada una. Estas son comprobaciones de estructura, integridad y disponibilidad de texto; no implican que cada página se haya auditado visualmente ni que todos sus contenidos o fórmulas estén validados. Los archivos permanecen en la caché local ignorada.
+
+## Artículo SeaWiFS del recurso R05
+
+Se revisaron directamente los métodos y la discusión estadística del [artículo alojado por NASA NTRS](https://ntrs.nasa.gov/api/citations/20090042747/downloads/20090042747.pdf), especialmente las páginas PDF 3 y 17–18. El estudio construyó series regionales de clorofila SeaWiFS con Giovanni y empleó regresión lineal, contraste F y anomalías mensuales; también comparó pendientes de regresión simple y robusta, reconociendo sensibilidad a eventos extremos. El texto señala que no pretendía realizar un análisis estadístico más amplio.
+
+Es un ejemplo de flujo y de necesidad de revisar supuestos, no una validación de temperatura, precipitación o humedad del suelo en Murray–Darling ni una prescripción del método para el proyecto. La copia pública consultada tiene 27 páginas, 8810247 bytes y SHA-256 `5209cee13b536f0b4df59b6e4fac9f631fafd1458f1e4d936d2cfab5edda0ab3`; queda en caché ignorada. El PDF no se presenta como parte verificada del ZIP ausente.
