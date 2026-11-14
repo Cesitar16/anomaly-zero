@@ -1,4 +1,4 @@
-"""Bounded Earthdata downloads and raw inspection for MERRA-2 and IMERG."""
+"""Bounded MERRA-2 and IMERG downloads with raw inspection for configured products."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ def inspect_product(path: Path | str, product_key: str) -> dict[str, Any]:
     if prefix.startswith((b"<html", b"<!doctype html")):
         raise probe.ProbeError("download is an HTML response, not a dataset")
 
-    if product_key == "merra2":
+    if product_key in {"gldas_noah_monthly", "merra2"}:
         return probe.inspect_netcdf(file_path, product.variable)
     if not h5py.is_hdf5(file_path):
         raise probe.ProbeError("file could not be opened as HDF5")
