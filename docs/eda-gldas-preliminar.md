@@ -2,52 +2,72 @@
 
 ## Objetivo y alcance
 
-Preparar una inspección reproducible de una muestra mensual GLDAS Noah 2.1, con controles de faltantes y una primera visualización global/regional. Esta rama parte de `feature/ful-103-earthdata-probe`, SHA base `cf3cd22897b2173ec389af4a4f6754793dbef2da`. El conector y sus 13 pruebas existentes se reutilizan sin cambios.
+Este avance verifica la procedencia y estructura de una muestra GLDAS Noah 2.1 auténtica, describe faltantes y distribución, y explora su grilla con mapas. No completa FUL-105: faltan EDA de MERRA-2 e IMERG, análisis temporal y revisión científica de la agregación regional.
 
-## Descubrimiento CMR observado
+## Procedencia e integridad verificadas
 
-Consulta pública efectuada el 2026-11-14 con `uv run python -m backend.app.data_sources.earthdata_probe discover --month 2005-01 --limit 1`. No requiere autenticación. Los tres productos devolvieron estado `found`:
+El archivo local `data/raw/nasa/gldas/GLDAS_NOAH025_M.A200501.021.nc4` fue obtenido el **2026-11-14 20:49 UTC** mediante el flujo interactivo Earthdata Login de `earthaccess`; el manifiesto registra autenticación, descarga de un archivo, lectura NetCDF4 e inspección exitosas. No se guardaron credenciales en el repositorio.
 
-| Producto / versión | Variable | Colección | Gránulo | Período observado | Tamaño CMR (MB) |
-| --- | --- | --- | --- | --- | ---: |
-| MERRA-2 `M2TMNXSLV` / 5.12.4 | `T2M` | `C1276812859-GES_DISC` | `G1278025954-GES_DISC`; `MERRA2_300.tavgM_2d_slv_Nx.200501.nc4` | 2005-01-01–2005-01-31 | 51.8986 |
-| GPM IMERG `GPM_3IMERGM` / 07 | `precipitation` | `C2723754851-GES_DISC` | `G2823464479-GES_DISC`; `3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5` | 2005-01-01–2005-01-31 | 17.1937 |
-| GLDAS `GLDAS_NOAH025_M` / 2.1 | `SoilMoi0_10cm_inst` | `C1342986036-GES_DISC` | `G1413723174-GES_DISC`; `GLDAS_NOAH025_M.A200501.021.nc4` | 2005-01-01–2005-01-31 | 23.9142 |
+| Campo | Valor observado |
+| --- | --- |
+| Producto / versión | GLDAS Noah `GLDAS_NOAH025_M` / `2.1` |
+| Variable | `SoilMoi0_10cm_inst` |
+| Colección / gránulo | `C1342986036-GES_DISC` / `G1413723174-GES_DISC` |
+| Período | 2005-01-01 a 2005-01-31 UTC |
+| Tamaño | 25.075.859 bytes (23,9142 MB indicados por CMR) |
+| SHA-256 | `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593` |
+| Formato y estructura | NetCDF4; `time=1`, `bnds=2`, `lat=600`, `lon=1440`; variable `float32`, forma `[1,600,1440]` |
+| Unidad y atributos de almacenamiento | `kg m-2`; `_FillValue=-9999`, `missing_value=-9999`, `cell_methods=time: mean`; no hay `scale_factor` ni `add_offset` |
 
-El bbox utilizado (`138,-38,153,-24`) filtra archivos candidatos en CMR; no recorta los píxeles del archivo.
+El SHA-256 calculado localmente coincide con el manifiesto y con el registro de la muestra GLDAS en [contraste_fuentes.md](contraste_fuentes.md). La apertura se hizo sin decodificación CF ni aplicación de máscara/escala. Por tanto, los estadísticos siguientes describen los valores numéricos almacenados, reportados con la unidad declarada; no se aplicó conversión. La unidad y los metadatos del modelo no equivalen a validación independiente del contenido físico.
 
-## Muestra y estado de acceso
+## QA y resumen del rectángulo
 
-En este checkout no existe el NetCDF objetivo ni su manifiesto bajo `data/raw/nasa/gldas/`. La documentación heredada de FUL-103 registra un SHA y una descarga previa, pero eso no verifica que el objeto exista localmente ahora. Se hizo un único intento con el comando interactivo autorizado y límite de 64 MiB. Earthaccess llegó a `Enter your Earthdata Login username:`; se interrumpió en ese prompt sin introducir credenciales ni persistir autenticación.
+La selección inclusiva `138,-38,153,-24` devuelve 56 latitudes (`-37,875` a `-24,125`) por 60 longitudes (`138,125` a `152,875`): **3.360 celdas**. Es una selección rectangular sobre la grilla global, no la máscara hidrográfica Murray–Darling.
 
-Por tanto, **no se descargó ni se leyó una muestra en esta ejecución**. No hay hallazgos de píxeles NASA ni gráficos observados que reportar. El notebook informa el bloqueo al ejecutarse sin muestra y queda preparado para leer datos auténticos una vez instalados localmente con el flujo oficial. Cuando se obtenga el archivo, conservar junto a él el manifiesto generado por FUL-103; el notebook verifica su SHA-256 antes del análisis.
+| Indicador sobre el rectángulo | Resultado observado |
+| --- | ---: |
+| Celdas válidas | 3.045 |
+| Celdas faltantes (`_FillValue`/`missing_value` o no finitas) | 315 |
+| Cobertura válida | 90,625 % |
+| Mínimo válido | 5,5918 kg m⁻² |
+| Mediana | 14,6866 kg m⁻² |
+| Media aritmética sin ponderación por área | 16,0753 kg m⁻² |
+| Máximo válido | 38,2782 kg m⁻² |
 
-## QA implementado y visualizaciones preparadas
+La media supera a la mediana en esta muestra; estos resúmenes describen un solo campo mensual y no caracterizan por sí solos la forma completa de su distribución. El cálculo asigna el mismo peso a cada celda válida. No es un promedio ponderado por área ni una estimación de toda la cuenca.
 
-`research/gldas_qa.py` abre con xarray y `decode_cf=False`, `mask_and_scale=False`, `decode_times=False`. Selecciona latitud/longitud inclusivas dentro del rectángulo, admite coordenadas ascendentes o descendentes, excluye NaN y los atributos `_FillValue`/`missing_value` de los resúmenes y conserva el cero como valor válido. Reporta cobertura, forma, coordenadas, atributos y estadísticos de valores almacenados. No aplica escala, offset, conversiones, QA flags ni agregación.
+No aparecieron variables candidatas de calidad por nombre en el archivo. Los valores fill se excluyen del resumen; el cero se conserva como válido. Las pruebas automatizadas verifican por separado ceros, fill, NaN, selección con latitudes descendentes, caja sin celdas, campo totalmente faltante, archivo ausente, coordenadas inválidas y variable ausente. Sus NetCDF son fixtures sintéticos, no datos científicos.
 
-El notebook prepara mapa global, mapa del bbox y distribución de valores válidos. Se mostrarán solo cuando estén presentes el archivo auténtico y su manifiesto. El bbox rectangular no es una máscara hidrográfica ni un promedio ponderado de cuenca. No se encontró `Anomaly_Zero_Evidencia.zip` dentro del repositorio para validar la geometría; queda pendiente confirmar con Lucas el polígono fuente, CRS, rasterización, celdas de borde y ponderación por área.
+## Notebook y gráficos
 
-La prueba de `research/tests/test_gldas_qa.py` usa un NetCDF sintético temporal para validar conteo de sentinelas, cobertura, selección espacial y archivo ausente. Es una prueba de código y **no constituye resultado de NASA**.
-
-## Reproducibilidad
-
-Desde la raíz del repositorio:
+El notebook reproducible es [ful_105_eda_gldas_200501.ipynb](../research/notebooks/ful_105_eda_gldas_200501.ipynb). Su copia ejecutada se guarda localmente como `research/notebooks/ful_105_eda_gldas_200501.executed.ipynb`; no se versiona y se regenera con:
 
 ```powershell
-uv sync --group research --group dev
-uv run python -m backend.app.data_sources.earthdata_probe discover --month 2005-01 --limit 1
-uv run pytest backend/tests/test_earthdata_probe.py research/tests/test_gldas_qa.py
-uv run ruff check backend research
 uv run jupyter nbconvert --to notebook --execute research/notebooks/ful_105_eda_gldas_200501.ipynb --output ful_105_eda_gldas_200501.executed.ipynb --output-dir research/notebooks
 ```
 
-Para habilitar celdas de EDA, ejecutar una única descarga acotada desde un terminal local: `uv run python -m backend.app.data_sources.earthdata_probe download-gldas --month 2005-01 --max-mib 64 --auth-strategy interactive`. Earthaccess pedirá autenticación por terminal; no registrar secretos ni persistirlos como parte de este análisis.
+Produce dos figuras: una con el mapa global y el mapa de la selección rectangular, y otra con el histograma global de valores válidos. Los sentinelas faltantes se enmascaran para graficar. El mapa rectangular incluye celdas fuera del límite de la cuenca; ninguno de los gráficos es una máscara oficial ni un promedio regional.
 
-## Decisiones y siguientes entregas
+## Límites científicos y contexto de Lucas
 
-- **Alaín / FUL-106:** integrar la base FUL-103 según el flujo del equipo y facilitar el descubrimiento/manifiestos de MERRA-2 e IMERG; cualquier extracción futura debe seguir limitada y con QA de procedencia. Esta rama no implementa descargas de esos productos.
-- **Lucas / FUL-104:** validar el polígono de Murray–Darling, CRS, cobertura y algoritmo de ponderación antes de producir un agregado regional comparable.
-- **FUL-105:** tras conseguir la muestra real, ejecutar el notebook y revisar atributos/unidades/faltantes con evidencia del archivo; luego acordar comparabilidad temporal y espacial de las tres variables. No inferir tendencias desde este único mes.
+La guía del equipo confirma que GLDAS 2.1 es un producto modelado y registra que NASA recomienda obtener salidas posteriores al posprocesamiento de octubre de 2020 para enmascarar salidas inválidas sobre aguas continentales. El archivo de enero de 2005 declara `history` de 2019; con esta muestra no queda resuelta su condición respecto de aquel posprocesamiento. Revisar linaje, período y tratamiento de faltantes antes de elegirla para una serie. La variable mensual tiene `cell_methods=time: mean`; `_inst` identifica el campo de origen, no convierte el promedio mensual en una observación instantánea. Véanse [datasets.md](datasets.md) y [contraste_fuentes.md](contraste_fuentes.md#muestra-gldas-de-enero-de-2005-entregada-por-lucas).
 
-La integración debe partir del historial de FUL-103 ya incluido aquí. Una vez que la base oficial integre FUL-103, trasladar los commits propios de esta rama mediante cherry-pick o rebase acordado tras revisar divergencia; no duplicar cambios del conector. No se crea PR en esta tarea.
+Lucas documentó la fuente de la geometría MDBA, CRS, licencia y advertencias de bordes en [region_murray_darling.md](region_murray_darling.md). Ese documento también presenta ensayos exploratorios con una muestra IMERG y varias reglas de ponderación para una fecha; sus diferencias y límites no eligen un método para producción. El segmento GeoJSON versionado no es el polígono completo, y la copia completa en caché local no está disponible en este checkout. Esta EDA usa solo el rectángulo. Antes de un agregado se deben revisar con Lucas/FUL-104 la geometría completa, CRS/transformación, celdas parciales, áreas, faltantes y sensibilidad temporal.
+
+Una muestra mensual no permite estimar tendencias, anomalías temporales, p-values, significancia ni causalidad. Tampoco se pueden atribuir a la cuenca los valores del rectángulo ni interpretar la media sin ponderación como estimación espacial oficial.
+
+## Estado Git, CI y siguientes pasos
+
+FUL-103 (PR #4), la consolidación de `develop` en `dev` (PR #6) y FUL-102 (PR #5) están integradas en `dev`. Esta rama FUL-105 parte del probe FUL-103, incorpora el catálogo actual de `dev` y conserva sus cambios en commits propios. La entrega de este avance se prepara como PR Draft hacia `dev`; su estado se registrará al abrirla. No modifica los PRs ni commits de otros integrantes.
+
+En la revisión del workflow compartido, `.github/workflows/checks.yml` aún ejecuta `pull_request` solo para `develop` y `push` solo para la antigua rama `feature/ful-103-earthdata-probe`. Además, `pyproject.toml` limita el descubrimiento predeterminado de pytest a `backend/tests`, por lo que `research/tests` requiere incluirse explícitamente. Se recomienda una corrección pequeña e independiente de infraestructura para que PRs hacia `dev` ejecuten lint y ambos grupos de pruebas; no se modificó el workflow en esta rama.
+
+Siguientes pasos:
+
+- **FUL-105:** integrar y revisar MERRA-2 e IMERG con procedencia verificada; armonizar unidades, soporte temporal y QA; luego comparar series mensuales de 2005–2024.
+- **Lucas / FUL-104:** validar geometría, CRS, ponderación y sensibilidad de bordes antes de una media de cuenca.
+- **Alaín / FUL-106:** mantener la extracción acotada y los manifiestos reproducibles para los tres productos; confirmar límites y semántica de calidad del insumo.
+- Revisar el linaje GLDAS de 2005 y decidir si corresponde al producto apropiado para el período y uso analítico.
+
+La EDA es un avance parcial y reproducible, no el cierre de FUL-105.

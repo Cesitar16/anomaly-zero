@@ -41,9 +41,21 @@ def inspect_gldas_sample(
     try:
         if variable not in dataset.data_vars:
             raise ValueError(f"required variable {variable!r} is missing")
-        for coordinate in ("lat", "lon"):
+        for coordinate, lower, upper in (("lat", -90.0, 90.0), ("lon", -180.0, 180.0)):
             if coordinate not in dataset.coords or dataset[coordinate].ndim != 1:
                 raise ValueError(f"expected a one-dimensional {coordinate} coordinate")
+            coordinate_values = np.asarray(dataset[coordinate].values, dtype=float)
+            if (
+                coordinate_values.size == 0
+                or not np.isfinite(coordinate_values).all()
+                or np.any((coordinate_values < lower) | (coordinate_values > upper))
+            ):
+                raise ValueError(f"{coordinate} coordinate contains invalid values")
+            differences = np.diff(coordinate_values)
+            if differences.size and not (
+                np.all(differences > 0) or np.all(differences < 0)
+            ):
+                raise ValueError(f"{coordinate} coordinate must be strictly monotonic")
         da = dataset[variable]
         if "lat" not in da.dims or "lon" not in da.dims:
             raise ValueError("variable must have lat and lon dimensions")
