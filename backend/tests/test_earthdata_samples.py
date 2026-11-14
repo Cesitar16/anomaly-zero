@@ -242,7 +242,7 @@ def test_spatial_qa_counts_center_cells_and_keeps_zero_distinct_from_fill(
     csv_path = tmp_path / "sample.csv"
     write_csv(result, csv_path)
 
-    assert result["selection"] == "cell center within polygon; boundary included"
+    assert result["selection"] == "cell center covered by polygon; outer and hole boundaries included"
     assert result["surface_area_claimed"] is False
     assert result["polygon_sha256"] == hashlib.sha256(polygon.read_bytes()).hexdigest()
     assert result["denominator_center_cells"] == 4
@@ -274,3 +274,26 @@ def test_download_preserves_existing_valid_original(tmp_path: Path) -> None:
     assert client.login_calls == []
     assert client.download_calls == []
 
+
+
+@pytest.mark.parametrize("kind", ["Polygon", "MultiPolygon"])
+def test_spatial_polygon_boundaries_and_holes_are_consistent(kind: str) -> None:
+    from backend.app.data_sources.earthdata_spatial import _geometries, _inside
+
+    exterior = [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+    hole = [[3, 3], [7, 3], [7, 7], [3, 7], [3, 3]]
+    second = [[20, 0], [25, 0], [25, 5], [20, 5], [20, 0]]
+    coordinates = (
+        [exterior, hole]
+        if kind == "Polygon"
+        else [[exterior, hole], [second]]
+    )
+    geometry = {"type": kind, "coordinates": coordinates}
+    polygons = list(_geometries(geometry))
+
+    assert _inside(0, 5, polygons)  # exterior boundary included
+    assert _inside(3, 5, polygons)  # hole boundary included
+    assert not _inside(5, 5, polygons)  # hole interior excluded
+    assert not _inside(15, 5, polygons)
+    if kind == "MultiPolygon":
+        assert _inside(21, 2, polygons)
