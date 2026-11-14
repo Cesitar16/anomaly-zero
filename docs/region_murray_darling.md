@@ -7,11 +7,11 @@
 - **DOC / TEC, 2026-11-14 UTC:** [ítem ArcGIS publicado por MDBA](https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json), titulado «Murray—Darling Basin Boundary as defined in Section 4 (1) of the Water Act 2007», propietario `MDBAGISPUBLISHER`, acceso público. El ítem declara [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Confirmar atribución y condiciones actuales antes de redistribuir derivados.
 - [Servicio FeatureServer, capa 0](https://services8.arcgis.com/5xxEi7I2m6ml97fE/arcgis/rest/services/boundary_gdb/FeatureServer/0): geometría poligonal. Los metadatos muestran extensión WKID 102100 / 3857; se puede solicitar salida en EPSG:4326 con `outSR=4326`. No asumir que el CRS del conjunto histórico original sea 4326.
 - Extensión aproximada en longitud/latitud: oeste 138,5685; sur −37,6821; este 152,4885; norte −24,5856. El atributo consultado `AREA_HA=105857400` no es una nueva medición. No usar el área Web Mercator como área geodésica equivalente.
-- El informe Work identifica el origen histórico como Australia's River Basins 1997. **PEND:** contrastar linaje y atribución exacta antes de publicar geometrías.
+- El ítem atribuye el recurso al Australian Government Department of Climate Change, Energy, the Environment and Water (DCCEEW) y describe su derivación desde Australia’s River Basins 1997, con procesamiento posterior del departamento. MDBA figura como publicador del ítem. Antes de redistribuir una entrega distinta, confirmar sus condiciones y atribución específicas.
 
 ## Fragmento geométrico de integración
 
-El [segmento GeoJSON](examples/murray_darling_boundary_segment.geojson) contiene 12 vértices consecutivos extraídos de la geometría MDBA descargada como EPSG:4326. Incluye autor, fuente, enlace, licencia CC BY 4.0 y descripción de la modificación. Está representado como `LineString` para probar lectura de coordenadas: **no es un polígono cerrado ni sirve para recortar, calcular superficies o decidir si un punto está en la cuenca**. La geometría completa debe obtenerse del servicio oficial y verificarse al usarla.
+El [segmento GeoJSON](examples/murray_darling_boundary_segment.geojson) contiene 12 vértices consecutivos extraídos de la geometría MDBA descargada como EPSG:4326. Incluye la atribución DCCEEW indicada en el ítem, el publicador MDBA, enlaces, licencia CC BY 4.0 y descripción de la modificación. Está representado como `LineString` para probar lectura de coordenadas: **no es un polígono cerrado ni sirve para recortar, calcular superficies o decidir si un punto está en la cuenca**. La geometría completa debe obtenerse del servicio oficial y verificarse al usarla.
 
 ## Punto de prueba
 

@@ -6,12 +6,14 @@
       "properties": {
         "name": "Murray–Darling Basin boundary: 12-vertex example segment",
         "purpose": "Integration example only; not a complete basin boundary or suitable for masking",
-        "source": "Murray–Darling Basin Authority, Murray—Darling Basin Boundary as defined in Section 4 (1) of the Water Act 2007",
+        "source": "Murray—Darling Basin Boundary as defined in Section 4 (1) of the Water Act 2007",
         "source_url": "https://services8.arcgis.com/5xxEi7I2m6ml97fE/arcgis/rest/services/boundary_gdb/FeatureServer/0",
         "item_url": "https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff",
         "license": "https://creativecommons.org/licenses/by/4.0/",
         "changes": "12 consecutive vertices extracted from polygon boundary; output represented as LineString in EPSG:4326",
-        "retrieved_utc": "2026-11-14"
+        "retrieved_utc": "2026-11-14",
+        "attribution": "Australian Government Department of Climate Change, Energy, the Environment and Water",
+        "published_by": "Murray–Darling Basin Authority (MDBAGISPUBLISHER)"
       },
       "geometry": {
         "type": "LineString",
