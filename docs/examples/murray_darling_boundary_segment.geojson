@@ -1,0 +1,71 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Murray–Darling Basin boundary: 12-vertex example segment",
+        "purpose": "Integration example only; not a complete basin boundary or suitable for masking",
+        "source": "Murray–Darling Basin Authority, Murray—Darling Basin Boundary as defined in Section 4 (1) of the Water Act 2007",
+        "source_url": "https://services8.arcgis.com/5xxEi7I2m6ml97fE/arcgis/rest/services/boundary_gdb/FeatureServer/0",
+        "item_url": "https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff",
+        "license": "https://creativecommons.org/licenses/by/4.0/",
+        "changes": "12 consecutive vertices extracted from polygon boundary; output represented as LineString in EPSG:4326",
+        "retrieved_utc": "2026-11-14"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            146.889431877,
+            -24.6402784822843
+          ],
+          [
+            146.888461924,
+            -24.6426284322843
+          ],
+          [
+            146.888132012,
+            -24.6451084702842
+          ],
+          [
+            146.890631998,
+            -24.6456985562842
+          ],
+          [
+            146.894481806,
+            -24.6444085812842
+          ],
+          [
+            146.89623178,
+            -24.6460385262842
+          ],
+          [
+            146.897831885,
+            -24.6482384402841
+          ],
+          [
+            146.900211843,
+            -24.6498687202841
+          ],
+          [
+            146.901911693,
+            -24.6506286232841
+          ],
+          [
+            146.904291651,
+            -24.651228600284
+          ],
+          [
+            146.906731623,
+            -24.652168714284
+          ],
+          [
+            146.908291662,
+            -24.653338660284
+          ]
+        ]
+      }
+    }
+  ]
+}
