@@ -45,7 +45,7 @@ npm run build && npm run preview   # http://localhost:4173
 5. **Sin proveedor de hosting.** Las rutas reales exigen que el hosting reescriba cualquier ruta a `index.html`.
 6. **Pruebas pendientes.** No se probó con lector de pantalla real ni en dispositivos físicos; solo en Chrome con viewports emulados.
 7. **Estado en Linear.** FUL-100 sigue en "Todo" y sin comentarios. No se modificó nada en Linear. Según el documento de gobernanza, para cerrar hay que enlazar PR o artefacto, comprobar los criterios uno a uno y tener revisión ajena.
-8. **Rama base.** `CONTRIBUTING.md` habla de `develop`, pero el repo tiene `dev` y las PR recientes (#5 y #7) se integraron ahí. La rama sale de `dev`. Confirmar a qué rama debe apuntar la PR.
+8. **Rama base (resuelta).** En GitHub no existe `develop`; la rama de integración es `dev` (las PR #5 y #7 se integraron ahí). La rama sale de `dev` y la PR apunta a `dev`. `CONTRIBUTING.md` todavía menciona `develop`: conviene actualizarlo.
 9. **Metadatos en imágenes.** Las capturas y `public/favicon.svg` llevan metadatos de procedencia C2PA (Content Credentials de Anthropic) añadidos al copiarlos. No cambian cómo se ven; el favicon pesa por eso unos 8 KB. Se puede reemplazar por una versión limpia si se prefiere.
 
 ## Decisiones tomadas
