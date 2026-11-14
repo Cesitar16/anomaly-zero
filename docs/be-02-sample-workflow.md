@@ -41,7 +41,7 @@ E01/catálogo registra para enero de 2005 51.8986 MiB para MERRA-2 y 17.1937 MiB
 
 ## Evidencia comprobada y pendiente
 
-- **H1 / GLDAS:** desde PowerShell con el grupo BUILTIN\\Administrators habilitado se reutilizó la muestra local de enero de 2005, sin re-descarga ni modificación. Tamaño calculado `25,075,859` bytes y SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593` coinciden con el manifiesto. Se abrió como NetCDF4: `time=1`, `bnds=2`, `lat=600`, `lon=1440`; variable `SoilMoi0_10cm_inst`, unidad `kg m-2`, fill `-9999.0`. El preview de las cuatro celdas iniciales contiene fill y no representa cobertura regional.
+- **H1 / GLDAS:** desde PowerShell con el grupo Administrators habilitado (SID S-1-5-32-544) se reutilizó la muestra local de enero de 2005, sin re-descarga ni modificación. Tamaño calculado `25,075,859` bytes y SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593` coinciden con el manifiesto. Se abrió como NetCDF4: `time=1`, `bnds=2`, `lat=600`, `lon=1440`; variable `SoilMoi0_10cm_inst`, unidad `kg m-2`, fill `-9999.0`. El preview de las cuatro celdas iniciales contiene fill y no representa cobertura regional.
 - **H2 pendiente:** obtener muestras NASA auténticas MERRA-2 e IMERG, medir tamaños y tiempos, y revisar sus metadatos reales antes de aceptar las identidades candidatas.
 - **H3 pendiente:** ejecutar la prueba espacial sobre grillas auténticas verificadas y generar una tabla CSV con manifiestos localizables. Esta prueba usa centros de celda; no estima superficie cubierta.
 - **Revisión científica pendiente:** FUL-104, Lucas y César deben revisar productos, unidades, QA y método. No se aplican conversiones ni se autoaprueban decisiones científicas.
