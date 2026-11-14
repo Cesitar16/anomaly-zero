@@ -75,4 +75,4 @@ Contribuciones y flujo Git: [CONTRIBUTING.md](CONTRIBUTING.md). Las pull request
 
 ## Estado
 
-Base inicial configurada: plantilla React + TypeScript de Vite, API mínima y estructura documental. FUL-101 incorpora un EDA metodológico de NASA POWER T2M en un punto, con la respuesta cruda excluida de Git. Los productos regionales MERRA-2, GPM IMERG y GLDAS siguen como candidatos no descargados ni validados; el piloto no es un análisis definitivo de tendencia. Pendiente validar extracción, definir contratos API, analizar los productos oficiales y desarrollar la experiencia del explorador.
+Base inicial configurada: plantilla React + TypeScript de Vite y API mínima con `GET /health`. FUL-101 incorpora un piloto puntual de NASA POWER T2M. FUL-103 incorpora descubrimiento CMR de MERRA-2, IMERG y GLDAS, además de una descarga autenticada y acotada de GLDAS; FUL-105 añade EDA de un único mes GLDAS sobre un rectángulo. Los tres productos siguen siendo candidatos, sin serie regional de cuenca ni tendencias validadas. El frontend todavía es el starter Vite; siguen pendientes la validación científica, el procesamiento regional, los contratos y el explorador.
