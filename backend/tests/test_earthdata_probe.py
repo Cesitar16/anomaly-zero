@@ -376,4 +376,3 @@ def test_download_rejects_html_without_leaving_a_granule(tmp_path: Path) -> None
         download_gldas(month="2005-01", max_mib=64, output_dir=tmp_path, client=client)
     assert list(tmp_path.glob("*.nc4")) == []
     assert list(tmp_path.glob("*.manifest.json")) == []
-
