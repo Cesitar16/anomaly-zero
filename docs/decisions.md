@@ -166,3 +166,49 @@ Los **nombres exactos en Pydantic, endpoints, códigos HTTP, rutas públicas y f
 **FUL-99 puede cerrarse sin extracción real** cuando Lucas, César y Alaín ratifiquen B-01–B-15, o documenten disensos/ajustes, y concuerden en las interfaces. La extracción y validación de granules son dependencias de **FUL-103/104/106/105**, no prerequisito para aprobar un diseño provisional. No es aceptable marcar la variable inicial como "científicamente validada" o publicar promedios/p-values sin esas pruebas.
 
 **Pendientes genuinamente dependientes de datos:** máscara espacial y regla definitiva de ponderación (área efectiva), tasa/acumulado y unidades de cada producto, tolerancia de cobertura, missing reales, método inferencial, almacenamiento/raster final y viabilidad de descarga autenticada. Todos tienen dueño y tarjeta en las secciones anteriores.
+
+
+## 8. Respuestas propuestas a las tres confirmaciones de FUL-99 (14-11-2026)
+
+**Estado: RECOMENDACIÓN TÉCNICA DEL BORRADOR; faltan conformidades de Lucas y Alaín.** Las tres preguntas de revisión reciben una respuesta explícita para reducir discusiones abiertas, pero no se convierten automáticamente en decisiones del equipo.
+
+### R-01 — Lucas: ¿MERRA-2/T2M y polígono MDBA?
+
+**Respuesta propuesta: SÍ, como Plan A y geometría candidata del prototipo.**
+- **Producto:** MERRA-2 `M2TMNXSLV` v5.12.4, CMR `C1276812859-GES_DISC`, variable `T2M`, frecuencia mensual; NASA lo documenta como reanálisis de media mensual con resolución nominal 0,5° × 0,625°. Fuente oficial: https://data.nasa.gov/dataset/merra-2-tavgm-2d-slv-nx-2dmonthly-meantime-averagedsingle-levelassimilationsingle-level-di-892ac .
+- **Área:** polígono Murray–Darling del servicio MDBA guardado en el ZIP (EPSG:4326, fuente/licencia consignadas en el inventario de evidencias). **No** usar el contorno NSW simplificado ni asumir que una intersección CMR valida la cuenca.
+- **Tiempo:** enero 2005–diciembre 2024; las respuestas CMR del ZIP tienen 240 entradas mensuales. Esto acredita inventario, no calidad espacial ni meses de serie regional.
+- **Primera entrega:** media mensual regional científicamente definida, no promedio de una estación ni de todos los píxeles sin máscara; mostrar cobertura de área, fuente y unidad. Conservar grillas para mapa futuro.
+- **Puerta obligatoria:** antes de declarar el producto viable, abrir 1 gránulo auténtico y comprobar `T2M`, dimensiones, unidad, calendario, fill values, píxeles válidos dentro del polígono, posibles celdas parcialmente superpuestas y ponderación defendible. Documentar las decisiones; si falla, revisar Plan B con Lucas. **No validar método espacial sin ese archivo**.
+
+### R-02 — Alaín: ¿batch, manifiestos y snapshots sobre carpetas existentes?
+
+**Respuesta propuesta: SÍ, para un MVP local, con tres reglas de protección.**
+1. **Persistencia:** `data/raw/<producto>/<versión>/` conserva descargas originales con hashes; `data/processed/snapshots/<snapshot_id>/` contiene resultados derivados, QA y manifiesto; `data/cache/` es recuperable. No subir datos pesados/credenciales a Git. No crear DB ni colas ahora.
+2. **Publicación:** producir el snapshot fuera del request web; validar consistencia de `series.csv`, `manifest.json` y `qa_summary.json`; publicar una referencia lógica al **último válido** solo cuando finalicen todos los archivos. No mostrar resultados incompletos; errores de NASA no bloquean `/health` ni borran snapshots previos.
+3. **Consumo:** FastAPI lee snapshots y metadatos de forma acotada y sirve series y estados; React presenta la fuente, período, cobertura, unidad y fecha de generación. El formato externo/endpoints pertenecen a FUL-108.
+
+**Condición de ingeniería:** verificar con 1 gránulo real tamaño, latencia y consumo de RAM/disco; reevaluar almacenamiento si las métricas lo justifican. La propuesta de rutas es una convención local, no infraestructura desplegada.
+
+### R-03 — César: ¿campos suficientes para un EDA regional trazable?
+
+**Respuesta propuesta: SÍ, si se conserva la tabla mínima y se amplía el manifiesto de calidad.** El esquema de serie en `architecture.md` contiene `period` (`YYYY-MM`), `variable_id`, `value` (numérico finito/null), `unit`, `product_id`, `product_version`, `region_id`, `spatial_support`, `quality_status` y `snapshot_id`. Para resultados de **cuenca**, exigir además `coverage_fraction` (área válida/área nominal de la máscara, documentando denominador). Para punto o grilla, puede ser nulo. El total y número de celdas válidas, así como la cobertura temporal cuando aplique, son diagnósticos y no sustituyen cobertura de área.
+
+**Datos obligatorios del manifiesto:**
+- Dataset/versión, IDs y SHA-256 de granules, fecha UTC de extracción y proceso; `snapshot_id` e identificador/revisión del código.
+- Polígono con fuente, CRS y hash; máscara/pesos, método de agregación, y tratamiento de celdas de borde y píxeles faltantes.
+- Unidad original/derivada y transformación exacta con fórmula/convención de tiempo; nombre de variable, `_FillValue`, flags QA y decisiones sobre filtrado.
+- Meses esperados, recibidos, válidos, faltantes y repetidos; cobertura espacial por mes, conteos y advertencias de calidad.
+- Separar `raw`, serie agregada, raster derivado y análisis inferencial; no etiquetar un dato puntual como `polygon_aggregate`.
+
+**Política:** el cero es válido si lo es para la variable; ausencia se expresa mediante null/estado. Un mes sin mediciones utilizables no se interpola automáticamente. Los umbrales para `valid`/`partial` y los métodos de pesos quedan **sin fijar** hasta abrir gránulos y acordar QA en FUL-104/105/106. Tendencias/p-values e intervalos solo cuando el método sea evaluado y aprobado.
+
+### R-04 — Qué falta de FUL-99 para pasar de Draft a acuerdo de equipo
+
+No se necesita extraer 240 archivos para aprobar esta arquitectura. Basta con que:
+- **Lucas** responda «acepto R-01 como plan inicial» o indique una objeción fundamentada; no exige declarar datos científicos listos.
+- **Alaín** confirme R-02 o identifique límites concretos del patrón en su implementación.
+- **César** revise R-03 y registre conformidad con el formato interno y controles obligatorios.
+- Se documenten los cambios/discordancias en esta PR; las decisiones pendientes de archivos quedan explícitamente transferidas a FUL-103/104/105/106/107 y los endpoints externos a FUL-108.
+
+**No marcar FUL-99 Done ni fusionar esta PR como consenso hasta tener constancia de las tres revisiones.**
