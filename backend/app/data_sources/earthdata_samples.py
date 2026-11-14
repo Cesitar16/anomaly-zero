@@ -21,6 +21,19 @@ PRODUCTS = {product.key: product for product in probe.PRODUCTS}
 DOWNLOADABLE = {"merra2", "imerg_final"}
 
 
+def _hdf5_dimensions(dataset: h5py.Dataset) -> list[str | None]:
+    labels = [dataset.dims[i].label or None for i in range(dataset.ndim)]
+    if all(label is None for label in labels):
+        names = dataset.attrs.get("DimensionNames")
+        if isinstance(names, bytes):
+            names = names.decode("utf-8", errors="replace")
+        if isinstance(names, str):
+            declared = [name.strip() for name in names.split(",")]
+            if len(declared) == dataset.ndim and all(declared):
+                return declared
+    return labels
+
+
 def _is_imerg_missing(value: Any, sentinel: Any) -> bool:
     if probe._is_missing(value, [sentinel] if sentinel is not None else []):
         return True
@@ -85,7 +98,7 @@ def inspect_product(path: Path | str, product_key: str) -> dict[str, Any]:
                 values = np.asarray(coord[...]).reshape(-1)
                 coordinate_info[name] = {
                     "dimensions": [
-                        coord.dims[i].label or None for i in range(coord.ndim)
+                        _hdf5_dimensions(coord)[i] for i in range(coord.ndim)
                     ],
                     "size": int(values.size),
                     "attributes": {
@@ -121,7 +134,7 @@ def inspect_product(path: Path | str, product_key: str) -> dict[str, Any]:
             "variable": {
                 "name": variable_path,
                 "dimensions": [
-                    variable.dims[i].label or None for i in range(variable.ndim)
+                    _hdf5_dimensions(variable)[i] for i in range(variable.ndim)
                 ],
                 "shape": list(variable.shape),
                 "dtype": str(variable.dtype),
@@ -139,7 +152,7 @@ def inspect_product(path: Path | str, product_key: str) -> dict[str, Any]:
             "quality_variable_candidates": quality_paths,
             "limitations": [
                 "A tiny raw subset was read; no temporal or spatial aggregation was calculated.",
-                "HDF5 dimension labels may be absent; axis semantics require coordinate-size matching.",
+                "Missing HDF5 labels fall back to DimensionNames; spatial QA validates names against coordinate sizes.",
                 "QA candidates are reported by path only and have not been interpreted.",
             ],
         }
