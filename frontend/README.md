@@ -6,7 +6,7 @@ Aplicación React + TypeScript del monorepositorio de Anomaly Zero (NASA Space A
 
 ## Requisitos
 
-- Node.js 20 o superior (probado con Node 22)
+- Node.js 20.19 o superior (probado con Node 20.19.4 y con Node 22)
 - npm 10 o superior
 
 No necesita backend, variables de entorno ni credenciales. Las fuentes están autoalojadas (paquetes `@fontsource`), así que la página no hace ninguna petición a servicios externos.
@@ -62,6 +62,7 @@ frontend/
 │   └── test/                    pruebas (excluidas de la compilación de la app, ver tsconfig.test.json)
 └── docs/
     ├── FE-01-evidencia.md       cierre de la tarjeta: criterios, hallazgos, decisiones abiertas
+    ├── INTEGRACION.md           pasos para llevar este código al monorepo
     └── capturas/                capturas de móvil, tablet y escritorio
 ```
 
@@ -107,7 +108,7 @@ frontend/
 ## Verificación realizada
 
 - `npx tsc -b`, `npm run build` y `npm run lint` sin errores ni avisos.
-- `npm test`: 48 pruebas pasando (estructura, axe, contraste, contenido).
+- `npm test`: 48 pruebas pasando en Node 20.19.4 y en Node 22 (estructura, axe, contraste, contenido).
 - Chrome en 320, 390, 768 y 1440 px de ancho: sin desbordamiento horizontal, sin errores de consola y sin peticiones externas. Capturas en `docs/capturas/`.
 - Teclado, anclas, menú móvil, recarga en `/explore` y 404 probados con Playwright sobre la compilación.
 
