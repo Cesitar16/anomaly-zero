@@ -22,6 +22,8 @@ frontend/.vite/
 *.pem
 *.key
 .netrc
+_netrc
+.dodsrc
 .earthaccess/
 
 # NASA data and generated outputs
