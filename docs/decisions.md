@@ -97,3 +97,19 @@
 **Referencias internas:** `docs/architecture.md` (diseño y esquemas provisionales), `docs/datasets.md` (productos candidatos), FUL-99, FUL-101 (piloto), FUL-102/104 (Lucas), FUL-103/106 (Alaín), FUL-105 (César), FUL-107 (puerta científica) y FUL-108 (contratos).
 
 **Referencias de implementación:** [Repositorio](https://github.com/Cesitar16/anomaly-zero) · [NASA GES DISC](https://disc.gsfc.nasa.gov/) · [Earthdata](https://www.earthdata.nasa.gov/) · [NASA POWER](https://power.larc.nasa.gov/).
+
+## 6. Incorporación de evidencias del ZIP de investigación (14-11-2026)
+
+**Documento asociado:** [docs/evidence_inventory_2026-11-14.md](evidence_inventory_2026-11-14.md). Se inspeccionaron archivos del ZIP y se compararon **59/59 hashes** de su manifiesto; el ZIP no se publicó en GitHub. Se registraron datos verificables de **CMR** y de un **polígono MDBA**, diferenciando evidencia histórica de las decisiones científicas pendientes.
+
+| ID | Evidencia nueva (captura 14-11-2026) | Actualiza, pero NO cierra |
+| --- | --- | --- |
+| E-01 | MERRA-2 `M2TMNXSLV` v5.12.4: `C1276812859-GES_DISC`; **240/240 meses 2005–2024** en el inventario CMR | O-01 y O-04: aún falta descargar y examinar grilla |
+| E-02 | IMERG Final `GPM_3IMERGM` v07: `C2723754851-GES_DISC`; **240/240** meses en CMR; en la captura extendida llega hasta septiembre 2025 | O-01/O-04; no completar meses posteriores mezclando versiones |
+| E-03 | GLDAS Noah `GLDAS_NOAH025_M` v2.1: `C1342986036-GES_DISC`; **240/240** meses en CMR | O-01 y O-04; aún falta QA de variable y área |
+| E-04 | Polígono Murray–Darling EPSG:4326, válido, publicado mediante servicio ArcGIS relacionado con MDBA, licencia CC BY 4.0; Wagga Wagga queda dentro | O-02: candidato geográfico ya disponible, pendiente aceptación de Lucas y revisión de máscara |
+| E-05 | Metadata ABS/NSW 2026 del ZIP declara CC BY-SA 4.0; geometría simplificada NSW es para dibujo | O-02/O-07: no emplear como máscara ni confundir territorio/licencia con MDBA |
+
+**Implicación para P-02:** puede priorizarse una prueba inicial de **MERRA-2 T2M** por continuidad con el análisis de temperatura de FUL-101, pero **no** aprobar esa elección ni declararla funcional hasta que FUL-103/106 pueda abrir un granule auténtico y Lucas valide las variables y unidades. La evidencia de 240 meses es de inventario, no de 240 valores de cuenca.
+
+**Siguen pendientes:** EDL/descarga efectiva, lectura NetCDF/HDF5 y atributos, meses/píxeles válidos dentro del polígono, máscara/pesos y calidad regional, inferencia de tendencias, backend de snapshots, contrato público, mapas y revisión formal de Lucas/Alaín. Conservar el estado global de FUL-99 en **In Review**, no Done.
