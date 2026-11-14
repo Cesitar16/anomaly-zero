@@ -119,9 +119,66 @@ def inspect_merra(path):
         }
 
 
+def inspect_gldas(path):
+    with h5py.File(path, "r") as source:
+        soil = source["SoilMoi0_10cm_inst"]
+        lat, lon, time = source["lat"][:], source["lon"][:], source["time"]
+        units = text_attr(soil.attrs["units"])
+        if soil.shape != (1, 600, 1440) or units != "kg m-2":
+            raise ValueError(
+                f"Dimensiones o unidades GLDAS inesperadas: {soil.shape}, {units}"
+            )
+        if text_attr(soil.attrs["cell_methods"]) != "time: mean":
+            raise ValueError("Agregación temporal GLDAS inesperada")
+        if (
+            text_attr(time.attrs["units"]) != "days since 2000-01-01 00:00:00"
+            or text_attr(time.attrs["calendar"]) != "standard"
+        ):
+            raise ValueError("Unidades o calendario GLDAS inesperados")
+        if not np.array_equal(time[:], [1827]) or not np.array_equal(
+            source["time_bnds"][:], [[1827, 1858]]
+        ):
+            raise ValueError("Intervalo GLDAS inesperado; se esperaba enero de 2005")
+        if not np.allclose(np.diff(lat), 0.25) or not np.allclose(np.diff(lon), 0.25):
+            raise ValueError("Espaciado de coordenadas GLDAS inesperado")
+        ys = np.flatnonzero((lat >= -38) & (lat <= -24))
+        xs = np.flatnonzero((lon >= 138) & (lon <= 153))
+        if (
+            not len(xs)
+            or not len(ys)
+            or np.any(np.diff(xs) != 1)
+            or np.any(np.diff(ys) != 1)
+        ):
+            raise ValueError("Coordenadas GLDAS inesperadas para la caja")
+        values = soil[0, ys[0] : ys[-1] + 1, xs[0] : xs[-1] + 1]
+        fill = float(np.asarray(soil.attrs["_FillValue"]).item())
+        valid = np.isfinite(values) & (values != fill)
+        if not np.any(valid):
+            raise ValueError("No hay valores distintos del fill en la caja GLDAS")
+        return {
+            "variable": "SoilMoi0_10cm_inst",
+            "shape_time_lat_lon": soil.shape,
+            "units": units,
+            "cell_methods": text_attr(soil.attrs["cell_methods"]),
+            "fill_value": fill,
+            "interval": "2005-01-01/2005-02-01",
+            "spacing_degrees": 0.25,
+            "box_cells": int(values.size),
+            "box_finite_non_fill": int(valid.sum()),
+            "box_missing_or_nonfinite": int((~valid).sum()),
+            "box_min_kg_m2": float(values[valid].min()),
+            "box_max_kg_m2": float(values[valid].max()),
+            "history": text_attr(source.attrs.get("history", b"")),
+            "note": "Muestra entregada por Lucas; no se ha verificado igualdad por checksum con NASA ni calidad integral o máscara de cuenca.",
+        }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", type=Path, default=Path("data/cache/ful-102"))
+    parser.add_argument(
+        "--gldas", type=Path, help="Ruta de la muestra GLDAS de enero de 2005"
+    )
     args = parser.parse_args()
     results = {}
     for name, digest in SAMPLES.items():
@@ -131,6 +188,10 @@ def main():
             inspect_imerg(path) if name.startswith("imerg_") else inspect_merra(path)
         )
         results[name] = {"sha256": actual, **details}
+    if args.gldas:
+        expected = "5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593"
+        actual = verify_file(args.gldas, expected)
+        results["gldas_200501"] = {"sha256": actual, **inspect_gldas(args.gldas)}
     print(json.dumps(results, indent=2, ensure_ascii=False))
 
 

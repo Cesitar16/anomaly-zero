@@ -155,7 +155,7 @@
       "format_expected": "NetCDF4 .nc4",
       "provider": "NASA GSFC / GES DISC",
       "source": "https://doi.org/10.5067/SXAVCZFAQLNO",
-      "evidence_notes": "CMR collection, associated variable metadata and 240 monthly inventory records checked; original granule and regional pixels pending; NASA distinguishes main versus early production streams and recommends replacing pre-November-2020 copies after inland-water mask post-processing",
+      "evidence_notes": "CMR inventory and user-supplied January 2005 file inspected; size and filename match CMR but source checksum unavailable; quality, basin mask and 2020 water-mask lineage remain pending",
       "status": "candidate",
       "inventory_period_start": "2005-01",
       "inventory_period_end": "2024-12",
@@ -168,10 +168,10 @@
       ],
       "inventory_checked_utc": "2026-11-14",
       "metadata_access": "CMR public",
-      "download_access": "GES DISC anonymous attempt returned 401; no scientific file opened",
+      "download_access": "Lucas supplied a local file; earlier anonymous GES DISC request returned 401; authenticated download not executed in this review",
       "license": "CMR refers to EOSDIS use and citation guidance and GES DISC data guidelines; check current terms for each delivery before redistribution",
-      "qa_status": "pending: authenticated file, dimensions, attributes, valid pixels, regional mask",
-      "unit_status": "documented in CMR UMM-Var; verify against the actual granule",
+      "qa_status": "January 2005 box: 3045 finite non-fill and 315 fill/nonfinite cells; basin mask, water-mask lineage and quality across the full series remain pending",
+      "unit_status": "kg m-2 confirmed in the supplied January 2005 file",
       "references": [
         "https://cmr.earthdata.nasa.gov/search/collections.json?concept_id=C1342986036-GES_DISC",
         "https://doi.org/10.5067/SXAVCZFAQLNO",
@@ -195,7 +195,7 @@
       "example_granule_name": "GLDAS_NOAH025_M.A200501.021.nc4",
       "example_granule_cmr_size_reported": 23.91420269012451,
       "example_granule_size_note": "CMR describes granule size as megabytes; binary conversion matches IMERG and GLDAS 2005 examples, but verify each source before capacity planning",
-      "coordinate_reference_status": "Grilla global de latitud/longitud documentada; ejes, datum y atributos del archivo real pendientes",
+      "coordinate_reference_status": "Sample has latitude/longitude in degrees, 0.25-degree spacing and equidistant cylindrical projection attribute; datum not verified",
       "service_inventory_note": "Inventarios CMR, Giovanni y AppEEARS tienen coberturas distintas; detalle en docs/datasets.md",
       "monthly_aggregation_note": "NASA GLDAS README describes monthly instantaneous fields as averages of 3-hourly time steps; _inst does not mean a single monthly snapshot. Verify file attributes and missing-data handling.",
       "citation_creator_cmr": "Beaudoing, H. and M. Rodell, NASA/GSFC/HSL",
@@ -206,7 +206,10 @@
       "use_constraints_checked_utc": "2026-11-14",
       "use_guidance_availability": "CMR URL returned HTTP 403 in web inspection on 2026-11-14; general NASA SMD policy is separately linked; check collection-specific terms",
       "general_nasa_science_policy": "https://science.nasa.gov/researchers/science-information-policy/",
-      "citation_guidance_availability": "redirected to GES DISC page whose body was not readable in this inspection"
+      "citation_guidance_availability": "redirected to GES DISC page whose body was not readable in this inspection",
+      "sample_sha256": "5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593",
+      "sample_provenance": "Local file supplied by Lucas; NASA CMR identifies the same filename and size, but provides no source checksum in the consulted record",
+      "sample_interval": "2005-01-01/2005-02-01"
     }
   ],
   "alternatives": [

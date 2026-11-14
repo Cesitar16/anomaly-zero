@@ -1,6 +1,6 @@
 # Catálogo científico inicial
 
-Catálogo para [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y). Colecciones, región y período son **candidatos**. Se inspeccionaron muestras IMERG V07B y una copia MERRA-2 reorganizada por NCAR; siguen pendientes el gránulo NASA original MERRA-2, una muestra GLDAS y la validación científica y espacial completa. FUL-104 profundiza la verificación y FUL-107 registra la decisión del equipo. El archivo [catalog_mvp.json](catalog_mvp.json) contiene las fichas estructuradas, [region_murray_darling.md](region_murray_darling.md) describe la región y [contraste_fuentes.md](contraste_fuentes.md) registra pruebas y límites del contraste.
+Catálogo para [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y). Colecciones, región y período son **candidatos**. Se inspeccionaron muestras IMERG V07B, una copia MERRA-2 reorganizada por NCAR y una muestra GLDAS entregada por Lucas; siguen pendientes el gránulo NASA original MERRA-2 y la validación científica y espacial completa. FUL-104 profundiza la verificación y FUL-107 registra la decisión del equipo. El archivo [catalog_mvp.json](catalog_mvp.json) contiene las fichas estructuradas, [region_murray_darling.md](region_murray_darling.md) describe la región y [contraste_fuentes.md](contraste_fuentes.md) registra pruebas y límites del contraste.
 
 ## Evidencia
 
@@ -16,7 +16,7 @@ Una etiqueta se aplica a una afirmación, no a todo el producto. La investigaci�
 
 - **Cobertura:** 2005–2024 está inventariado en CMR para las tres colecciones; IMERG Final V07 llega a septiembre de 2025 en la consulta ampliada. El inventario no certifica píxeles válidos.
 - **Interpretación:** MERRA-2 `T2M` es aire a 2 m; IMERG mensual es una tasa en mm/h; GLDAS describe agua de la capa 0–10 cm. Las conversiones y las dependencias entre productos requieren revisión científica.
-- **Muestras:** se abrieron gránulos IMERG y una copia MERRA-2 reorganizada. En la caja de estudio se comprobaron valores finitos y distintos del fill durante los doce meses de 2005 para ambos productos; ello no valida la calidad. La comparación exploratoria con estaciones de Wagga Wagga muestra diferencias que no prueban por sí solas error o sesgo; faltan ventanas temporales alineadas e independencia. El gránulo NASA original MERRA-2 y GLDAS no se abrieron.
+- **Muestras:** se abrieron gránulos IMERG, una copia MERRA-2 reorganizada y un archivo GLDAS de enero de 2005 entregado por Lucas. La caja de GLDAS contiene 3.045 valores finitos distintos del fill y 315 celdas con fill o no finitas; no se aplicó máscara de cuenca. Las comprobaciones no validan la calidad integral. La comparación exploratoria con estaciones requiere alinear ventanas y comprobar independencia. El gránulo NASA original MERRA-2 sigue sin abrirse.
 - **Alternativas:** se detectaron [conflictos de metadatos SMAP L4 y MOD11A2 en AppEEARS](contraste_fuentes.md#conflicto-de-unidades-en-metadatos-appeears-de-smap-l4). No aplicar automáticamente unidades o fill sin revisar la entrega real.
 - **Geografía:** Murray–Darling es la región candidata; NSW es un estado parcialmente solapado. La prueba de bordes es exploratoria y no aprueba una ponderación o máscara de producción.
 - **Evidencia Work:** se verificaron por hash 35 respuestas o archivos individuales; las otras pruebas y sus límites están en [pruebas_work.csv](pruebas_work.csv). El ZIP completo no se recibió y no se espera para continuar.
@@ -27,11 +27,11 @@ Una etiqueta se aplica a una afirmación, no a todo el producto. La investigaci�
 | --- | --- | --- | --- | --- | --- |
 | Temperatura del aire a 2 m | MERRA-2 `M2TMNXSLV` / `5.12.4` | `T2M` | K en copia NCAR; confirmar en archivo NASA | Mensual; 0,625° longitud × 0,5° latitud | TEC copia NCAR reorganizada; PEND gránulo NASA y QA |
 | Precipitación | IMERG Final `GPM_3IMERGM` / `07` | `Grid/precipitation` | mm/h, tasa confirmada en muestras | Mensual; 0,1° × 0,1° | TEC muestras 2005 y enero 2010 y control básico; PEND máscara y validación independiente |
-| Agua modelada de suelo 0–10 cm | GLDAS Noah `GLDAS_NOAH025_M` / `2.1` | `SoilMoi0_10cm_inst` | kg/m² documentado; confirmar atributos del archivo | Mensual; 0,25° × 0,25° | DOC colección y tabla Noah; TEC UMM-Var e inventario; PEND apertura y QA |
+| Agua modelada de suelo 0–10 cm | GLDAS Noah `GLDAS_NOAH025_M` / `2.1` | `SoilMoi0_10cm_inst` | kg/m² confirmado en muestra | Mensual; 0,25° × 0,25° | TEC muestra enero 2005; PEND QA integral, máscara y linaje |
 
 **Procedencia GLDAS:** NASA distingue producción principal y temprana por sus forzantes; además recomienda obtener las versiones posteriores al posprocesamiento de octubre de 2020 que enmascaró salidas inválidas sobre aguas continentales. Ver [detalle y fuentes](contraste_fuentes.md#gldas-21-revisión-de-procedencia-y-máscara-histórica).
 
-En GLDAS mensual, el sufijo `_inst` identifica el tipo de campo de origen y **no** significa que el valor mensual sea una sola instantánea: el manual describe un promedio de los pasos de tres horas. Confirmar los atributos y el tratamiento de faltantes al abrir el archivo. Ver [contraste del manual](contraste_fuentes.md#contraste-de-la-terna).
+En GLDAS mensual, el sufijo `_inst` identifica el tipo de campo de origen y **no** significa que el valor mensual sea una sola instantánea: el manual describe un promedio de los pasos de tres horas. La muestra de enero de 2005 confirma `cell_methods=time: mean` y `_FillValue=-9999`; falta revisar el tratamiento de faltantes para la serie completa. Ver [contraste del manual](contraste_fuentes.md#contraste-de-la-terna).
 
 MERRA-2 es un reanálisis; temperatura del aire no equivale a temperatura radiométrica superficial. GLDAS 2.1 es un modelo terrestre sin asimilación, según [NASA LDAS](https://ldas.gsfc.nasa.gov/gldas/dataset); no es una medición puntual directa. Para IMERG, NASA describe `precipitation` como tasa en su [guía V07](https://gpm.nasa.gov/sites/default/files/2025-02/FAQ%20for%20IMERG%20V07%20Applications%20Users_202502.pdf). Confirmar la semántica de la entrega mensual en el manual y el archivo.
 
@@ -67,7 +67,7 @@ Consultar cada concept ID para enero de 2005 y la caja indicada; usar el punto d
 | IMERG `C2723754851-GES_DISC` | `.HDF5`, archivo V07B | `Grid/precipitation` | Grupo, nombre, mm/h, definición mensual, ejes, fill y calidad |
 | GLDAS `C1342986036-GES_DISC` | `.nc4`, archivos `021` | `SoilMoi0_10cm_inst` | Unidad kg/m², capa, agregación mensual, ejes, fill y máscara |
 
-Las muestras IMERG de NCAR abrieron el grupo y campo indicados; MERRA-2 solo se ha abierto en una copia reorganizada y GLDAS sigue pendiente de apertura. Consultar los manuales antes de interpretar QA o aplicar escalas: no suponer que cero significa dato faltante. Registrar gránulo, colección, versión, URL descubierta, fecha, checksum si está disponible, método, resultado o error. FUL-103 cubre la primera muestra y FUL-106 la extracción de las tres. La guía no bloquea el descubrimiento en paralelo.
+Las muestras IMERG de NCAR abrieron el grupo y campo indicados; MERRA-2 solo se ha abierto en una copia reorganizada. La muestra GLDAS entregada por Lucas abrió el campo y atributos indicados; su cobertura y tratamiento de calidad siguen por validar. Consultar los manuales antes de interpretar QA o aplicar escalas: no suponer que cero significa dato faltante. Registrar gránulo, colección, versión, URL descubierta, fecha, checksum si está disponible, método, resultado o error. FUL-103 cubre la primera muestra y FUL-106 la extracción de las tres. La guía no bloquea el descubrimiento en paralelo.
 
 ### Descubrimiento de variables en otros servicios
 

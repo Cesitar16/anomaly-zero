@@ -33,7 +33,7 @@ El [índice de pruebas](pruebas_work.csv) identifica las 41 filas de datos de la
 
 1. Contrastar las afirmaciones prioritarias con documentación primaria y muestras científicas; la lectura no equivale a comprobar cada fuente o enlace.
 2. No esperar el paquete E01: registrar que las respuestas y scripts originales que faltan no fueron inspeccionados. Si el equipo los consigue en el futuro, podrán contrastarse con las pruebas repetidas.
-3. Usar las muestras y contrastes disponibles documentados en contraste_fuentes.md. No esperar acceso GLDAS; su archivo nativo y el gránulo NASA original MERRA-2 siguen sin verificarse. Las descargas y QA adicionales pueden continuar en FUL-103/106 cuando el equipo disponga de acceso.
+3. Usar las muestras y contrastes disponibles documentados en contraste_fuentes.md. Lucas entregó una muestra GLDAS de enero de 2005 que se abrió localmente; el gránulo NASA original MERRA-2 sigue sin verificarse. Las descargas y QA adicionales pueden continuar en FUL-103/106 cuando el equipo disponga de acceso.
 4. Solicitar a César revisión de semántica/unidades y a Alaín revisión de identificadores, acceso y formatos. No se ha solicitado ni recibido esa aprobación en esta etapa.
 
 
