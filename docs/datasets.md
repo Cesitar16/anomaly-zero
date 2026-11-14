@@ -71,6 +71,8 @@ Las muestras IMERG de NCAR abrieron el grupo y campo indicados; MERRA-2 solo se 
 
 ### Descubrimiento de variables en otros servicios
 
+**Hydrology:** la [guía de migración de GES DISC](https://github.com/nasa/gesdisc-tutorials/blob/main/user-guidance/GES_DISC_Migration_to_Earthdata_Website_and_Earthdata_Cloud.md) distingue el antiguo servicio **Hydrology Data Rods**, que incluye entre los servicios discontinuados, del **Hydrology Time Series Viewer**, que menciona como alternativa para series por punto. No se ejecutó una extracción en el visor ni se comprobó cobertura para la terna; no asumir que conserve la interfaz o el contrato del servicio anterior.
+
 **TEC, 2026-11-14:** en la respuesta completa [configured-variables de Giovanni](https://api.giovanni.earthdata.nasa.gov/configured-variables) aparecen `GPM_3IMERGM_07_precipitation` y `GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst`. No aparece el identificador exacto `M2TMNXSLV_5_12_4_T2M` ni otra entrada de `M2TMNXSLV`; sí hay otras colecciones MERRA. La respuesta completa coincide con el hash registrado por Work. Esto es descubrimiento, no prueba de que una petición autenticada funcione; no reemplazar la colección mensual por otra solo porque esté disponible.
 
 La respuesta [AppEEARS de productos](https://appeears.earthdatacloud.nasa.gov/api/product), también recuperada con el hash de Work, no incluye entradas con los tres shortnames exactos de la terna. Sí incluye alternativas MODIS y SMAP; sus variables, temporalidad y QA deben evaluarse para el caso de uso. La ausencia se limita al catálogo consultado y no significa que los productos no existan en NASA. Más detalle en [contraste de fuentes](contraste_fuentes.md#respuestas-completas-recuperadas-de-giovanni-y-appeears).
