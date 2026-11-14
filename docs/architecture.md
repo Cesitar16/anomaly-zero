@@ -221,3 +221,68 @@ Se auditó el paquete `Anomaly_Zero_Evidencia.zip` aportado por el equipo y se r
 **Límite de validación:** son comprobaciones de **metadatos, gránulos listados y límites geográficos**; ningún `.nc4` o `.HDF5` de producción fue inspeccionado en el ZIP. La máscara, cobertura válida de píxeles, conversiones, método de agregación y serie regional siguen pendientes de FUL-104/106/105. La elección de la primera variable sigue sujeta a viabilidad de descarga/QA y aprobación FUL-107; MERRA-2/T2M es una opción de prueba por continuidad con FUL-101, **no una selección final**.
 
 **Licencias:** el polígono MDBA declara CC BY 4.0, pero NSW ASGS 2026 del paquete declara CC BY-SA 4.0 en su XML específico; no mezclar atribuciones ni utilizar una geometría simplificada solo para dibujo como máscara científica.
+
+
+## 11. Línea base operativa pre-extracción (borrador que FUL-99 sí puede definir)
+
+### 11.1 Flujo mínimo de la primera ruta vertical
+
+1. **NASA/Catálogo:** la primera candidata es MERRA-2 `M2TMNXSLV`/T2M (CMR `C1276812859-GES_DISC`, versión candidata 5.12.4) para enero 2005–diciembre 2024. La evidencia [CMR del ZIP](evidence_inventory_2026-11-14.md) prueba existencia de inventario mensual, no datos regionales válidos.
+2. **Prueba inicial de Alaín:** elegir un mes y descargar un archivo `.nc4` auténtico con EDL; verificar tamaño y SHA; conservar URL/ID de gránulo sin publicar tokens.
+3. **Prueba científica de César + Lucas:** abrir el gránulo; registrar variables, unidad real, lon/lat, calendario, fill, calidad y posición de la geometría MDBA; estimar datos válidos y agregado regional **solo si hay evidencia suficiente**.
+4. **Crecimiento controlado:** ampliar a 12 meses después de validar el primero; completar los 240 meses solo si son técnicamente viables; documentar cualquier mes insuficiente.
+5. **Snapshot:** generar series y metadatos desde archivos fuente validados; conservar hash del polígono, código/algoritmo y versión de producto; FastAPI lee el último snapshot publicado y React muestra su fecha y cobertura.
+6. **Ampliación:** agregar IMERG/GLDAS como nuevos adaptadores con campos y calidad propios, sin modificar los contratos internos básicos y **sin asumir que las variables son comparables en la misma unidad o profundidad**.
+
+La geometría inicial candidata es `geometrias/murray_darling.geojson` del ZIP de evidencia MDBA (EPSG:4326, licencia declarada CC BY 4.0); **no está añadida al repositorio** y debe convertirse en un asset versionado/atribuido cuando Lucas apruebe la fuente. La geometría NSW simplificada es solo de visualización, no reemplaza a Murray–Darling.
+
+### 11.2 Diseño de artefactos locales (rutas sugeridas, no creadas en esta tarjeta)
+
+```text
+data/raw/<product>/<version>/<granule-original>    # descarga original + metadatos/hashes
+data/processed/snapshots/<snapshot_id>/
+  series.csv                                        # tabla mensual por producto/región
+  manifest.json                                     # procedencia completa
+  qa_summary.json                                   # cobertura, faltantes, duplicados, unidades
+  grids/                                            # opcional; no inferir que existe raster publicado
+data/processed/current.json                         # referencia lógica al último snapshot válido
+data/cache/                                         # recuperable, no fuente canónica
+```
+
+**Reglas:** `snapshot_id` identifica una combinación de producto, versión, variable, región, período y versión del procesamiento. No reutilizar el ID con contenido diferente. Escribir/validar en carpeta temporal y **publicar referencia al último válido únicamente después de terminar QA**. Si falla NASA o el proceso, mantener el snapshot anterior e indicar su antigüedad. La publicación atómica debe concretarse en FUL-106/FUL-108 según sistema de archivos.
+
+**Nota de compatibilidad FUL-101:** el piloto NASA POWER dispone de `force=True` para renovar deliberadamente su archivo crudo de caché. La política propuesta aquí de conservar originales de **gránulos oficiales** por versión es más estricta; no implica reescribir retroactivamente el cliente POWER ni eliminar su excepción documentada.
+
+### 11.3 Registro mínimo de una observación regional
+
+```text
+series.csv
+period,variable_id,value,unit,product_id,product_version,region_id,spatial_support,quality_status,coverage_fraction,snapshot_id
+YYYY-MM,T2M,<real-or-empty>,<verified-unit>,M2TMNXSLV,5.12.4,murray_darling_candidate,polygon_aggregate,<quality>,<0..1-or-empty>,<id>
+```
+
+La segunda fila es un **molde con marcadores**, no un dato NASA ni una afirmación de agregación realizada. Valores ausentes deben serializarse sin confundirlos con cero; importación y serialización exactas se ensayarán antes de congelar FUL-108.
+
+**Invariantes:** un registro por `snapshot_id × variable_id × region_id × spatial_support × period`; orden cronológico; unidades físicas por variable y conversión rastreable; `coverage_fraction` no inventado; sin duplicados mensuales. Para datos por celdas, mantener dimensión celda/grilla aparte, sin colapsar rasters en la misma clave.
+
+**Validación mínima de salida** antes de permitir lectura por FastAPI:
+
+- Archivo/manifest accesibles e íntegros; colección, fuente, región, período y unidad definidos.
+- 240 meses objetivo **declarados**, número recibido/válido y huecos **calculados**, no asumidos por CMR.
+- Fill/NaN, duplicados exactos y meses repetidos reportados, y denominador de cobertura documentado.
+- `spatial_support=polygon_aggregate` solo si existen geometría, máscara, método de ponderación y evidencia de QA espacial en el manifest.
+- No publicar p-values, pendiente, mapa ni resultado inferencial mientras la metodología correspondiente no haya sido aprobada.
+
+### 11.4 Tabla de responsabilidades y entregables concretos
+
+| Hito | Responsable primario | Entrega verificable | Revisión necesaria |
+| --- | --- | --- | --- |
+| Arquitectura FUL-99 | Lucas | `architecture.md` + `decisions.md` + mini-acta | César y Alaín |
+| Catálogo/granules candidatos FUL-102/104 | Lucas | Fichas con colección CMR, versión, unidad esperada, DOI y límites | César + Alaín |
+| Primera descarga FUL-103 | Alaín | 1 gránulo auténtico + manifest/hashes + error controlado | Lucas |
+| Proceso de 1 mes y después 12/240 FUL-106 | Alaín (ingesta) + César/Lucas (QA) | Atributos fuente, control espacial, series/grillas derivadas | Ciencia + backend |
+| EDA regional FUL-105 | César | Notebook sobre derivados reales, cobertura y diagnósticos | Lucas |
+| Puerta científica FUL-107 | Equipo | Variable/región/período y método de agregación aprobados | Lucas + César + Alaín |
+| Contrato FUL-108 | Alaín + César + Alejandra | Campos y respuestas API aprobados con datos reales o mocks etiquetados | Todos |
+
+El **criterio de cierre de FUL-99** es un acuerdo documentado sobre las interfaces y sobre qué evidencia se requiere en cada hito, **no** completar ninguno de los hitos posteriores. Esta línea base está lista para revisión técnica, pero sigue pendiente de los comentarios de Lucas y Alaín.
