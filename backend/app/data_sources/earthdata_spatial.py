@@ -50,11 +50,13 @@ def _on_segment(x: float, y: float, a: list, b: list) -> bool:
     )
 
 
-def _ring_contains(x: float, y: float, ring: list) -> bool:
+def _ring_contains(
+    x: float, y: float, ring: list, *, include_boundary: bool = True
+) -> bool:
     inside = False
     for a, b in pairwise(ring):
         if _on_segment(x, y, a, b):
-            return True
+            return include_boundary
         if (a[1] > y) != (b[1] > y):
             crossing_x = (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]
             if x < crossing_x:
@@ -65,7 +67,8 @@ def _ring_contains(x: float, y: float, ring: list) -> bool:
 def _inside(lon: float, lat: float, polygons: list[tuple[list, list[list]]]) -> bool:
     for exterior, holes in polygons:
         if _ring_contains(lon, lat, exterior) and not any(
-            _ring_contains(lon, lat, ring) for ring in holes
+            _ring_contains(lon, lat, ring, include_boundary=False)
+            for ring in holes
         ):
             return True
     return False
@@ -153,7 +156,7 @@ def _centers(
                 )
     missing_count = inside_count - valid_count
     return {
-        "selection": "cell center within polygon; boundary included",
+        "selection": "cell center covered by polygon; outer and hole boundaries included",
         "surface_area_claimed": False,
         "denominator_center_cells": inside_count,
         "valid_center_cells": valid_count,
