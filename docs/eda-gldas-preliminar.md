@@ -59,7 +59,7 @@ Una muestra mensual no permite estimar tendencias, anomalías temporales, p-valu
 
 ## Estado Git, CI y siguientes pasos
 
-FUL-103 (PR #4), la consolidación de `develop` en `dev` (PR #6) y FUL-102 (PR #5) están integradas en `dev`. Esta rama FUL-105 parte del probe FUL-103, incorpora el catálogo actual de `dev` y conserva sus cambios en commits propios. La entrega de este avance se prepara como PR Draft hacia `dev`; su estado se registrará al abrirla. No modifica los PRs ni commits de otros integrantes.
+FUL-103 (PR #4), la consolidación de `develop` en `dev` (PR #6) y FUL-102 (PR #5) están integradas en `dev`. Esta rama FUL-105 parte del probe FUL-103, incorpora el catálogo actual de `dev` y conserva sus cambios en commits propios. El avance está publicado como [PR #7 en Draft hacia `dev`](https://github.com/Cesitar16/anomaly-zero/pull/7). No modifica los PRs ni commits de otros integrantes.
 
 En la revisión del workflow compartido, `.github/workflows/checks.yml` aún ejecuta `pull_request` solo para `develop` y `push` solo para la antigua rama `feature/ful-103-earthdata-probe`. Además, `pyproject.toml` limita el descubrimiento predeterminado de pytest a `backend/tests`, por lo que `research/tests` requiere incluirse explícitamente. Se recomienda una corrección pequeña e independiente de infraestructura para que PRs hacia `dev` ejecuten lint y ambos grupos de pruebas; no se modificó el workflow en esta rama.
 
