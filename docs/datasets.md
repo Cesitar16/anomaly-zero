@@ -2,6 +2,10 @@
 
 Catálogo para [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y). Colecciones, región y período son **candidatos**. Se inspeccionaron muestras IMERG V07B, una copia MERRA-2 reorganizada por NCAR y una muestra GLDAS entregada por Lucas; siguen pendientes el gránulo NASA original MERRA-2 y la validación científica y espacial completa. FUL-104 profundiza la verificación y FUL-107 registra la decisión del equipo. El archivo [catalog_mvp.json](catalog_mvp.json) contiene las fichas estructuradas, [region_murray_darling.md](region_murray_darling.md) describe la región y [contraste_fuentes.md](contraste_fuentes.md) registra pruebas y límites del contraste.
 
+## Conexión con FUL-103
+
+La [sonda de Earthdata de FUL-103](earthdata-probe.md) documenta el descubrimiento de las tres colecciones y una descarga autenticada de GLDAS de enero de 2005. El SHA-256 registrado allí coincide con el del archivo entregado por Lucas e inspeccionado para este catálogo. El acceso y la lectura prueban el flujo técnico; no aprueban la calidad científica, la máscara de la cuenca ni los productos para el análisis.
+
 ## Evidencia
 
 - **DOC:** documentación primaria identificada; no implica haber abierto un archivo.
@@ -67,7 +71,7 @@ Consultar cada concept ID para enero de 2005 y la caja indicada; usar el punto d
 | IMERG `C2723754851-GES_DISC` | `.HDF5`, archivo V07B | `Grid/precipitation` | Grupo, nombre, mm/h, definición mensual, ejes, fill y calidad |
 | GLDAS `C1342986036-GES_DISC` | `.nc4`, archivos `021` | `SoilMoi0_10cm_inst` | Unidad kg/m², capa, agregación mensual, ejes, fill y máscara |
 
-Las muestras IMERG de NCAR abrieron el grupo y campo indicados; MERRA-2 solo se ha abierto en una copia reorganizada. La muestra GLDAS entregada por Lucas abrió el campo y atributos indicados; su cobertura y tratamiento de calidad siguen por validar. Consultar los manuales antes de interpretar QA o aplicar escalas: no suponer que cero significa dato faltante. Registrar gránulo, colección, versión, URL descubierta, fecha, checksum si está disponible, método, resultado o error. FUL-103 cubre la primera muestra y FUL-106 la extracción de las tres. La guía no bloquea el descubrimiento en paralelo.
+Las muestras IMERG de NCAR abrieron el grupo y campo indicados; MERRA-2 solo se ha abierto en una copia reorganizada. La muestra GLDAS entregada por Lucas abrió el campo y atributos indicados; su cobertura y tratamiento de calidad siguen por validar. Consultar los manuales antes de interpretar QA o aplicar escalas: no suponer que cero significa dato faltante. Registrar gránulo, colección, versión, URL descubierta, fecha, checksum si está disponible, método, resultado o error. FUL-103 ya documenta la primera muestra autenticada y FUL-106 cubre la extracción de las tres. La guía no bloquea el descubrimiento en paralelo.
 
 ### Descubrimiento de variables en otros servicios
 
@@ -108,7 +112,7 @@ Los 13 recursos están inventariados en el informe y la hoja «Inventario de fue
 | 13 recursos originales diferenciados de datasets | [Referencias Work](referencias_work.csv), IDs R01–R13 | Inventariados; contraste por referencia parcial |
 | Ventana 2005–2024 y límites de calidad | Inventario CMR y [contraste](contraste_fuentes.md) | 240 meses por colección en metadatos; QA integral pendiente |
 | Región oficial, CRS y licencia | [Ficha de Murray–Darling](region_murray_darling.md) | Preparada; atribución de derivados y método espacial por revisar |
-| Parámetros y checklist para Alaín | Sección «Entrega a Alaín» de este documento | Preparado; extracción autenticada no ejecutada aquí |
+| Parámetros y checklist para Alaín | Sección «Entrega a Alaín» y [sonda FUL-103](earthdata-probe.md) | Preparado; primera descarga GLDAS autenticada documentada en FUL-103 |
 | Alternativas, estados y condiciones | Sección «Alternativas» y catálogo estructurado | Preparadas como opciones, no aprobadas |
 | Revisión de César y Alaín; enlace a la entrega en la card | [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y) enlaza esta ficha en la rama de trabajo | Enlace publicado; conformidad y revisión humana pendientes |
 

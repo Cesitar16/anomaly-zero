@@ -553,7 +553,7 @@ Es un ejemplo de flujo y de necesidad de revisar supuestos, no una validación d
 
 ## Muestra GLDAS de enero de 2005 entregada por Lucas
 
-Se abrió `GLDAS_NOAH025_M.A200501.021.nc4`, entregado localmente por Lucas. Tiene 25.075.859 bytes y SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593`. Su nombre y tamaño coinciden con el [registro CMR G1413723174-GES_DISC](https://cmr.earthdata.nasa.gov/search/concepts/G1413723174-GES_DISC.umm_json); el registro consultado no incluye checksum, por lo que no se afirma identidad byte a byte con NASA. La revisión no realizó una descarga autenticada.
+Se abrió `GLDAS_NOAH025_M.A200501.021.nc4`, entregado localmente por Lucas. Tiene 25.075.859 bytes y SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593`. Su nombre y tamaño coinciden con el [registro CMR G1413723174-GES_DISC](https://cmr.earthdata.nasa.gov/search/concepts/G1413723174-GES_DISC.umm_json); el registro consultado no incluye checksum, por lo que no se afirma identidad byte a byte con NASA. La revisión de FUL-102 no realizó una descarga autenticada; la [sonda FUL-103](earthdata-probe.md) documenta una descarga autenticada de ese gránulo cuyo SHA-256 coincide con el archivo entregado por Lucas.
 
 La variable `SoilMoi0_10cm_inst` tiene dimensiones `(time, lat, lon)=(1,600,1440)`, unidad `kg m-2`, `_FillValue=-9999` y `cell_methods=time: mean`. Los ejes tienen espaciado de 0,25°, calendario `standard` y límites temporales 2005-01-01 a 2005-02-01. En la caja de centros `138,-38,153,-24` hay 3.360 celdas: 3.045 finitas distintas del fill y 315 con fill o no finitas; las primeras van de 5,592 a 38,278 kg/m². No son promedios de cuenca ni una evaluación de calidad integral.
 

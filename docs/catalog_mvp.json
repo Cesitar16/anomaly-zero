@@ -168,7 +168,7 @@
       ],
       "inventory_checked_utc": "2026-11-14",
       "metadata_access": "CMR public",
-      "download_access": "Lucas supplied a local file; earlier anonymous GES DISC request returned 401; authenticated download not executed in this review",
+      "download_access": "FUL-103 documents authenticated GES DISC download; Lucas supplied a file with the same SHA-256; earlier anonymous request returned 401",
       "license": "CMR refers to EOSDIS use and citation guidance and GES DISC data guidelines; check current terms for each delivery before redistribution",
       "qa_status": "January 2005 box: 3045 finite non-fill and 315 fill/nonfinite cells; basin mask, water-mask lineage and quality across the full series remain pending",
       "unit_status": "kg m-2 confirmed in the supplied January 2005 file",
@@ -208,7 +208,7 @@
       "general_nasa_science_policy": "https://science.nasa.gov/researchers/science-information-policy/",
       "citation_guidance_availability": "redirected to GES DISC page whose body was not readable in this inspection",
       "sample_sha256": "5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593",
-      "sample_provenance": "Local file supplied by Lucas; NASA CMR identifies the same filename and size, but provides no source checksum in the consulted record",
+      "sample_provenance": "File supplied by Lucas matches the SHA-256 recorded for the authenticated GLDAS download in docs/earthdata-probe.md; CMR provides no source checksum in the consulted record",
       "sample_interval": "2005-01-01/2005-02-01"
     }
   ],
