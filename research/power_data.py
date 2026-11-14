@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -33,6 +33,72 @@ LOCATION = {
 
 class PowerDataError(RuntimeError):
     """Raised when NASA POWER returns an unusable response."""
+
+
+def _validate_power_payload(
+    payload: Any, params: dict[str, str]
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Validate response structure and consistency with a point query."""
+    if not isinstance(payload, dict):
+        raise PowerDataError("NASA POWER response is malformed: expected an object.")
+    properties = payload.get("properties")
+    parameter_values = properties.get("parameter") if isinstance(properties, dict) else None
+    parameters = payload.get("parameters")
+    variable = params["parameters"]
+    if not isinstance(parameter_values, dict) or not isinstance(parameters, dict):
+        raise PowerDataError(
+            "NASA POWER response is malformed: missing properties/parameters objects."
+        )
+    values = parameter_values.get(variable)
+    parameter_metadata = parameters.get(variable)
+    if not isinstance(values, dict) or not values:
+        raise PowerDataError(
+            f"NASA POWER response does not contain usable values for variable {variable}."
+        )
+    if (
+        not isinstance(parameter_metadata, dict)
+        or not isinstance(parameter_metadata.get("units"), str)
+        or not parameter_metadata["units"]
+    ):
+        raise PowerDataError(
+            f"NASA POWER response has invalid metadata for {variable}."
+        )
+    header = payload.get("header")
+    geometry = payload.get("geometry")
+    if not isinstance(header, dict) or not isinstance(geometry, dict):
+        raise PowerDataError(
+            "NASA POWER response is malformed: missing header or geometry."
+        )
+    expected_start = f'{params["start"]}0101'
+    expected_end = f'{params["end"]}1231'
+    if header.get("start") != expected_start or header.get("end") != expected_end:
+        raise PowerDataError(
+            "NASA POWER response period contradicts the requested start/end years."
+        )
+    if (
+        geometry.get("type") != "Point"
+        or not isinstance(geometry.get("coordinates"), list)
+        or len(geometry["coordinates"]) < 2
+    ):
+        raise PowerDataError("NASA POWER response has invalid point geometry.")
+    try:
+        response_longitude, response_latitude = map(float, geometry["coordinates"][:2])
+        requested_longitude = float(params["longitude"])
+        requested_latitude = float(params["latitude"])
+    except (TypeError, ValueError, KeyError) as exc:
+        raise PowerDataError(
+            "NASA POWER response geometry or query coordinates are invalid."
+        ) from exc
+    if (
+        not math.isfinite(response_longitude)
+        or not math.isfinite(response_latitude)
+        or abs(response_longitude - requested_longitude) > 0.01
+        or abs(response_latitude - requested_latitude) > 0.01
+    ):
+        raise PowerDataError(
+            "NASA POWER point geometry contradicts the requested coordinates."
+        )
+    return values, parameter_metadata, header
 
 
 def build_power_query(
@@ -72,32 +138,100 @@ def fetch_power_response(
     """Load a cached response or fetch and preserve the original NASA JSON.
 
     A metadata sidecar records the exact URL, request parameters, and retrieval
-    time. Existing raw files are reused unless force=True.
+    time. Existing raw files are reused only when both files and their
+    provenance agree. force=True deliberately makes a fresh request and
+    replaces the cache only after a valid response has been received.
     """
     path = Path(raw_path)
     metadata_path = path.with_suffix(".metadata.json")
     params = query or build_power_query()
+    required_query_keys = {
+        "parameters", "community", "longitude", "latitude", "start", "end", "format"
+    }
+    if not isinstance(params, dict) or not required_query_keys.issubset(params):
+        raise PowerDataError("NASA POWER query is missing required parameters.")
     url = f"{POWER_URL}?{urlencode(params)}"
 
     if path.exists() and not force:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        metadata = (
-            json.loads(metadata_path.read_text(encoding="utf-8"))
-            if metadata_path.exists()
-            else {
-                "institution": "NASA Langley Research Center POWER Project",
-                "service": "NASA POWER Monthly and Annual API",
-                "request_url": url,
-                "parameters": params,
-                "retrieved_at_utc": None,
-                "note": "Loaded existing raw response; retrieval timestamp unavailable.",
-            }
-        )
-        cached_parameters = metadata.get("parameters")
-        if cached_parameters is not None and cached_parameters != params:
+        if not metadata_path.exists():
             raise PowerDataError(
-                "Cached response parameters differ from this request; use a "
-                "different raw_path or set force=True deliberately."
+                f"NASA POWER metadata sidecar missing: {metadata_path}. "
+                "Restore the matching sidecar, choose a new cache path, or set force=True "
+                "to deliberately download a fresh response."
+            )
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise PowerDataError(
+                f"Cached NASA POWER metadata is invalid: {metadata_path}. "
+                "Restore it, choose a new cache path, or set force=True deliberately."
+            ) from exc
+        if not isinstance(metadata, dict):
+            raise PowerDataError("Cached NASA POWER metadata is invalid: expected an object.")
+        required_metadata = {
+            "institution",
+            "service",
+            "request_url",
+            "parameters",
+            "retrieved_at_utc",
+            "http_status",
+            "parameter_metadata",
+            "response_header",
+            "response_geometry",
+            "requested_years",
+            "received_record_count_including_annual_summaries",
+        }
+        if not required_metadata.issubset(metadata):
+            raise PowerDataError(
+                "Cached NASA POWER metadata is invalid: required provenance fields are missing."
+            )
+        if (
+            metadata["institution"] != "NASA Langley Research Center POWER Project"
+            or metadata["service"] != "NASA POWER Monthly and Annual API"
+        ):
+            raise PowerDataError("Cached NASA POWER metadata identifies an unexpected source.")
+        if metadata["parameters"] != params:
+            raise PowerDataError(
+                "Cached request parameters do not match this query; use a different "
+                "cache path or set force=True deliberately."
+            )
+        if metadata["request_url"] != url or metadata["http_status"] != 200:
+            raise PowerDataError(
+                "Cached NASA POWER metadata contradicts the requested URL or successful HTTP status."
+            )
+        if not isinstance(metadata["retrieved_at_utc"], str) or not metadata["retrieved_at_utc"]:
+            raise PowerDataError("Cached NASA POWER metadata has no valid retrieval timestamp.")
+        try:
+            retrieved_at = datetime.fromisoformat(metadata["retrieved_at_utc"])
+        except ValueError as exc:
+            raise PowerDataError(
+                "Cached NASA POWER metadata has an invalid retrieval timestamp."
+            ) from exc
+        if retrieved_at.utcoffset() != timedelta(0):
+            raise PowerDataError(
+                "Cached NASA POWER retrieval timestamp must explicitly use UTC."
+            )
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise PowerDataError(
+                f"Cached NASA POWER response is malformed: {path}. "
+                "Restore the original response, choose a new cache path, or set force=True deliberately."
+            ) from exc
+        try:
+            values, parameter_metadata, header = _validate_power_payload(payload, params)
+        except PowerDataError as exc:
+            raise PowerDataError(f"Cached {exc}") from exc
+        if (
+            metadata["parameter_metadata"] != parameter_metadata
+            or metadata["response_header"] != header
+            or metadata["response_geometry"] != payload["geometry"]
+            or metadata["requested_years"] != [int(params["start"]), int(params["end"])]
+            or metadata["received_record_count_including_annual_summaries"] != len(values)
+        ):
+            raise PowerDataError(
+                "Cached metadata and NASA POWER response disagree; restore the matching "
+                "sidecar/response pair or use a new cache path."
             )
         return payload, metadata
 
@@ -118,14 +252,11 @@ def fetch_power_response(
         payload = json.loads(body)
     except json.JSONDecodeError as exc:
         raise PowerDataError("NASA POWER response was not valid JSON") from exc
-    if not isinstance(payload, dict) or not isinstance(payload.get("properties"), dict):
-        raise PowerDataError("NASA POWER response is missing the properties object")
-    properties = payload["properties"]
-    if params["parameters"] not in properties.get("parameter", {}):
-        messages = payload.get("messages", [])
-        raise PowerDataError(
-            f"NASA POWER response has no {params['parameters']} parameter: {messages}"
-        )
+    try:
+        values, parameter_metadata, response_header = _validate_power_payload(payload, params)
+    except PowerDataError as exc:
+        messages = payload.get("messages", []) if isinstance(payload, dict) else []
+        raise PowerDataError(f"NASA POWER response is invalid: {exc} Messages: {messages}") from exc
 
     metadata = {
         "institution": "NASA Langley Research Center POWER Project",
@@ -134,15 +265,13 @@ def fetch_power_response(
         "parameters": params,
         "retrieved_at_utc": datetime.now(UTC).isoformat(),
         "http_status": status,
-        "parameter_metadata": payload.get("parameters", {}).get(
-            params["parameters"], {}
-        ),
-        "response_header": payload.get("header", {}),
+        "parameter_metadata": parameter_metadata,
+        "response_header": response_header,
         "response_geometry": payload.get("geometry", {}),
         "response_messages": payload.get("messages", []),
         "requested_years": [int(params["start"]), int(params["end"])],
         "received_record_count_including_annual_summaries": len(
-            properties["parameter"][params["parameters"]]
+            values
         ),
         "restrictions": [
             "A point request represents a single location, not a basin-wide spatial average.",

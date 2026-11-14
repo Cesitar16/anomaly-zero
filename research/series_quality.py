@@ -30,7 +30,16 @@ def quality_summary(
     value_column: str = "value",
     missing_column: str = "is_missing",
 ) -> dict[str, object]:
-    """Summarize expected/received coverage, duplicate timestamps, and invalids."""
+    """Summarize coverage and duplicate timestamps/months without altering rows.
+
+    duplicate_rows counts all rows participating in an exact-timestamp
+    duplicate; duplicate_months preserves its legacy meaning as the count of
+    exact-timestamp repetitions after the first. The explicit timestamp
+    metrics have those same meanings. duplicate_month_rows counts every
+    row participating in any repeated calendar month, and
+    duplicate_months_count counts distinct calendar months with repeats.
+    Missing timestamps (NaT) are not treated as duplicates or valid months.
+    """
     expected = pd.period_range(start=start, end=end, freq="M")
     timestamps = pd.to_datetime(frame[timestamp_column])
     values = pd.to_numeric(frame[value_column], errors="coerce")
@@ -44,7 +53,17 @@ def quality_summary(
     in_range = periods.isin(expected_set)
     valid = values.notna() & np.isfinite(values) & ~missing_flags & in_range
     valid_months = int(periods[valid].nunique())
-    duplicated_rows = int(timestamps.duplicated(keep=False).sum())
+    has_timestamp = timestamps.notna()
+    exact_duplicate_rows = int(
+        (has_timestamp & timestamps.duplicated(keep=False)).sum()
+    )
+    exact_duplicate_repeats = int(
+        (has_timestamp & timestamps.duplicated(keep="first")).sum()
+    )
+    has_period = periods.notna()
+    duplicate_month_mask = has_period & periods.duplicated(keep=False)
+    duplicate_month_rows = int(duplicate_month_mask.sum())
+    duplicate_months_count = int(periods[duplicate_month_mask].nunique())
     absent = missing_months(frame, start, end, timestamp_column=timestamp_column)
     return {
         "expected_months": len(expected),
@@ -56,8 +75,12 @@ def quality_summary(
             if len(expected)
             else float("nan")
         ),
-        "duplicate_rows": duplicated_rows,
-        "duplicate_months": int(timestamps.duplicated().sum()),
+        "duplicate_rows": exact_duplicate_rows,
+        "duplicate_months": exact_duplicate_repeats,
+        "duplicate_timestamp_rows": exact_duplicate_rows,
+        "duplicate_timestamp_repeats": exact_duplicate_repeats,
+        "duplicate_month_rows": duplicate_month_rows,
+        "duplicate_months_count": duplicate_months_count,
         "absent_months": [str(period) for period in absent],
         "non_finite_values": int((values.notna() & ~np.isfinite(values)).sum()),
         "minimum_valid_value": float(values[valid].min()) if valid.any() else None,
