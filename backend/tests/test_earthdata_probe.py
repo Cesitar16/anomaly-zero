@@ -8,8 +8,9 @@ from typing import Any
 import numpy as np
 import pytest
 import xarray as xr
-from earthaccess.search import DataGranules
+from earthaccess.search import DataGranule, DataGranules
 
+from backend.app.data_sources import earthdata_probe
 from backend.app.data_sources.earthdata_probe import (
     DEFAULT_BBOX,
     GLDAS,
@@ -170,6 +171,19 @@ def test_spatial_query_builds_with_earthaccess_collection_guard() -> None:
         assert "short_name" in query._build_url()
 
 
+def test_installed_earthaccess_size_in_bytes_fallback_returns_mib() -> None:
+    granule = DataGranule(
+        {
+            "umm": {
+                "DataGranule": {
+                    "ArchiveAndDistributionInformation": [{"SizeInBytes": 25_075_859}]
+                }
+            }
+        }
+    )
+    assert granule.size == pytest.approx(23.91420269012451)
+
+
 def test_empty_catalog_result_is_reported() -> None:
     result = discover_product(GLDAS, "2005-01", 1, DEFAULT_BBOX, FakeEarthaccess())
     assert result["status"] == "no_granules"
@@ -221,13 +235,24 @@ def test_download_limit_is_checked_before_authentication(tmp_path: Path) -> None
     assert client.download_calls == []
 
 
+def test_sample_size_mib_over_limit_is_rejected_before_authentication(
+    tmp_path: Path,
+) -> None:
+    client = FakeEarthaccess([fake_granule(size_mib=23.91420269012451)])
+    with pytest.raises(ProbeError, match="exceeds"):
+        download_gldas(month="2005-01", max_mib=23, output_dir=tmp_path, client=client)
+    assert client.login_calls == []
+    assert client.download_calls == []
+
+
 def test_download_opens_one_file_and_writes_sanitized_manifest(tmp_path: Path) -> None:
-    client = FakeEarthaccess([fake_granule()])
+    output_dir = tmp_path
+    client = FakeEarthaccess([fake_granule(size_mib=23.91420269012451)])
     result = download_gldas(
-        month="2005-01", max_mib=64, output_dir=tmp_path, client=client
+        month="2005-01", max_mib=64, output_dir=output_dir, client=client
     )
-    data_file = tmp_path / "GLDAS_NOAH025_M.A200501.021.nc4"
-    manifest_file = tmp_path / "GLDAS_NOAH025_M.A200501.021.nc4.manifest.json"
+    data_file = output_dir / "GLDAS_NOAH025_M.A200501.021.nc4"
+    manifest_file = output_dir / "GLDAS_NOAH025_M.A200501.021.nc4.manifest.json"
     manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
     assert result["status"] == "downloaded_and_opened"
     assert data_file.is_file() and data_file.stat().st_size > 0
@@ -239,6 +264,12 @@ def test_download_opens_one_file_and_writes_sanitized_manifest(tmp_path: Path) -
         "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200501.021.nc4"
     )
     assert manifest["filename"] == data_file.name
+    assert manifest["expected_size_mib"] == 23.91420269012451
+    assert manifest["expected_size_bytes"] == 25_075_859
+    assert manifest["download_limit_bytes"] == 64 * 1024**2
+    assert (
+        manifest_file.parent / manifest["relative_path"]
+    ).resolve() == data_file.resolve()
     assert manifest["stages"] == {
         "authentication": {"status": "succeeded"},
         "download": {"status": "succeeded", "files": 1},
@@ -253,6 +284,54 @@ def test_download_opens_one_file_and_writes_sanitized_manifest(tmp_path: Path) -
     assert client.search_data_calls[0]["short_name"] == GLDAS.short_name
     assert client.search_data_calls[0]["version"] == GLDAS.version
     assert "token" not in manifest_file.read_text(encoding="utf-8").lower()
+
+
+def test_manifest_write_failure_leaves_no_published_sample(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client = FakeEarthaccess([fake_granule()])
+    original_write_text = Path.write_text
+
+    def fail_manifest_write(self: Path, *args: Any, **kwargs: Any) -> int:
+        if self.name.endswith(".manifest.json"):
+            raise OSError("simulated manifest write failure")
+        return original_write_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", fail_manifest_write)
+    with pytest.raises(ProbeError, match="prepare or validate"):
+        download_gldas(month="2005-01", max_mib=64, output_dir=tmp_path, client=client)
+    assert list(tmp_path.glob("*.nc4")) == []
+    assert list(tmp_path.glob("*.manifest.json")) == []
+
+
+def test_manifest_publish_failure_removes_new_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client = FakeEarthaccess([fake_granule()])
+    original_publish = earthdata_probe._publish_no_replace
+
+    def fail_manifest_publish(src: Path, dst: Path) -> None:
+        if str(dst).endswith(".manifest.json"):
+            raise OSError("simulated manifest publish failure")
+        original_publish(src, dst)
+
+    monkeypatch.setattr(earthdata_probe, "_publish_no_replace", fail_manifest_publish)
+    with pytest.raises(ProbeError, match="publish the validated sample"):
+        download_gldas(month="2005-01", max_mib=64, output_dir=tmp_path, client=client)
+    assert list(tmp_path.glob("*.nc4")) == []
+    assert list(tmp_path.glob("*.manifest.json")) == []
+
+
+def test_existing_sample_is_preserved(tmp_path: Path) -> None:
+    destination = tmp_path / "GLDAS_NOAH025_M.A200501.021.nc4"
+    write_tiny_netcdf(destination)
+    existing_content = destination.read_bytes()
+    client = FakeEarthaccess([fake_granule()])
+    with pytest.raises(ProbeError, match="already exists"):
+        download_gldas(month="2005-01", max_mib=64, output_dir=tmp_path, client=client)
+    assert destination.read_bytes() == existing_content
+    assert client.login_calls == []
+    assert client.download_calls == []
 
 
 def test_download_stops_if_authentication_is_not_confirmed(tmp_path: Path) -> None:
