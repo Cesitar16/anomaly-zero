@@ -23,20 +23,59 @@ from backend.app.data_sources.earthdata_samples import (
 
 
 def _geometries(obj: dict[str, Any]) -> Iterator[tuple[list, list[list]]]:
+    if not isinstance(obj, dict):
+        raise probe.ProbeError("polygon GeoJSON geometry is malformed")
     kind = obj.get("type")
     coordinates = obj.get("coordinates")
     if kind == "FeatureCollection":
-        for feature in obj.get("features", []):
-            yield from _geometries(feature.get("geometry") or {})
+        features = obj.get("features")
+        if not isinstance(features, list):
+            raise probe.ProbeError("polygon FeatureCollection has no feature list")
+        for feature in features:
+            if not isinstance(feature, dict) or feature.get("type") != "Feature":
+                raise probe.ProbeError("polygon FeatureCollection contains an invalid feature")
+            yield from _geometries(feature)
     elif kind == "Feature":
-        yield from _geometries(obj.get("geometry") or {})
+        geometry = obj.get("geometry")
+        if geometry is not None:
+            yield from _geometries(geometry)
     elif kind == "Polygon":
-        if coordinates:
-            yield coordinates[0], coordinates[1:]
+        if not isinstance(coordinates, list) or not coordinates:
+            raise probe.ProbeError("polygon has no exterior ring")
+        for ring in coordinates:
+            _validate_ring(ring)
+        yield coordinates[0], coordinates[1:]
     elif kind == "MultiPolygon":
-        for polygon in coordinates or []:
-            if polygon:
-                yield polygon[0], polygon[1:]
+        if not isinstance(coordinates, list) or not coordinates:
+            raise probe.ProbeError("MultiPolygon has no polygon components")
+        for polygon in coordinates:
+            if not isinstance(polygon, list) or not polygon:
+                raise probe.ProbeError("MultiPolygon component has no exterior ring")
+            for ring in polygon:
+                _validate_ring(ring)
+            yield polygon[0], polygon[1:]
+    else:
+        raise probe.ProbeError("polygon GeoJSON type is unsupported or invalid")
+
+
+def _validate_ring(ring: Any) -> None:
+    if not isinstance(ring, list) or len(ring) < 4:
+        raise probe.ProbeError("polygon ring must contain at least four positions")
+    dimensions: int | None = None
+    for position in ring:
+        if not isinstance(position, list) or len(position) < 2:
+            raise probe.ProbeError("polygon ring contains an invalid position")
+        if dimensions is None:
+            dimensions = len(position)
+        if len(position) != dimensions or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not np.isfinite(value)
+            for value in position
+        ):
+            raise probe.ProbeError("polygon ring coordinates must be finite and consistent")
+    if ring[0] != ring[-1]:
+        raise probe.ProbeError("polygon ring must be closed")
 
 
 def _on_segment(x: float, y: float, a: list, b: list) -> bool:
@@ -50,23 +89,28 @@ def _on_segment(x: float, y: float, a: list, b: list) -> bool:
     )
 
 
-def _ring_contains(x: float, y: float, ring: list) -> bool:
+def _ring_classify(x: float, y: float, ring: list) -> str:
+    """Classify a point as outside, inside, or on a closed ring boundary."""
     inside = False
     for a, b in pairwise(ring):
         if _on_segment(x, y, a, b):
-            return True
+            return "boundary"
         if (a[1] > y) != (b[1] > y):
             crossing_x = (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]
             if x < crossing_x:
                 inside = not inside
-    return inside
+    return "inside" if inside else "outside"
 
 
 def _inside(lon: float, lat: float, polygons: list[tuple[list, list[list]]]) -> bool:
+    """Return whether a point is covered, including exterior and hole boundaries."""
     for exterior, holes in polygons:
-        if _ring_contains(lon, lat, exterior) and not any(
-            _ring_contains(lon, lat, ring) for ring in holes
-        ):
+        exterior_position = _ring_classify(lon, lat, exterior)
+        if exterior_position == "outside":
+            continue
+        # A point is excluded only when strictly inside a hole. This includes
+        # both exterior and hole boundaries (a provisional covers convention).
+        if all(_ring_classify(lon, lat, ring) != "inside" for ring in holes):
             return True
     return False
 
