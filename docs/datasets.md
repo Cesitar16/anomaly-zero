@@ -3,6 +3,7 @@
 Catálogo para [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y). Colecciones, región y período son **candidatos**. Se inspeccionaron muestras IMERG V07B, una copia MERRA-2 reorganizada por NCAR y una muestra GLDAS entregada por Lucas; siguen pendientes el gránulo NASA original MERRA-2 y la validación científica y espacial completa. FUL-104 profundiza la verificación y FUL-107 registra la decisión del equipo. El archivo [catalog_mvp.json](catalog_mvp.json) contiene las fichas estructuradas, [region_murray_darling.md](region_murray_darling.md) describe la región y [contraste_fuentes.md](contraste_fuentes.md) registra pruebas y límites del contraste.
 
 ## Conexión con FUL-103
+Los productos y variables siguientes son candidatos de investigación; tener una muestra no implica validación científica del producto, sus píxeles ni del análisis propuesto.
 
 La [sonda de Earthdata de FUL-103](earthdata-probe.md) documenta el descubrimiento de las tres colecciones y una descarga autenticada de GLDAS de enero de 2005. El SHA-256 registrado allí coincide con el del archivo entregado por Lucas e inspeccionado para este catálogo. El acceso y la lectura prueban el flujo técnico; no aprueban la calidad científica, la máscara de la cuenca ni los productos para el análisis.
 
@@ -117,3 +118,8 @@ Los 13 recursos están inventariados en el informe y la hoja «Inventario de fue
 | Revisión de César y Alaín; enlace a la entrega en la card | [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y) enlaza esta ficha en la rama de trabajo | Enlace publicado; conformidad y revisión humana pendientes |
 
 Esta tabla describe el estado de los materiales locales y no marca la card como terminada. El usuario indicó no esperar el ZIP ni acceso GLDAS; sus ausencias se mantienen explícitas como límites de la evidencia.
+La región candidata es la cuenca Murray–Darling, Australia, para enero de 2005 a diciembre de 2024. Giovanni se usará para exploración. FUL-103 añadió un sondeo acotado con `earthaccess` y descargó/abrió una muestra GLDAS global de enero de 2005, verificando el flujo técnico y algunos metadatos, no la validez científica de los píxeles. El acceso a MERRA-2 e IMERG aún debe investigarse y probarse. No se han recortado grillas ni calculado agregados de cuenca. Véase [earthdata-probe.md](earthdata-probe.md) para los IDs CMR, parámetros, evidencia y límites.
+
+## Piloto metodológico FUL-101
+
+Para desarrollar procedimientos de EDA antes de recibir las muestras regionales, se descargó localmente una serie **puntual** de NASA POWER: T2M mensual, comunidad AG, Wagga Wagga (NSW), 2005–2024. La respuesta API indica unidad C, fuente meteorológica MERRA2 y convención LST. El archivo original y el sidecar de procedencia están en `data/raw/` y excluidos de Git. Este piloto no valida ni reemplaza los tres productos del MVP, no representa el promedio de la cuenca y no es un resultado científico definitivo. Detalle y notebook ejecutable: `research/notebooks/01_eda_piloto_power.ipynb`.
