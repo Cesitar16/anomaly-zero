@@ -257,3 +257,20 @@ def test_spatial_qa_counts_center_cells_and_keeps_zero_distinct_from_fill(
         .startswith("period,product,version")
     )
 
+
+def test_download_preserves_existing_valid_original(tmp_path: Path) -> None:
+    destination = tmp_path / "imerg_final" / IMERG_FILENAME
+    destination.parent.mkdir(parents=True)
+    write_imerg(destination)
+    before = destination.read_bytes()
+    client = Client()
+
+    with pytest.raises(earthdata_probe.ProbeError, match="already exists"):
+        earthdata_samples.download_product(
+            "imerg_final", output_dir=tmp_path, client=client
+        )
+
+    assert destination.read_bytes() == before
+    assert client.login_calls == []
+    assert client.download_calls == []
+

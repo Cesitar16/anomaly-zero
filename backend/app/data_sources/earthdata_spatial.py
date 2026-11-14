@@ -280,7 +280,9 @@ def write_csv(result: dict[str, Any], output: Path | str) -> None:
         "original_file",
         "manifest",
     ]
-    with Path(output).open("w", encoding="utf-8", newline="") as stream:
+    output_path = Path(output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields)
         writer.writeheader()
         writer.writerows(result["rows"])
