@@ -108,6 +108,6 @@ Los 13 recursos están inventariados en el informe y la hoja «Inventario de fue
 | Región oficial, CRS y licencia | [Ficha de Murray–Darling](region_murray_darling.md) | Preparada; atribución de derivados y método espacial por revisar |
 | Parámetros y checklist para Alaín | Sección «Entrega a Alaín» de este documento | Preparado; extracción autenticada no ejecutada aquí |
 | Alternativas, estados y condiciones | Sección «Alternativas» y catálogo estructurado | Preparadas como opciones, no aprobadas |
-| Revisión de César y Alaín; enlace a la entrega en la card | No hay conformidad registrada ni enlace publicado en Linear | Pendiente de revisión y coordinación del equipo |
+| Revisión de César y Alaín; enlace a la entrega en la card | [FUL-102](https://linear.app/fullstack-track/issue/FUL-102/nasa-01-consolidar-investigacion-work-en-catalogo-nasa-verificable-y) enlaza esta ficha en la rama de trabajo | Enlace publicado; conformidad y revisión humana pendientes |
 
 Esta tabla describe el estado de los materiales locales y no marca la card como terminada. El usuario indicó no esperar el ZIP ni acceso GLDAS; sus ausencias se mantienen explícitas como límites de la evidencia.
