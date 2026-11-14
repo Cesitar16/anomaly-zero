@@ -17,6 +17,7 @@ import xarray as xr
 from backend.app.data_sources import earthdata_probe as probe
 from backend.app.data_sources.earthdata_samples import (
     PRODUCTS,
+    _hdf5_dimensions,
     _is_imerg_missing,
     inspect_product,
 )
@@ -188,25 +189,34 @@ def spatial_qa(
     if product_key == "imerg_final":
         with h5py.File(path, "r") as h5:
             var = h5["Grid/precipitation"]
-            labels = [var.dims[i].label for i in range(var.ndim)]
-            if "lat" not in labels or "lon" not in labels:
+            labels = _hdf5_dimensions(var)
+            if labels.count("lat") != 1 or labels.count("lon") != 1:
                 raise probe.ProbeError(
-                    "HDF5 variable axes lack explicit lat/lon labels"
+                    "HDF5 variable axes lack unambiguous lat/lon dimension names"
                 )
             latitudes = np.asarray(h5["Grid/lat"][...]).reshape(-1)
             longitudes = np.asarray(h5["Grid/lon"][...]).reshape(-1)
+            if var.shape[labels.index("lat")] != latitudes.size or var.shape[
+                labels.index("lon")
+            ] != longitudes.size:
+                raise probe.ProbeError(
+                    "HDF5 dimension names do not match coordinate sizes"
+                )
             lat_units = str(h5["Grid/lat"].attrs.get("units", ""))
             lon_units = str(h5["Grid/lon"].attrs.get("units", ""))
             if "degree" not in lat_units.lower() or "degree" not in lon_units.lower():
                 raise probe.ProbeError(
                     "HDF5 latitude/longitude units are not geographic degrees"
                 )
+            time_axes = [i for i, label in enumerate(labels) if label == "time"]
+            if len(time_axes) > 1 or any(
+                label not in {"lat", "lon", "time"} for label in labels
+            ):
+                raise probe.ProbeError("HDF5 variable dimensions are unsupported")
             array = np.asarray(var[...])
-            for axis, label in enumerate(labels):
-                if label not in {"lat", "lon"}:
-                    array = np.take(array, 0, axis=axis)
-                    labels.pop(axis)
-                    break
+            for axis in reversed(time_axes):
+                array = np.take(array, 0, axis=axis)
+                labels.pop(axis)
             if labels == ["lon", "lat"]:
                 array = array.T
             elif labels != ["lat", "lon"]:
