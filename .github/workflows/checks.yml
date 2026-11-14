@@ -2,9 +2,9 @@ name: Checks
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [dev]
   push:
-    branches: [feature/ful-103-earthdata-probe]
+    branches: [feature/ful-103-earthdata-probe, feature/ful-106-be-02-three-product-samples]
   workflow_dispatch:
 
 permissions:
@@ -41,3 +41,4 @@ jobs:
         run: npm run lint --prefix frontend
       - name: Frontend type-check and build
         run: npm run build --prefix frontend
+
