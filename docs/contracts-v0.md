@@ -10,7 +10,7 @@ El código actual contiene FastAPI con `GET /health`; los módulos `backend/app/
 
 El catálogo candidato incluye MERRA-2 T2M, GPM IMERG Final precipitation y GLDAS Noah SoilMoi0_10cm_inst. La región Murray–Darling y 2005-01 a 2024-12 son contexto de trabajo, no cobertura científica aprobada. El inventario, los archivos reales y las revisiones de FUL-104/106/107 determinan qué datos llegan a publicarse.
 
-Los cuatro ejemplos al final son fixtures sintéticos. Cada raíz lleva `"synthetic": true`; el servicio real devolvería `false`. Ningún número de los ejemplos representa una observación o resultado estadístico.
+Los cinco ejemplos al final son fixtures sintéticos. Cada raíz lleva `"synthetic": true`; el servicio real devolvería `false`. Ningún número de los ejemplos representa una observación o resultado estadístico.
 
 ## Convenciones propuestas
 
@@ -71,13 +71,19 @@ Cada elemento de `series` es `{date, value, quality}`. `value` está en la unida
 
 `coverage.expected_periods`, `present_periods`, `valid_periods` y `missing_periods` describen períodos de la serie. `present_periods` cuenta períodos con una entrada temporal de la fuente aunque su valor sea fill; `valid_periods` cuenta valores finitos no-fill, sin afirmar que se filtraran QA flags ni medir área. `missing_periods` lista puntos con `value: null`. Un cero finito no-fill cuenta como presente y en `valid_periods`.
 
-`spatial_aggregation.method`, `area_weighted` y `mask_version` son explícitos y nullable. Mientras no se apruebe el método espacial, la API no debe describir la serie como promedio validado de cuenca; la decisión pendiente se indica abajo.
+`spatial_aggregation` declara qué soporte espacial representa cada valor de toda la serie. `support_type` distingue `point_sample`, `descriptive_mean` y `regional_aggregate`; no se infiere el significado desde la geometría de `region`.
+
+- `point_sample` identifica una celda/punto (`point.cell_id` y coordenadas, `null` si no se conocen), no una media de la región.
+- `descriptive_mean` significa una media explícita del conjunto de celdas señalado por `cell_count`, con método nombrado y estado `descriptive_only`; no se presenta como media de cuenca validada ni como porcentaje de superficie.
+- `regional_aggregate` solo se emite con `approval_state: "approved"`, método, máscara y referencia de aprobación registrados. La decisión queda pendiente; este contrato no declara ninguna agregación aprobada.
+
+Si no hay registros, `spatial_aggregation` es `null`. En el ejemplo de éxito todas las fechas describen el mismo punto sintético; cada `value` corresponde a una muestra de esa celda. El frontend puede distinguirla de una media descriptiva o de una agregación regional aprobada leyendo `support_type` y `approval_state`.
 
 ### Resultado de análisis
 
 `analysis_id` lo asigna el backend al crear un recurso mediante `201` o `202`. El frontend lo guarda para abrir la vista y consultar `GET /api/v1/analyses/{analysis_id}` al navegar o recargar. El contrato no propone colas ni polling automático. Un cálculo que de verdad se aceptó puede pasar de `pending` a `complete`; si no hay procesador, no se crea el recurso y se usa `409 ANALYSIS_METHOD_UNAVAILABLE`. Repetir GET devuelve el estado actual mientras se retenga el registro. Cuando se solicita otra ejecución, recibe otro ID.
 
-El objeto propuesto incluye `analysis_id`, `dataset_id`, `region_id`, `product_id`, `product_version`, `variable`, `quantity`, `input_unit`, ventana mensual inclusiva, `source`, `provenance`, `transformations`, `status`, `method`, `metrics` y `limitations`. `input_unit` y `quantity` describen los datos analizados; `metrics.slope_unit` describe la salida y queda `null` hasta definir método y unidad de tiempo. En `pending`, el método aceptado debe estar identificado y las métricas todavía no calculadas son `null`; nunca usar `p_value: 0` para representar ausencia. No se fija método, mínimo de muestra, unidad de pendiente, intervalo de confianza, valor p ni umbral de significancia en esta propuesta.
+El objeto propuesto incluye `analysis_id`, `dataset_id`, `region_id`, `product_id`, `product_version`, `variable`, `quantity`, `input_unit`, ventana mensual inclusiva, `source`, `provenance`, `transformations`, `spatial_aggregation`, `status`, `method`, `metrics` y `limitations`. `spatial_aggregation` conserva el mismo soporte de los datos usados por el análisis. `input_unit` y `quantity` describen los datos analizados; `metrics.slope_unit` describe la salida y queda `null` hasta definir método y unidad de tiempo. En `pending`, el método aceptado debe estar identificado y las métricas todavía no calculadas son `null`; nunca usar `p_value: 0` para representar ausencia. No se fija método, mínimo de muestra, unidad de pendiente, intervalo de confianza, valor p ni umbral de significancia en esta propuesta.
 
 Estados y creación se distinguen así: `not_available` es un rechazo previo a crear el recurso (`409 ANALYSIS_METHOD_UNAVAILABLE`, sin `analysis_id`); `insufficient_data` es rechazo previo (`422 INSUFFICIENT_DATA`); `pending` solo significa que el cálculo fue aceptado y un procesador confirmó que ya está trabajando (respuesta `202` con `analysis_id`); `complete` significa cálculo terminado. El contrato v0 no habilita un método ni exige un procesador: por ello no produce `pending` hasta que exista esa capacidad. No hay colas ni consulta automática periódica; el cliente puede hacer un GET explícito al navegar a un análisis aceptado. Un error técnico usa el envelope de error y nunca se disfraza de `pending`, `no_data` o `complete`.
 
@@ -188,7 +194,7 @@ Este registro no contiene conformidades ni firmas; cada persona debe completar s
 
 ## Ejemplos JSON sintéticos
 
-Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `synthetic: true` aparece en la raíz de cada respuesta. `generated_at` es una marca sintética en estos fixtures; una respuesta real usaría la hora UTC de la petición.
+Los cinco objetos son fixtures de forma, no datos ni resultados científicos. `synthetic: true` aparece en la raíz de cada respuesta. `generated_at` es una marca sintética en estos fixtures; una respuesta real usaría la hora UTC de la petición. El primer ejemplo asigna cada valor a una sola celda sintética; no es un promedio espacial.
 
 ### 1. Serie con cero válido y un valor ausente
 
@@ -285,9 +291,16 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
     "mask_applied": null
   },
   "spatial_aggregation": {
+    "support_type": "point_sample",
+    "approval_state": "not_assessed",
     "method": null,
     "area_weighted": null,
-    "mask_version": null
+    "mask_version": null,
+    "point": {
+      "cell_id": "cell-synthetic-001",
+      "latitude": null,
+      "longitude": null
+    }
   },
   "transformations": [],
   "series": [
@@ -393,11 +406,7 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
     "verification_state": "unassessed",
     "mask_applied": null
   },
-  "spatial_aggregation": {
-    "method": null,
-    "area_weighted": null,
-    "mask_version": null
-  },
+  "spatial_aggregation": null,
   "transformations": [],
   "series": [],
   "message": "No hay datos disponibles para el período solicitado.",
@@ -465,8 +474,79 @@ La respuesta representa un rechazo previo a crear un análisis: `409`, sin `anal
 }
 ```
 
+### 5. Análisis aceptado que sigue en procesamiento (forma 202)
+
+Este fixture enseña el envelope `202` si un procesador real aceptó y confirmó el trabajo. El identificador/nombre del método son sintéticos; no acreditan método aprobado ni ejecución existente. Todas las métricas permanecen `null`.
+
+```json
+{
+  "contract_version": "0.1-draft",
+  "synthetic": true,
+  "generated_at": "2026-01-01T00:00:00Z",
+  "analysis_id": "analysis-synthetic-pending-001",
+  "dataset_id": "ds-synthetic-001",
+  "region_id": "REG01",
+  "product_id": "P02",
+  "product_version": "V07B",
+  "variable": "precipitation",
+  "quantity": "monthly_mean_rate",
+  "input_unit": "mm/hr",
+  "window": {
+    "start": "2005-01",
+    "end": "2005-03",
+    "end_inclusive": true
+  },
+  "source": {
+    "agency": "NASA/JAXA",
+    "distributor": "GES DISC",
+    "collection_id": "C2723754851-GES_DISC",
+    "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
+    "source_urls": [],
+    "granule_ids": []
+  },
+  "provenance": {
+    "source_sha256": [],
+    "retrieved_at": null,
+    "manifest_version": null,
+    "source_updated_at": null,
+    "snapshot_created_at": null,
+    "manifest_sha256": null,
+    "original_file_count": null
+  },
+  "transformations": [],
+  "spatial_aggregation": {
+    "support_type": "point_sample",
+    "approval_state": "not_assessed",
+    "method": null,
+    "area_weighted": null,
+    "mask_version": null,
+    "point": {
+      "cell_id": "cell-synthetic-001",
+      "latitude": null,
+      "longitude": null
+    }
+  },
+  "status": "pending",
+  "method": {
+    "name": "synthetic-demonstration-method",
+    "version": "0.0-synthetic"
+  },
+  "metrics": {
+    "slope": null,
+    "slope_unit": null,
+    "confidence_interval": null,
+    "p_value": null,
+    "significance": null
+  },
+  "limitations": [
+    "Fixture sintético de la forma 202; no representa un método aprobado ni un cálculo real."
+  ]
+}
+```
+
+
 ## Archivos del contrato y siguiente implementación
 
-La especificación declarativa versionada está en [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml) y comparte nombres, estados y tipos con este documento y sus cuatro ejemplos. No se añadieron modelos Pydantic ejecutables porque la API aún no implementa estos recursos. Lucas revisa procedencia, producto, unidades, calendario, QA y cobertura; César revisa el significado estadístico y límites de los resultados; Alejandra comprueba los envelopes, estados y flujo React de obtención/uso de `analysis_id`; Alaín verifica viabilidad FastAPI y consistencia OpenAPI. La aprobación de AZ-04 aún depende de las relaciones existentes con FUL-107, FUL-103 y FUL-99; esta propuesta no las elimina.
+La especificación declarativa versionada está en [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml) y comparte nombres, estados, tipos y ejemplos con este documento. No se añadieron modelos Pydantic ejecutables porque la API aún no implementa estos recursos. Lucas revisa procedencia, producto, unidades, calendario, QA y cobertura; César revisa el significado estadístico y límites de los resultados; Alejandra comprueba los envelopes, estados y flujo React de obtención/uso de `analysis_id`; Alaín verifica viabilidad FastAPI y consistencia OpenAPI. La aprobación de AZ-04 aún depende de las relaciones existentes con FUL-107, FUL-103 y FUL-99; esta propuesta no las elimina.
 
 No se añade exportación, integración NASA desde React, cola de trabajos ni formato raster ejecutable en esta tarjeta.

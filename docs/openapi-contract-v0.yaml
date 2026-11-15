@@ -83,6 +83,182 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SeriesResponse'
+              examples:
+                pointSample:
+                  summary: Synthetic monthly series where each value is one grid-cell sample, not a regional mean.
+                  value:
+                    contract_version: 0.1-draft
+                    synthetic: true
+                    data_state: available_with_gaps
+                    region:
+                      region_id: REG01
+                      name: Región sintética
+                      geometry_version: null
+                      geometry_source: null
+                      area_km2: null
+                    product:
+                      product_id: P02
+                      short_name: GPM_3IMERGM
+                      product_version: V07B
+                      variable: precipitation
+                      quantity: monthly_mean_rate
+                      unit: mm/hr
+                      availability: partial
+                      source:
+                        agency: NASA/JAXA
+                        distributor: GES DISC
+                        collection_id: C2723754851-GES_DISC
+                        doi: 10.5067/GPM/IMERG/3B-MONTH/07
+                        source_urls: []
+                        granule_ids: []
+                      current_dataset_id: ds-synthetic-001
+                      coverage:
+                        start: 2005-01
+                        end: 2005-03
+                      quality:
+                        source_flag_fields: []
+                        provider_flags_applied: false
+                        source_missing_attributes:
+                          fill_value: -9999.9
+                          missing_value: null
+                          scale_factor: null
+                          add_offset: null
+                        finite_non_fill_filter_applied: true
+                        verification_state: basic_checks_only
+                        mask_applied: null
+                    dataset_id: ds-synthetic-001
+                    provenance:
+                      source_sha256: []
+                      retrieved_at: null
+                      manifest_version: null
+                      source_updated_at: null
+                      snapshot_created_at: null
+                      manifest_sha256: null
+                      original_file_count: null
+                    temporal:
+                      frequency: monthly
+                      calendar: null
+                      date_label: month_start
+                    requested_coverage:
+                      start: 2005-01
+                      end: 2005-03
+                      end_inclusive: true
+                    available_coverage:
+                      start: 2005-01
+                      end: 2005-03
+                    coverage:
+                      expected_periods: 3
+                      present_periods: 3
+                      valid_periods: 2
+                      missing_periods:
+                      - 2005-02
+                    quality:
+                      source_flag_fields: []
+                      provider_flags_applied: false
+                      source_missing_attributes:
+                        fill_value: -9999.9
+                        missing_value: null
+                        scale_factor: null
+                        add_offset: null
+                      finite_non_fill_filter_applied: true
+                      verification_state: basic_checks_only
+                      mask_applied: null
+                    spatial_aggregation:
+                      support_type: point_sample
+                      approval_state: not_assessed
+                      method: null
+                      area_weighted: null
+                      mask_version: null
+                      point:
+                        cell_id: cell-synthetic-001
+                        latitude: null
+                        longitude: null
+                    transformations: []
+                    series:
+                    - date: '2005-01-01'
+                      value: 0.42
+                      quality:
+                        state: unassessed
+                        provider_flags: []
+                        missing_reason: null
+                    - date: '2005-02-01'
+                      value: null
+                      quality:
+                        state: missing
+                        provider_flags: []
+                        missing_reason: provider_fill_value
+                    - date: '2005-03-01'
+                      value: 0.0
+                      quality:
+                        state: unassessed
+                        provider_flags: []
+                        missing_reason: null
+                    generated_at: '2026-01-01T00:00:00Z'
+                noData:
+                  summary: Synthetic valid query with no records; spatial support is not applicable.
+                  value:
+                    contract_version: 0.1-draft
+                    synthetic: true
+                    data_state: no_data
+                    region:
+                      region_id: REG01
+                      name: Región sintética
+                      geometry_version: null
+                      geometry_source: null
+                      area_km2: null
+                    product:
+                      product_id: P03
+                      short_name: GLDAS_NOAH025_M
+                      product_version: '2.1'
+                      variable: SoilMoi0_10cm_inst
+                      quantity: soil_moisture_layer_0_10_cm
+                      unit: kg m-2
+                      availability: unavailable
+                      source:
+                        agency: NASA
+                        distributor: GES DISC
+                        collection_id: C1342986036-GES_DISC
+                        doi: 10.5067/SXAVCZFAQLNO
+                        source_urls: []
+                        granule_ids: []
+                      current_dataset_id: null
+                      coverage: null
+                      quality: null
+                    dataset_id: null
+                    provenance: null
+                    temporal:
+                      frequency: monthly
+                      calendar: null
+                      date_label: month_start
+                    requested_coverage:
+                      start: 2005-01
+                      end: 2005-03
+                      end_inclusive: true
+                    available_coverage: null
+                    coverage:
+                      expected_periods: 3
+                      present_periods: 0
+                      valid_periods: 0
+                      missing_periods:
+                      - 2005-01
+                      - 2005-02
+                      - 2005-03
+                    quality:
+                      source_flag_fields: []
+                      provider_flags_applied: false
+                      source_missing_attributes:
+                        fill_value: null
+                        missing_value: null
+                        scale_factor: null
+                        add_offset: null
+                      finite_non_fill_filter_applied: false
+                      verification_state: unassessed
+                      mask_applied: null
+                    spatial_aggregation: null
+                    transformations: []
+                    series: []
+                    message: No hay datos disponibles para el período solicitado.
+                    generated_at: '2026-01-01T00:00:00Z'
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
@@ -192,6 +368,21 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            snapshotUnavailable:
+              summary: Synthetic transient snapshot error; not an empty data response.
+              value:
+                contract_version: 0.1-draft
+                synthetic: true
+                error:
+                  code: SERVICE_UNAVAILABLE
+                  message: El snapshot de datos no está disponible temporalmente.
+                  retryable: true
+                  request_id: req-synthetic-001
+                  details:
+                    dataset_id: ds-synthetic-001
+                    provider_status: null
+                generated_at: '2026-01-01T00:00:00Z'
     InternalError:
       description: Unexpected internal failure; the client must not treat it as no data.
       content:
@@ -204,6 +395,36 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            methodUnavailable:
+              summary: Synthetic 409; no analysis resource or ID is created.
+              value:
+                contract_version: 0.1-draft
+                synthetic: true
+                generated_at: '2026-01-01T00:00:00Z'
+                error:
+                  code: ANALYSIS_METHOD_UNAVAILABLE
+                  message: No hay un método estadístico aprobado y habilitado; no se creó un análisis.
+                  retryable: false
+                  request_id: req-synthetic-analysis-001
+                  details:
+                    analysis:
+                      state: not_available
+                      analysis_id: null
+                      dataset_id: ds-synthetic-001
+                      region_id: REG01
+                      product_id: P02
+                      window:
+                        start: 2005-01
+                        end: 2005-03
+                        end_inclusive: true
+                      method: null
+                      metrics:
+                        slope: null
+                        slope_unit: null
+                        confidence_interval: null
+                        p_value: null
+                        significance: null
     AnalysisComplete:
       description: Synchronous analysis has completed.
       headers:
@@ -224,6 +445,64 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/AnalysisResponse'
+          examples:
+            pendingAnalysis:
+              summary: Synthetic 202 response shape only; it does not claim a real processor or method approval.
+              value:
+                contract_version: 0.1-draft
+                synthetic: true
+                generated_at: '2026-01-01T00:00:00Z'
+                analysis_id: analysis-synthetic-pending-001
+                dataset_id: ds-synthetic-001
+                region_id: REG01
+                product_id: P02
+                product_version: V07B
+                variable: precipitation
+                quantity: monthly_mean_rate
+                input_unit: mm/hr
+                window:
+                  start: 2005-01
+                  end: 2005-03
+                  end_inclusive: true
+                source:
+                  agency: NASA/JAXA
+                  distributor: GES DISC
+                  collection_id: C2723754851-GES_DISC
+                  doi: 10.5067/GPM/IMERG/3B-MONTH/07
+                  source_urls: []
+                  granule_ids: []
+                provenance:
+                  source_sha256: []
+                  retrieved_at: null
+                  manifest_version: null
+                  source_updated_at: null
+                  snapshot_created_at: null
+                  manifest_sha256: null
+                  original_file_count: null
+                transformations: []
+                spatial_aggregation:
+                  support_type: point_sample
+                  approval_state: not_assessed
+                  method: null
+                  area_weighted: null
+                  mask_version: null
+                  point:
+                    cell_id: cell-synthetic-001
+                    latitude: null
+                    longitude: null
+                status: pending
+                method:
+                  name: synthetic-demonstration-method
+                  version: 0.0-synthetic
+                metrics:
+                  slope: null
+                  slope_unit: null
+                  confidence_interval: null
+                  p_value: null
+                  significance: null
+                limitations:
+                - Fixture sintético de la forma 202; no representa un método aprobado ni un cálculo
+                  real.
   schemas:
     YearMonth:
       type: string
@@ -484,15 +763,86 @@ components:
         missing_reason:
           type: [string, 'null']
     SpatialAggregation:
+      description: Spatial support for every value in the returned series.
+      oneOf:
+        - $ref: '#/components/schemas/PointSampleSupport'
+        - $ref: '#/components/schemas/DescriptiveMeanSupport'
+        - $ref: '#/components/schemas/ApprovedRegionalSupport'
+      discriminator:
+        propertyName: support_type
+    PointReference:
       type: object
-      required: [method, area_weighted, mask_version]
+      required: [cell_id, latitude, longitude]
       properties:
+        cell_id:
+          type: string
+        latitude:
+          type: [number, 'null']
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: [number, 'null']
+          minimum: -180
+          maximum: 180
+    PointSampleSupport:
+      type: object
+      required: [support_type, approval_state, method, area_weighted, mask_version, point]
+      properties:
+        support_type:
+          type: string
+          const: point_sample
+        approval_state:
+          type: string
+          const: not_assessed
         method:
-          type: [string, 'null']
+          type: 'null'
         area_weighted:
-          type: [boolean, 'null']
+          type: 'null'
+        mask_version:
+          type: 'null'
+        point:
+          $ref: '#/components/schemas/PointReference'
+    DescriptiveMeanSupport:
+      type: object
+      required: [support_type, approval_state, method, cell_count, area_weighted, mask_version]
+      properties:
+        support_type:
+          type: string
+          const: descriptive_mean
+        approval_state:
+          type: string
+          const: descriptive_only
+        method:
+          type: string
+          minLength: 1
+        cell_count:
+          type: integer
+          minimum: 1
+        area_weighted:
+          type: boolean
         mask_version:
           type: [string, 'null']
+    ApprovedRegionalSupport:
+      type: object
+      required: [support_type, approval_state, method, area_weighted, mask_version, approval_reference]
+      properties:
+        support_type:
+          type: string
+          const: regional_aggregate
+        approval_state:
+          type: string
+          const: approved
+        method:
+          type: string
+          minLength: 1
+        area_weighted:
+          type: boolean
+        mask_version:
+          type: string
+          minLength: 1
+        approval_reference:
+          type: string
+          minLength: 1
     Transformation:
       type: object
       required: [operation, parameters, input_unit, output_unit, code_version]
@@ -544,7 +894,9 @@ components:
         quality:
           $ref: '#/components/schemas/Quality'
         spatial_aggregation:
-          $ref: '#/components/schemas/SpatialAggregation'
+          oneOf:
+            - $ref: '#/components/schemas/SpatialAggregation'
+            - type: 'null'
         transformations:
           type: array
           items:
@@ -688,6 +1040,7 @@ components:
             - status
             - method
             - metrics
+            - spatial_aggregation
             - limitations
           properties:
             analysis_id:
@@ -723,6 +1076,8 @@ components:
               $ref: '#/components/schemas/Method'
             metrics:
               $ref: '#/components/schemas/Metrics'
+            spatial_aggregation:
+              $ref: '#/components/schemas/SpatialAggregation'
             limitations:
               type: array
               items:
