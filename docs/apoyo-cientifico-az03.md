@@ -66,6 +66,18 @@ Una afirmación puede ser `DOC` en su definición y `PARCIAL` en la aplicación 
 | **IMERG Final** | NASA GPM/GES DISC; `GPM_3IMERGM`, versión de colección `07`; DOI [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07). Gránulo inspeccionado marca versión de archivo `V07B`. | `Grid/precipitation`: estimación combinada satélite–pluviómetro de precipitación mensual, expresada como tasa media en mm/hr; mensual Final; grilla 0,1° × 0,1°; HDF5 compatible con NetCDF4. | `3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5` (`G2823464479-GES_DISC`) y equivalente 2021-01 (`G2829125431-GES_DISC`). Los hashes están en §6. Enero 2005 coincide byte a byte con la copia NCAR verificada. | Mayor detalle espacial de la terna; apropiado para una demo raster de una muestra y para lluvia mensual una vez QA/espacio estén acordados. La serie de 12 meses IMERG 2005 facilita una prueba temporal limitada. | La tasa `mm/hr` no es acumulado; conversión requiere horas exactas del intervalo calendario y una regla de datos faltantes. Final incorpora gauge analysis y tiene latencia. `randomError` y QIm solo describen error aleatorio/calidad según alcance del ATBD, no sesgo. Las versiones/sensores y reprocesamientos deben mantenerse consistentes; no llamar “observaciones independientes” a tres productos. |
 | **GLDAS Noah 2.1** | NASA LDAS/GES DISC; `GLDAS_NOAH025_M.2.1`, versión 2.1; DOI [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO). | `SoilMoi0_10cm_inst`: humedad/almacenamiento de agua modelado en capa de suelo 0–10 cm; mensual, 0,25° × 0,25°, kg m⁻²; NetCDF4. En la muestra `cell_methods=time: mean`. | `GLDAS_NOAH025_M.A200501.021.nc4` (`G1413723174-GES_DISC`) y `GLDAS_NOAH025_M.A202101.021.nc4` (`G2040571257-GES_DISC`). Atributos `history` 2019-10-31 y 2021-04-23, respectivamente. | Tiene significado cercano a un estado del suelo asociado a sequía, y ofrece cobertura mensual desde 2000; es el candidato de la terna para capa de 0–10 cm. | Producto terrestre/modelado, sin variable directa de agua disponible para plantas; NASA especifica que GLDAS-2.1 no asimila variables. La re-máscara de agua interior de 2020 hace incierto el linaje específico del archivo 2005. `kg m⁻²` no es porcentaje de saturación ni contenido volumétrico sin supuestos/parametrización. |
 
+### Cobertura de catálogo y calendario observado
+
+Las fechas siguientes describen la cobertura publicada de la colección consultada, no meses que hayamos descargado o validado. Las colecciones siguen activas y sus extremos pueden cambiar; se registran la institución y la consulta para que el período sea reproducible.
+
+| Producto | Cobertura espacial y período publicado al consultar | Consulta/fuente del período | Calendario y semántica temporal de la muestra inspeccionada |
+|---|---|---|---|
+| MERRA-2 `M2TMNXSLV` 5.12.4 | Global, longitud −180° a 180°, latitud −90° a 90°; catálogo indica enero de 1980–presente. Media mensual de diagnósticos temporales. | Ficha NASA GES DISC en NASA Open Data, metadata actualizada 2026-11-05; consultada 2026-11-15: [M2TMNXSLV](https://catalog.data.gov/dataset/merra-2-tavgm_2d_slv_nx-2dmonthly-meantime-averagedsingle-levelassimilationsingle-level-di). | Las muestras usan `time` con unidades minutos desde las 00:30 UTC del primer día, incremento mensual de 60.000 minutos y `begin_date=YYYY0101`; no exponen atributo `calendar`. No inferimos un calendario distinto a partir de su omisión. La semántica mensual procede de la colección `tavgM`. |
+| IMERG Final `GPM_3IMERGM` colección 07 / archivo V07B | Global, −180° a 180° y −90° a 90°; las fuentes oficiales consultadas no coinciden en el inicio publicado: la ficha GES DISC indica junio de 2000–presente y la página NASA GPM de V07B indica enero de 1998–presente. Ambas cubren la ventana objetivo 2005–2024. | Ficha NASA GES DISC en NASA Open Data, revisada 2026-11-05, y [NASA GPM Data Directory](https://gpm.nasa.gov/data/directory), consultado 2026-11-15. Mantener visible la discrepancia hasta comprobar el registro CMR/versiones para cualquier fecha anterior a junio de 2000. | `Grid/time` declara calendario `julian`, segundos desde `1980-01-06 00:00:00 UTC`, bounds y tiempo representativo mensual; el LongName advierte que el cálculo no suma leap seconds. No sustituir este atributo por una conversión de calendario asumida sin probarla. |
+| GLDAS Noah 2.1 `GLDAS_NOAH025_M` | Global; NASA LDAS indica período 2000–presente, rejillas de 0,25° y 1°, frecuencia mensual y 3-horaria para la familia. El granule seleccionado aquí es el producto mensual Noah de 0,25°. | [NASA LDAS Dataset](https://ldas.gsfc.nasa.gov/gldas/dataset), consultado 2026-11-15. | Enero 2005 declara `calendar=standard`, días desde `2000-01-01`; enero 2021 no declara `calendar` y expone `time_increment=one month`, `begin_date=20210101`, `end_date=20210131`, `end_time=210000`. Tratar el atributo ausente como una limitación de metadata de esa muestra y validar con los bounds al leer, no como prueba de otro calendario. |
+
+**Lectura para FUL-107:** la ventana 2005-01–2024-12 queda dentro de los períodos publicados de las tres colecciones al momento de consulta; esto solo acredita elegibilidad temporal de catálogo. El inventario de 240 registros citado abajo sigue sin acreditar 240 archivos descargados ni valores válidos. Para IMERG, no usar la diferencia de cobertura anterior a 2000 como una certeza resuelta: queda registrada como discrepancia documental que no afecta la ventana objetivo.
+
 ### Inventario, descargas, valores y series: cuatro estados distintos
 
 - **Inventario:** en la ventana/caja consultada constan 240 meses por candidato. Es un resultado de CMR; no prueba integridad de los pixels.
@@ -164,6 +176,26 @@ Las medias de `intersección` en la tabla usan las áreas de intersección segú
 **Riesgos geométricos identificados:** celdas que solo tocan borde; 747 celdas IMERG parcialmente intersectadas en la muestra de enero 2005 (375 con centro exterior, 372 interior); agujeros/bordes deben respetar predicados topológicos; lat/lon no equivale a área; resoluciones nativas distintas; cambio CRS/datum puede desplazar fronteras; límite MDBA se sirve como 3857 pero se pidió 4326; ABS NSW era GDA2020 (EPSG:7844) y el ensayo empleó EPSG:3577 GDA94; bounds MERRA/GLDAS fueron inferidos; los límites IMERG float32 se redondearon a 0,01° en ensayo posterior; no se densificaron bordes. En el ensayo inicial las áreas parciales sumaban ~48 km² más que el área del polígono (0,0046%); con límites redondeados al nominal, EPSG:3577 cerró casi exactamente, pero ese cierre es interno al supuesto y **no demuestra exactitud** ni justifica el redondeo para producción.
 
 **Recomendación provisional de método:** mantener cuenca MDBA completa como región objeto; probar overlay fraccional con geometría integral versionada y CRS/datum conocido, bounds de celda oficiales o reconstruidos de forma comprobable, geodesia/densificación y conservación de área. Calcular cobertura válida total y por soporte disponible. Compararlo al menos con centros y área completa en fechas de distintas estaciones/años en los tres productos y documentar efecto de faltantes/QA. FUL-104 cubre enero 2005 y enero 2021, no cumple esa amplitud. FUL-107 debe seleccionar el método provisional para el prototipo; aprobación operativa depende de dichas pruebas/revisión.
+
+### Métricas mínimas que deberá emitir el futuro pipeline espacial
+
+Para que dos agregados regionales puedan compararse y auditarse, cada fila producto-mes deberá guardar, con CRS, regla QA y método explícitos:
+
+| Métrica | Definición/denominador obligatorio |
+|---|---|
+| `n_centers_inside` | Número de centros de celda dentro del polígono con la regla topológica documentada; no usarlo como denominador de área. |
+| `n_cells_intersecting`, `n_cells_partial`, `n_cells_full` | Celdas con área de intersección positiva, y su desglose parcial/completo; declarar si “touch-only” (contacto de área cero) se excluye. |
+| `n_valid`, `n_fill`, `n_missing`, `n_qa_rejected` | Conteo dentro de celdas seleccionadas, separado por causa. `n_valid` significa pasa el fill/finito y la regla QA aplicada; si no hay regla, marcar `QA_NOT_APPLIED`, no equiparar válido-numérico con QA aprobado. |
+| `A_basin` | Área del polígono de cuenca en el CRS de área de análisis, medida una vez y versionada. |
+| `A_intersection` | Suma de áreas de intersección de las celdas de la grilla con la cuenca; la cobertura espacial del soporte del producto debe informarse respecto a `A_basin`. |
+| `A_valid` | Suma de pesos/áreas de intersección de celdas que pasan la validez y la regla QA declarada. |
+| `coverage_intersection = A_valid / A_intersection` | Fracción del soporte cubierto por la grilla que queda válida. Denominador: superficie intersectada, no toda la cuenca. |
+| `coverage_basin = A_valid / A_basin` | Fracción de la superficie completa de cuenca efectivamente respaldada por valores válidos. Este denominador incluye sectores fuera del soporte de grilla y no debe sustituirse por `A_intersection`. |
+| `regional_mean` | `sum(value_i × area_intersection_i) / A_valid`; publicar solo con `A_valid`, ambas coberturas y política de faltantes, sin imputar missing a cero ni expandir la media a área no cubierta. |
+| Identidad reproducible | Shortname, colección y versión de archivo, mes, granule ID, manifest/hash del archivo, hash del polígono y de la máscara/pesos, URL/fuente, fecha de consulta y unidades. |
+| Contrato espacial y QA | CRS/datum de entrada de geometría y grilla, CRS proyectado para área, operación de transformación identificada, origen/convención de cell bounds, método (`center`, `intersects`, `fractional_area`), versión de pesos y regla QA; flags/estados por separado para fill, no finito, QA fail y QA no aplicado. |
+
+Estas variables son un **requisito recomendado de trazabilidad**, no un pipeline implementado en FUL-110 ni umbrales de aceptación aprobados. Los porcentajes deben publicar siempre numerador y denominador; reportar solo “% válido” no basta.
 
 ## 8. GLDAS 2005: dictamen de linaje
 
@@ -324,16 +356,22 @@ La decisión de equipo que puede adoptar César sin afirmar más de lo que demue
 
 Quedan bajo decisión de César/equipo: primera pregunta/variable, caso/región y geometría que se registrará, política QA/cobertura, condición para serie, mapa permitido y baseline para cualquier anomalía. Alaín debe revisar procedencia/formatos/CRS y ayudar a resolver la descarga/edición de GLDAS y límites. No existe aprobación de César o Alaín incorporada a este documento. FUL-107 sigue siendo propiedad de César y no se altera desde FUL-110.
 
-### Criterios de aceptación que cubre este entregable
+### Checklist de los 13 criterios de aceptación de FUL-110
 
-- [x] Leída FUL-110 completa antes de actuar; revisada FUL-107 como dependencia.
-- [x] Checkout/estado/`origin/dev` verificados y rama FUL-110 propia creada desde dev actualizado.
-- [x] Entregado resumen, matriz de evidencia, comparación de tres productos y decisión/recomendación diferenciada.
-- [x] QA de IMERG/MERRA-2/GLDAS documentado con atributos observados, faltantes, reglas propuestas y límites; sin umbral inventado.
-- [x] Geometría, licencias, NSW vs cuenca y sensibilidad de métodos explicitados; método continúa provisional.
-- [x] Pregunta GLDAS 2005 clasificada **Indeterminado**, con consecuencias y pruebas para resolver.
-- [x] Demo/serie/anomalía/tendencia/mapas separados por viabilidad y gates de publicación definidos.
-- [x] Identidad de originales y fechas/muestras diferenciada de inventario CMR; fuente primaria e DOI listados.
-- [x] No se modificaron decisiones de César ni se aprobaron FUL-107/MVP/máscara.
-- [ ] Revisión de César y Alaín, decisión FUL-107 y confirmación de fuentes pendientes.
-- [ ] Merge de FUL-110; expresamente no se realizará automáticamente.
+La tarjeta permanece en **In Review**. “Cumplido” abajo significa que el entregable demuestra el criterio documental; no afirma que César/Alaín hayan aprobado el contenido ni que FUL-107 esté decidido.
+
+- [x] **1. Fichas de los tres productos:** identidad, versión, DOI, unidad, frecuencia, resolución, formato, tipo de fuente, granules y fecha; se consolidan cobertura global/período publicado y calendario/metadata temporal observados en §4. La discrepancia de período de IMERG queda visible y acotada a pre-2000.
+- [x] **2. Matriz QA:** separa fill, cero, QA del proveedor, diagnóstico, filtros aplicados/no aplicados, estado, incertidumbre y reglas elegibles/bloqueadas; no inventa umbrales (§5).
+- [x] **3. Versiones y unidades:** distingue IMERG colección 07/archivo V07B y mm/hr; MERRA T2M K; GLDAS kg/m² y riesgos de conversión (§4–§5).
+- [x] **4. Geometría y permiso:** identifica ítem/servicio MDBA, origen, salida CRS, datum incierto, licencia/atribución, hash de muestra y límite del LineString (§7).
+- [x] **5. Métodos espaciales:** cifras de enero 2005/2021 para tres productos, conteos válidos y denominadores; propone el método fraccional como candidato y añade el contrato de métricas/denominadores para el pipeline (§7).
+- [x] **6. NSW frente a cuenca:** diferencia territorial, porcentajes con denominadores y cautela de redistribución (§7).
+- [x] **7. Linaje GLDAS 2005:** dictamen **Indeterminado**, evidencia, alcance, consecuencia y prueba posterior (§8).
+- [x] **8. Visualizaciones:** distingue muestra raster, media descriptiva, serie regional, anomalía y significancia; ninguna se declara existente por el catálogo (§9).
+- [x] **9. Recomendación de MVP:** opción condicionada para demo frente al camino candidato para caso/serie validable, alternativas no aprobadas y evidencia que cambiaría la selección (§4, §11).
+- [x] **10. Gates de publicación:** demo, serie regional e inferencia/tendencia tienen criterios separados, responsables/evidencias y requisitos de cobertura (§10, §12).
+- [x] **11. Trazabilidad:** afirmaciones y recomendaciones se vinculan a fuentes primarias, fecha, estado, riesgo y limitación (§3, §14).
+- [x] **12. Límites de alcance:** no se descargaron 240 meses, no se implementaron API/UI/pipeline, ni se aprobaron QA o agregación definitivos (§2–§3).
+- [x] **13. Transferencia y revisión:** el informe y la PR #18 están vinculados a FUL-110 y formulan decisiones para FUL-107 (§13, §15). Solicitudes de revisión a César y Alaín se enviaron desde la cuenta GitHub de Lucas; no se adjudica aprobación mientras no exista revisión.
+
+**Fuera de estos criterios documentales y aún pendiente por decisión externa:** revisar el informe/PR; confirmar procedencia y licencia de fuentes específicas; que César registre los acuerdos y decisiones en FUL-107; integrar la PR solo después de revisión. Nada de ello se marca como aprobación científica ya recibida.
