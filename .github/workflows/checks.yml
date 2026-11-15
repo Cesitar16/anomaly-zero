@@ -20,11 +20,11 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v6
       - name: Sync locked Python dependencies
-        run: uv sync --locked --python 3.12 --group dev
+        run: uv sync --locked --python 3.12 --group dev --group research
       - name: Backend lint
-        run: uv run --locked --python 3.12 ruff check backend
+        run: uv run --locked --python 3.12 ruff check backend research
       - name: Offline backend tests
-        run: uv run --locked --python 3.12 pytest
+        run: uv run --locked --python 3.12 pytest backend/tests research/tests
 
   frontend:
     runs-on: ubuntu-latest
