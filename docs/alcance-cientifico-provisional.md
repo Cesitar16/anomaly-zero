@@ -1,75 +1,124 @@
-# FUL-107 — borrador de alcance científico provisional
+# FUL-107 — alcance científico provisional del MVP
 
-**Estado:** propuesta para discusión; no es selección aprobada del MVP. Mantiene en alcance la terna de Anomaly Zero y usa el catálogo de FUL-102 como fuente de detalle para evitar duplicarlo. Actualización de evidencia: la [PR #9](https://github.com/Cesitar16/anomaly-zero/pull/9) (FUL-106), Draft hacia `dev` en HEAD `e2174d5`, documenta una muestra NASA auténtica inspeccionada por producto y una QA espacial acotada. Sus datos originales, manifiestos y CSV permanecen fuera de Git; esta evidencia aún requiere revisión independiente y no es funcionalidad integrada en `dev` ni aprobación científica.
+**Estado:** propuesta para discusión, no selección aprobada. Corte de repositorio: `origin/dev` `b51ca0617a96d582e0239d661c00647da2a32e11` (15-11-2026). FUL-104, FUL-105 y FUL-106 están integradas mediante PR #14/#15, #11 y #9. No se registra aquí conformidad de Lucas, Alaín ni del equipo. Linear no se pudo consultar en esta sesión; confirmar allí estados y criterios textuales de FUL-107/FUL-110 antes del cierre.
 
-## Matriz de evidencia
+Este documento sintetiza evidencia con soporte en [catálogo](catalog_mvp.json), [FUL-104](validacion_cientifica_ful104.md), [plan inferencial FUL-105](ful-105-plan-inferencia.md), [muestras BE-02](be-02-sample-workflow.md), [región MDBA](region_murray_darling.md), [contraste de fuentes](contraste_fuentes.md) y [notebook de EDA](../research/notebooks/02_eda_nasa_products.ipynb). Las tarjetas y decisiones científicas siguen siendo responsabilidad de sus titulares.
 
-| Variable | Producto y versión | Evidencia documental | Descarga / datos abiertos | EDA y calidad | Región | Viabilidad para MVP | Pendientes / validadores |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Temperatura del aire | MERRA-2 `M2TMNXSLV` 5.12.4, `T2M` | CMR y catálogo inventarían 240 meses 2005–2024. PR #9 documenta el granule `MERRA2_300.tavgM_2d_slv_Nx.200501.nc4`, 54.419.597 bytes, SHA-256 `103d95aa3ffe9b8d7e98caea5f6a764831bad3b70155370d3a84c2dfd95616c6`; la unidad reportada es K. | Una muestra NASA auténtica de enero de 2005 está descrita en la PR #9; el archivo y su manifest no están en Git para inspección independiente. | PR #9 reporta NetCDF4, forma 1×361×576, 0,5°×0,625°, fill observado y 323/323 centros MDBA finitos/no-fill. No reporta candidatos QA; esto no equivale a validar todos los píxeles ni una serie. POWER comparte ascendencia MERRA-2 y no es contraste independiente. | QA espacial exploratoria de una fecha por centros; sin agregado mensual regional de producción. | Candidato con acceso nativo demostrado en el reporte de FUL-106; todavía insuficiente para aprobar serie regional. | Alaín: archivos/manifest y reproducción. Lucas: identidad, unidades, QA y geometría. César: comparabilidad con POWER. FUL-104/105/106. |
-| Precipitación | GPM IMERG Final `GPM_3IMERGM` versión de colección 07, granule `V07B`, `Grid/precipitation` | Catálogo y documentación NASA describen tasa mensual en mm/h; CMR inventaría 240 meses 2005–2024. PR #9 documenta el granule auténtico `3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5`, 18.028.945 bytes, SHA-256 `bac3b9bc5ee8cc3eb1e5fe844778d54fd86e2b722813055b37f3872e6e4c73d5`. | Una muestra NASA auténtica de enero de 2005 está descrita en la PR #9; archivo y manifest fuera de Git. La nomenclatura de colección `07` frente a `ProductVersion=V07B` requiere confirmación de Lucas. | PR #9 reporta HDF5, forma 1×3600×1800, 0,1°, unidad mm/hr, fill y 10.092/10.092 centros MDBA finitos/no-fill. Los candidatos `precipitationQualityIndex` y `randomError` no se interpretan ni filtran. | QA espacial exploratoria de una fecha por centros; los ensayos anteriores de intersección/ponderación siguen experimentales y no sustituyen una regla validada. | Candidato para ruta espacial; no declara serie de cuenca ni producto científico validado. | Lucas: nomenclatura, QA y polígono. Alaín: archivos/manifests y reproducción. César: calendario, faltantes, dependencia de productos y sensibilidad. FUL-104/105/106. |
-| Humedad del suelo | GLDAS Noah `GLDAS_NOAH025_M` 2.1, `SoilMoi0_10cm_inst` | Catálogo/manual confirman capa de suelo, unidad kg m⁻² y semántica mensual de promedio de pasos de 3 h. CMR inventaría 240 meses 2005–2024. | Un granulo NASA auténtico autenticado: enero 2005; 25.075.859 bytes y SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593`. | FUL-105: caja con 3.360 celdas, 3.045 válidas, 315 faltantes (90,625 %), media sin pesos 16,0753 kg/m². PR #9 reporta además 1.617 centros MDBA, 1.615 finitos/no-fill y 2 faltantes. Son denominadores espaciales distintos. Sin `scale_factor`/`add_offset`; QA de serie y linaje histórico pendientes. | QA de una fecha en caja y por centros MDBA; ninguno es una serie de cuenca. El archivo declara `history` 2019; su estado respecto del enmascarado de aguas continentales posterior a 2020 debe revisarse. | Es la ruta con EDA previo más reproducible para un primer spike técnico mensual; esto no selecciona GLDAS como producto científico del MVP. | Lucas: idoneidad/linaje y geometría. Alaín: archivo/manifest y procedencia. César: QA y comparabilidad. FUL-104/105/106. |
+## Pregunta inicial propuesta
 
-Las 240 entradas CMR son inventario de catálogo, no 240 grillas descargadas ni 240 valores válidos de cuenca. PR #9 reporta una sola muestra por producto; sus hashes y dimensiones están documentados, pero los archivos originales/manifests/CSV se conservan fuera de Git y la PR sigue sin merge/revisión. Los detalles y referencias originales por fuente permanecen en [catalog_mvp.json](catalog_mvp.json), [contraste_fuentes.md](contraste_fuentes.md) y [region_murray_darling.md](region_murray_darling.md).
+**¿Cómo varían descriptivamente, en el tiempo, la temperatura del aire a 2 m, la tasa de precipitación y el agua modelada en los primeros 10 cm del suelo en la cuenca Murray–Darling, y qué cobertura y calidad respaldan cada observación?**
 
-## Matriz de decisiones para FUL-107
+Es descriptiva, no causal. Para el primer corte del MVP se propone mostrar una muestra real, su procedencia y sus límites; no se afirma aún una media regional validada, tendencia, anomalía ni significancia. La respuesta temporal solo se habilita cuando la serie y el protocolo superen los gates R y T.
 
-| Decisión pendiente | Evidencia disponible | Evidencia faltante | Quién valida | Tarjeta | Estado |
+## Inventario de evidencia por producto
+
+Convenciones: **DOC** = metadato/documentación; **TEC** = lectura/comprobación ejecutada y descrita; **PARCIAL** = evidencia directa limitada al soporte/periodo indicado; **INF** = recomendación; **PEND** = no verificado. Los estados no son escalas de calidad científica.
+
+| Campo | Temperatura del aire | Precipitación | Agua del suelo superficial |
+| --- | --- | --- | --- |
+| Producto / variable | MERRA-2 `M2TMNXSLV` 5.12.4, `T2M` (aire a 2 m) | GPM IMERG Final `GPM_3IMERGM`, colección 07, archivo `V07B`, `Grid/precipitation` | GLDAS Noah `GLDAS_NOAH025_M` 2.1 / granule 021, `SoilMoi0_10cm_inst` |
+| DOI / origen | [10.5067/AP1B0BA5PD2K](https://doi.org/10.5067/AP1B0BA5PD2K), NASA GMAO/GES DISC | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07), NASA GPM/GES DISC | [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO), NASA GSFC/GES DISC |
+| Evidencia y localizador | FUL-104/105/106; PR #9/#11/#14/#15; granule/manifiesto Release BE-02, SHA en `be-02-sample-workflow.md` | FUL-104/105/106; PR #9/#11/#14/#15; doce granules/manifiestos en Release BE-02, hashes en `be-02-sample-workflow.md` | FUL-103/104/105/106; PR #9/#11/#14/#15; granule/manifiesto en Release/probe y `be-02-sample-workflow.md` |
+| Unidad original / conversión | K; conversión derivada posible `°C = K − 273.15`, conservar K de origen | mm/h (tasa media mensual); no convertir en acumulado sin duración/convención explícitas | kg m⁻²; contenido de agua modelado en capa 0–10 cm, no humedad volumétrica |
+| Resolución nativa y frecuencia | 0,625° lon × 0,5° lat; mensual; NetCDF4 | 0,1° × 0,1°; mensual; HDF5 | 0,25° × 0,25°; mensual; NetCDF4; `_inst` describe campos mensuales derivados de pasos de 3 h según el producto |
+| Periodo inventariado | 240 meses CMR en bbox, 2005-01–2024-12 | 240 meses CMR en bbox, 2005-01–2024-12 | 240 meses CMR en bbox, 2005-01–2024-12 |
+| Datos realmente inspeccionados | Granule original enero 2005; FUL-104 reporta también enero 2021. Se conserva fuera de Git. | Doce granules originales enero–diciembre 2005 en FUL-105; FUL-104 compara enero 2005/2021. | Original enero 2005 y muestra enero 2021 según FUL-104; EDA rectangular de enero 2005 y QA por centros MDBA en FUL-105/106. |
+| QA disponible / aplicado | Fill y finitos; muestra enero 2005/2021. **No** existe regla QA aprobada/aplicada para toda la serie. | Fill/nonfinite revisados; candidatos `precipitationQualityIndex`, `randomError`. No se aplicaron filtros de esos flags. | Fill/nonfinite revisados. QA de proveedor y linaje temporal de máscara de agua pendientes. |
+| Cobertura reportada | Enero 2005: 323 centros MDBA, 323 finitos/no-fill; no porcentaje de área | Enero 2005: 10.092/10.092 centros; los doce meses de 2005 mantienen 10.092/10.092, según notebook; denominador es número de centros | Enero 2005: 1.615/1.617 centros finitos/no-fill; dos faltantes. La caja global FUL-105 tiene otro denominador y no es cobertura de cuenca. |
+| Comparación espacial FUL-104 | Enero 2005, centros vs fracción de área: 299,606 vs 299,730 K | 0,037816 vs 0,037790 mm/h | 15,904 vs 15,945 kg/m² |
+| Estado de evidencia | **PARCIAL** — gránulo NASA abierto y QA básico, no serie regional | **PARCIAL** — doce meses abiertos y panel de 20 centros validado contra grilla; no filtro QA ni serie de 20 años | **PARCIAL** — lectura y muestra espacial; linaje 2005 indeterminado |
+| Limitación principal | Dataset de reanálisis; QA/producto y máscara deben ser revisados; muestra corta | Tasa no es acumulado; `07`/`V07B` requiere semántica concordada por Lucas; flags no filtrados | No se determinó si enero 2005 incorpora corrección posterior de agua interior; no usar como agregado final validado |
+
+**Interpretación correcta de inventarios:** las 240 fechas CMR por producto solo indican granules localizados dentro de un bbox de consulta. No significan 240 descargas, 240 archivos abiertos, valores finitos, valores que superan QA, celdas con cobertura espacial de cuenca, ni una serie regional validada. La Release `be02-samples-2005-v1` distribuye archivos/manifiestos; la copia portable IMERG contiene 240 valores (12 meses × 20 centros), no una muestra representativa de toda el área. Datos originales y geometría permanecen fuera de Git.
+
+## Comparación de alternativas del MVP
+
+| Alternativa | Relevancia y significado | Evidencia / viabilidad | Calidad y dependencias | Visualización y análisis futuro | Recomendación provisional |
 | --- | --- | --- | --- | --- | --- |
-| Distinguir demostración técnica de selección científica | PR #9 documenta una muestra auténtica por producto y QA espacial de una fecha; GLDAS cuenta además con EDA FUL-105. La nota de coordinación enlazada a FUL-99 nombra MERRA-2/T2M Plan A provisional, sin excluir los demás. | Criterios de aceptación de una demostración y ratificación o ajuste de la prioridad provisional para el primer vertical slice regional. | Lucas + equipo; César aporta QA | FUL-104, FUL-107 | Pendiente; no hay producto científico aprobado |
-| Confirmar identidades, versiones, unidades y granules | FUL-104 inspeccionó localmente muestras NASA originales MERRA-2 e IMERG de enero 2005/2021; GLDAS, enero 2005/2021. Archivos y hashes se documentan en el informe, y los binarios siguen fuera de Git. | Reproducir la lectura desde manifiestos/gránulos accesibles al equipo; aclarar `07` frente a `V07B` para IMERG y completar revisión independiente de Lucas. | Lucas + Alaín | FUL-104, FUL-106 | Evidencia local reportada por FUL-104; reproducción/revisión pendiente |
-| Aprobar región y método de selección espacial | PR #9 informa uso de geometría MDBA completa, EPSG:4326 y hash; cuenta centros y faltantes por producto. | Lucas debe confirmar procedencia/CRS/geometría; comparar centros con intersección/área fraccional, sensibilidad y faltantes. El conteo central no pondera superficie. | Lucas; César revisa QA | FUL-104, FUL-107 | Exploratorio; sin método regional aprobado |
-| Aprobar reglas de QA por producto | Fill y candidatos QA están reportados; PR #9 no aplica los filtros auxiliares de IMERG. | Umbrales/reglas por producto, efecto de cada filtro y validación independiente. | Lucas + César | FUL-104, FUL-105, FUL-106 | Pendiente |
-| Establecer condiciones para serie mensual regional | Catálogo CMR inventaría 240 meses por colección; muestras documentadas cubren enero de 2005. | Archivos y manifests por mes, calendario, duplicados/faltantes, cobertura común, criterios QA y método espacial reproducible. | César + Lucas; Alaín entrega archivos | FUL-105, FUL-106, FUL-107 | No hay serie temporal regional |
-| Definir visualización responsable | Frontend sigue como starter Vite y backend expone solo `/health`; una ficha de muestra puede mostrar fecha, fuente, variable, unidad y límites. | Contrato FUL-108 y método validado antes de presentar agregados, mapas de cuenca o tendencias. | Alejandra + César + Lucas | FUL-107, FUL-108 | Puede mostrarse solo evidencia de muestra con advertencias |
+| Aire a 2 m, MERRA-2 `T2M` | Temperatura atmosférica cerca de superficie, útil para describir estado térmico; no es temperatura de superficie terrestre | Muestra mensual nativa 0,5° × 0,625° abierta; enero 2005/2021 reportados por FUL-104 | Revisión QA completa, cobertura y homogeneidad temporal; es reanálisis y no observación directa de estación | Raster nativo de baja/mediana resolución y serie mensual futura | Candidato propuesto para primera serie temporal, condicionado a FUL-110 y Gate R |
+| Precipitación, IMERG Final | Tasa media mensual de precipitación, no total mensual | Grilla 0,1° y doce meses de 2005 abiertos; adecuada para una demo de mapa de granule | Interpretar V07B, flags, valores cero, faltantes y cobertura; método espacial y QA pendientes | Mejor detalle visual de las tres muestras; serie futura no establecida por 12 meses | Propuesta para demo raster acotada, no ranking científico aprobado |
+| Agua del suelo 0–10 cm, GLDAS Noah | Agua modelada en capa superficial, unidad masa/área; no equivalente a humedad volumétrica ni medición in situ | Resolución 0,25°; enero 2005 y 2021; EDA/reproducibilidad ya disponible | Linaje de máscara continental del granule 2005 desconocido; QA y sensibilidad temporal | Demo de valores de un granule posible con caveat; serie depende de resolver linaje | Mantener como variable candidata; no seleccionarla aún para serie regional |
 
-### Tres niveles de alcance
+**Propuesta para que el equipo evalúe:** IMERG permite una demo de grilla/raster etiquetada por fecha, fuente, unidad y QA pendiente; MERRA-2 `T2M` es un candidato condicional para la primera serie; GLDAS continúa en la terna y requiere resolver su linaje 2005. Ninguna alternativa es hoy un producto científicamente aprobado. Las tres fuentes no son independientes ni intercambiables: difieren en magnitud, resolución, método/forzantes y soporte.
 
-| Nivel | Situación actual | Decisión |
+## Región, periodo y agregación espacial
+
+### Región propuesta
+
+Murray–Darling es la región inicial **propuesta** porque la pregunta se formula para la cuenca y se dispone de una geometría MDBA completa reportada como Polygon EPSG:4326, con hash SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`, caché local y referencia de servicio en `region_murray_darling.md`. Antes de uso productivo, Lucas debe revisar la adecuación científica de la geometría y Alaín debe hacer reproducible la distribución/acceso. Confirmar datum, precisión de bordes, licencia/atribución y CRS de los granules. No usar el `LineString` demostrativo del repositorio como polígono. NSW puede ser una futura región administrativa para consulta, no grupo de control independiente ni réplica causal.
+
+### Método de soporte
+
+FUL-104 comparó selección por centro, celdas intersectadas y fracción de área en enero 2005/2021; FUL-105 usa centros para diagnóstico IMERG. En enero de 2005 la diferencia numérica centro/fracción fue pequeña para los tres productos, pero solo se observó en fechas y grillas concretas. No valida método, límites, geometría, cobertura ni faltantes para las otras 240 fechas. La media no ponderada de centros trata cada píxel seleccionado igual y no es media ponderada por superficie.
+
+Matriz a resolver junto a FUL-110:
+
+| Opción | Qué estima | Qué comprobar antes de aprobar |
 | --- | --- | --- |
-| Primera demostración técnica | Las tres muestras de enero de 2005 y QA espacial están reportadas por PR #9; GLDAS tiene además una ruta de EDA ya integrada. La nota de coordinación FUL-99 identifica MERRA-2/T2M como prioridad Plan A provisional para una ruta regional. | FUL-107 debe ratificar el vertical slice; GLDAS puede seguir sirviendo para demostrar EDA y MERRA-2 para la ruta regional prevista, sin elevar ninguno a producto validado. |
-| Primer producto científicamente validado | Ninguna variable tiene serie mensual regional, QA, cobertura y agregación aceptadas por Lucas/equipo. | Aún no existe; FUL-104 y FUL-107 deben resolverlo. |
-| MVP completo | Requiere el alcance temporal/regional acordado, entradas reproducibles, reglas QA, resultados y contrato/UI aprobados. | Propuesto, no construido ni aprobado; no implica descargar los 240 meses antes de acordar el caso. |
+| Centro dentro del polígono | Estadístico de celdas cuyo centro está dentro; límites excluyen cruces sin centro interior | Resolución/área desigual, bordes, huecos y sensibilidad por producto/mes |
+| Intersección | Selecciona celdas que tocan el polígono | Tratamiento de fracción diminuta, duplicidad/topología y pesos efectivos |
+| Fracción de área | Peso por porción de celda que intersecta el polígono | Área geodésica/CRS, antimeridiano/topología, resolución y manejo de celdas faltantes |
+| Media sin ponderar | Igual peso por celda seleccionada | Solo descriptiva; sesgo de área si áreas de celdas difieren; denominar soporte y no llamarla media de cuenca |
 
-## Propuesta provisional para decisión
+**Propuesta:** mantener fracción de área como alternativa a evaluar, sin seleccionarla; no crear agregador en esta tarjeta. Lucas prepara el dictamen científico y prueba sensibilidad por dataset; equipo aprueba método y denominador.
 
-### 1. Primera variable implementable
+### Calendario
 
-Ninguna fuente cumple hoy los requisitos para una serie mensual regional Murray–Darling validada. Si el equipo necesita un **vertical slice técnico**, puede usar GLDAS por su EDA ya integrado o comparar las lecturas de los tres productos inspeccionadas en FUL-104; los archivos originales permanecen fuera de Git y el acceso reproducible para otros checkouts/manifiestos queda por coordinar con Alaín. El EDA GLDAS FUL-105 en caja sigue siendo distinto del conteo por centros MDBA reportado por FUL-106. Esto no selecciona GLDAS como producto científico oficial del MVP ni reduce el alcance de temperatura, lluvia y suelo.
+Ventana objetivo: enero 2005–diciembre 2024 (240 meses por producto, frecuencia mensual). Inventario CMR, archivos descargados, archivos abiertos, observaciones finitas, observaciones post-QA y valores regionales son niveles distintos. Por evidencia del handoff, las ventanas abiertas incluyen: MERRA-2 enero 2005 y muestras comparativas puntuales; IMERG enero–diciembre 2005; GLDAS enero 2005 y muestra comparativa enero 2021. Los valores regionales mensuales de 240 meses **no existen** en el proyecto.
 
-IMERG y MERRA-2 tienen muestras NASA auténticas de enero de 2005 y 2021 inspeccionadas por FUL-104; permanecen pendientes de revisión independiente. IMERG puede ayudar a continuar pruebas geográficas; los métodos comparados aún no están aprobados. La identidad, unidad y estructura de las muestras MERRA-2 están documentadas, pero su QA, pertinencia y uso en una serie deben revisarse.
+Para aceptar la ventana se necesitará: manifest/hash por archivo, identidad homogénea/versionado o explicación de cambios, exactamente un archivo/estado por mes esperado, auditoría de meses faltantes/duplicados, atributos de tiempo/calendario/unidad, reglas QA por periodo, cobertura y método espacial reproducible, registro de meses excluidos y revisión independiente. No imputar ni convertir faltantes a cero.
 
-### 2. Qué requiere una representación de la cuenca
+## Tres niveles de producto
 
-- FUL-106 informa que usó una geometría completa MDBA con atribución/licencia, EPSG:4326 y hash; el original y los CSV no están versionados en la PR. Lucas debe confirmar procedencia y CRS, y Alaín debe facilitar una forma reproducible de acceder al archivo. El segmento `LineString` versionado en el repositorio nunca sirve de máscara.
-- Acordar transformación, precisión de bordes, centros frente a intersecciones, fracción de área, ponderación de celdas y comportamiento ante faltantes.
-- Probar conservación de área, sensibilidad y cobertura en varias fechas/productos; documentar incertidumbre y QA. No adoptar el resultado exploratorio de IMERG de enero de 2005 como método definitivo.
+| Nivel | Permitido cuando | Contenido permitido | Estado actual |
+| --- | --- | --- | --- |
+| A — demo técnica | Granule auténtico/manifiesto reproducibles; identidad/variable/unidad/periodo verificados; fill y finitos contados; procedencia y soporte etiquetados | Ficha de muestra; gráfico/raster de la grilla nativa con fecha y unidad; QA `unassessed`/parcial; mensaje “muestra, sin inferencia ni media validada de cuenca” | Muestras disponibles; demo requiere UI/captions y handoff reproducible |
+| B — serie regional | Gate R aprobado para un producto y ventana especificados | Serie mensual con meses esperados/observados, valor/null, QA, cobertura/denominador, geometría y agregación identificados | No alcanzado |
+| C — tendencias históricas | Nivel B + Gate T y protocolo estadístico validado | Pendiente/unidad temporal, IC y p-value/significancia cuando corresponda, diagnóstico y sensibilidad, límites explícitos | No alcanzado; no calcular en FUL-107 |
 
-### 3. Fuentes que necesitan más validación
+## Gates de publicación
 
-Las tres. FUL-104 inspeccionó gránulos NASA nativos por producto y reporta la comparación espacial de dos meses; todavía requiere reproducción y revisión independiente del equipo. Para MERRA-2 falta acordar QA; para IMERG, confirmar la nomenclatura de versión y semántica temporal y acordar filtro QA; para GLDAS, QA de serie y linaje histórico. En todas faltan reglas acordadas y una serie regional mensual validada.
+| Gate | Insumos y comprobaciones concretas | Evidencia de aprobación | Responsable | Estado y faltante |
+| --- | --- | --- | --- | --- |
+| **D — demo exploratoria** | Original + manifest SHA/tamaño; identificadores de producto/variable/DOI/versión; unidad/tiempo; forma y resolución; total, fill, no finitos y válidos; indicar si QA proveedor se aplicó; declarar “grilla global”, “celda”, “punto” o máscara por centros; si hay geometría, origen/CRS/hash; título/caption con fecha y no representatividad | Registro de lectura repetible y captura/caption que muestra fuente, periodo, unidad, soporte, QA state, faltantes y límite de muestra | Alaín reproducibilidad, César semántica, Alejandra presentación | Parcial; cierre al ejecutar y revisar presentación de la demo |
+| **R — serie regional** | Todos los meses de la ventana/cobertura declarada; inventario y manifest por granule; versionado/unidad/calendario; QA por proveedor/fecha; geometry license/hash/CRS; máscara/ponderación escogidas; denominador por mes; porcentaje/área válida; política para mes parcial/faltante; reproducibilidad end-to-end; sensibilidad y comparación independiente | Reporte de 240 estados mensuales; checks por cada producto y periodo; config/versionado; validación independiente de valores y cobertura; acta que aprueba el método para producto/región/ventana | Alaín pipeline, Lucas dictamen científico, César análisis; equipo aprueba | No aprobado; no hay serie procesada ni método aceptado |
+| **T — tendencia** | Serie R completa o ventana declarada con regla de suficiencia; estacionalidad/calendario; autocorrelación; faltantes; rupturas/homogeneidad; outliers; hipótesis/método; pendiente/unidad; incertidumbre/IC y p-value si procede; corrección multiplicidad si varias pruebas; sensibilidad de inicio/final y especificación reproducible | Protocolo previo, diagnósticos, resultados reproducibles, incertidumbre y límites, revisión científica independiente; sin causalidad implícita | César + Lucas y revisor del equipo | No aprobado; no existe serie regional ni modelo validado |
+| **M — mapas** | Grilla/coords/orientación y CRS; nodata; geometría y transformación; leyenda/unidad/escala; reglas de QA; reproyección/remuestreo adecuado a variable; máscara y versión; para anomalía, baseline explícito; para significancia espacial, dependencia/autocorrelación y multiplicidad | QA raster por muestra/periodo, prueba de alineación, archivo de configuración y leyenda con soporte y limitaciones | Lucas geoespacial/ciencia, Alaín pipeline, Alejandra UI | Solo demo de raster nativo con Gate D; regional/anomalía/significancia bloqueados por R/T |
 
-### 4–6. Gráficos, meses y mapas
+## Registro de decisiones
 
-Hoy no hay base suficiente para un gráfico mensual **regional de cuenca**: CMR ofrece inventario y las muestras no constituyen la serie procesada. Puede presentarse como artefacto de investigación una visualización de una muestra mensual o el piloto puntual NASA POWER, etiquetando fuente, fecha, soporte espacial, cobertura y limitaciones; no llamarla tendencia de la cuenca.
+El registro detallado, opciones, riesgos, responsables, pruebas pendientes y estado (Proposed/Pending) está en [AZ-03 de `decisions.md`](decisions.md#az-03--definición-del-alcance-científico-inicial-de-anomaly-zero). Ningún elemento se marca Approved. Decisiones mínimas: región; demo/variable; primera serie; terna; horizonte; método espacial; QA; faltantes; visualización; raster; inferencia; campos de contrato.
 
-No se ha demostrado disponibilidad de 240 meses de píxeles válidos para ningún producto. Hay 240 meses inventariados en CMR; muestras directas/derivadas disponibles cubren solo ciertos archivos/meses. Los mapas temporales requieren grillas por fecha armonizadas, QA, geometría y método espacial, por lo que no están justificados todavía.
+## Transferencia y compatibilidad FUL-108/UI
 
-### 7. Requisitos para tendencias
+### Para Alaín / FUL-108
 
-Primero una serie regional mensual verificable con meses esperados/observados, faltantes, cobertura y QA. Después, decisión científica sobre continuidad, estacionalidad, autocorrelación, definición de anomalía, modelo/prueba, incertidumbre, supuestos y validación independiente. No especifica ni aprueba aquí un test, pendiente o umbral estadístico.
+El contrato debe poder preservar colección, DOI/product ID/version, variable, unidad nativa y conversiones, periodo/calendario, geometría/CRS/hash, soporte espacial y su estado de aprobación/referencia, denominadores/cobertura, conteos faltantes/QA, flags y regla QA versionada, manifest/hash/provenance, snapshot/código de procesamiento, y método/métricas estadísticas nullable. `0` es valor observado; `null` es no disponible/no calculado. La PR #13 abierta ya representa states de disponibilidad, provenance, coverage, quality, transformations, method/metrics y variantes de soporte (`point_sample`, `descriptive_mean`, `regional_aggregate`). Verificar que `approved` requiera referencia aprobatoria verificable y que `unassessed` no se confunda con QA exitoso. Esta observación no modifica ni aprueba PR #13.
 
-### 8. Información que FUL-108 debería preservar
+### Para Alejandra / UI
 
-Sin definir schemas ni endpoints, los contratos deberían poder transportar: producto, versión, colección/DOI, variable, unidad original y conversión aplicada, tiempo/periodo/calendario, región y geometría/CRS, método de selección y ponderación, total/válido/faltante/cobertura, indicadores QA y sus reglas, procedencia/hashes del archivo y del derivado, versión de procesamiento, incertidumbre, estado (incluidos `no_data`/`partial`/`pending`) y métricas no disponibles como `null`.
+Estados propuestos: disponibilidad `available`, `partial`, `no_data`; QA `unassessed`, `partial`, `passed`, `failed` únicamente tras definir criterios; análisis `not_available`, `pending`, `complete`; soporte espacial `point_sample`, `descriptive_mean`, `regional_aggregate` con badge de estado. Mostrar producto/versión, variable/unidad, periodo, fuente, cobertura/denominador, QA y limitaciones cerca del gráfico. No implementar componentes aquí ni comunicar `null` como cero.
 
-## Discrepancia de alcance de FUL-105
+### Para Lucas / FUL-110
 
-Según el contexto recibido, Linear muestra FUL-105 como `Done` tras fusionarse la PR #7, aunque el texto original cubre los tres productos y un informe metodológico. No se modificó tarjeta ni dependencia. Se recomienda al equipo la **opción A**: conservar el objetivo original y volver la tarjeta a In Progress hasta completar las variables y metodología. Alternativamente, la opción B conserva FUL-105 como el primer EDA GLDAS y crea explícitamente una sucesora para MERRA-2, IMERG y el plan científico. Ambas requieren acuerdo del equipo; no se ejecuta ninguna aquí.
+Solicitar dictamen sobre interpretación/QA de cada colección; priorización de la variable; método espacial por producto; geometría, CRS y sensibilidad; significado de `V07B`/colección `07`; linaje GLDAS 2005; viabilidad de raster y condiciones para mapas derivados. No se duplica ni edita `docs/apoyo-cientifico-az03.md`.
 
-## Preguntas de revisión
+## Backlog científico propuesto (no crear tarjetas aún)
 
-- **Lucas:** ¿es correcta la prioridad técnica GLDAS como muestra de trabajo, manteniendo sin decisión el producto/región científica? ¿Qué linaje y criterio QA exige la muestra GLDAS de 2005? ¿Qué método de polígono/borde debe probarse a continuación?
-- **Alaín:** ¿puedes facilitar originales y manifests de las tres muestras de enero de 2005 documentadas en la PR #9 (`e2174d5`) para reproducir inspección y QA, y confirmar sus limitaciones de acceso/versión? La PR sigue Draft y sus datos no están en Git.
-- **César:** ¿qué checks de QA y cobertura deben ser puerta antes de construir una serie? ¿Qué soporte temporal/unidad se conserva para comparar variables?
-- **Equipo:** ¿FUL-105 sigue In Progress con el objetivo original o se divide en avance GLDAS y tarjeta sucesora? ¿Qué evidencia mínima habilita FUL-107 y después FUL-108?
+| Trabajo | Entregable/aceptación sugerida | Dependencias | Responsable sugerido | Riesgo |
+| --- | --- | --- | --- | --- |
+| Ingesta mensual histórica | Estado de 240 meses por producto, archivos/manifests y hashes, control de duplicados, faltantes e idempotencia | Alcance y acceso/licencias aprobados | Alaín | Inventario no garantiza descarga |
+| QA por producto/mes | Reglas de fill/flags justificadas, conteos antes/después y sensibilidad temporal | FUL-110, docs oficiales | Lucas + César | Umbral arbitrario y sesgo |
+| Normalización espacial | Geometry/CRS/versiones, alineación, prueba de bordes y método elegido | AZ03-D01/D06 | Alaín + Lucas | Pérdida de soporte/señal |
+| Serie regional reproducible | Un estado/valor/null por mes con cobertura, QA, provenance y método | Gate R, FUL-108 | Data Science + Backend | Huecos ocultos |
+| Snapshots/versionado | Derivado inmutable con hashes y configuración/código identificados | Estrategia de storage | Alaín | No reproducibilidad del resultado |
+| Motor estadístico | Implementación posterior de método aprobado y diagnósticos; métricas nullables cuando no se calculan | Serie R + Gate T | César + Lucas | Significancia engañosa |
+| Validación de tendencias | Pruebas/sensibilidad, incertidumbre, homogeneidad e informe reproducible | Motor estadístico | César + Lucas | Rupturas y falsos positivos |
+| Mapas temporales | Raster/salida cartográfica con nodata, QA, procedencia, CRS y leyenda | Gates R/M; almacenamiento raster | Alaín + Alejandra + Lucas | Resolución aparente y reproyección |
+
+## Limitaciones, aprobación y siguiente paso
+
+- La geometría, las reglas QA, el método espacial, la prioridad del producto y la primera serie siguen **propuestos o pendientes**. Los resultados FUL-104 son sensibilidad de muestras, no consenso metodológico.
+- No hay una serie regional de 240 meses, tendencia, p-value, anomalía ni significancia espacial aprobados.
+- FUL-110, revisión de Alaín y decisión explícita del equipo son requisitos para pasar de Draft a Ready y considerar cierre de FUL-107. La rama inicial puede documentar evidencia ya integrada sin esperar FUL-110; la conclusión y el merge no deben anticiparse.
+- Al publicarse FUL-110: contrastar cada fila con las fuentes, registrar coincidencias/discrepancias, actualizar la recomendación con evidencia, solicitar a Alaín reproducción/contrato y a Alejandra confirmar estados de UI, registrar aprobaciones con autor/fecha/referencia, actualizar Linear y solo entonces solicitar revisión final.
