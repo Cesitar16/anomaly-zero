@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "purpose": "Input provenance for the FUL-111 spatial audit; original NASA granules and full boundary geometry are not included in Git.",
+  "audited_periods": ["2005-01", "2021-01"],
+  "samples": [
+    {
+      "file": "MERRA2_300.tavgM_2d_slv_Nx.200501.nc4",
+      "product": "MERRA-2",
+      "collection": "M2TMNXSLV v5.12.4 (filename stream 300)",
+      "variable": "T2M",
+      "units": "K",
+      "period": "2005-01",
+      "bytes": 54419597,
+      "sha256": "103d95aa3ffe9b8d7e98caea5f6a764831bad3b70155370d3a84c2dfd95616c6"
+    },
+    {
+      "file": "MERRA2_400.tavgM_2d_slv_Nx.202101.nc4",
+      "product": "MERRA-2",
+      "collection": "M2TMNXSLV v5.12.4 (filename stream 400)",
+      "variable": "T2M",
+      "units": "K",
+      "period": "2021-01",
+      "bytes": 78841049,
+      "sha256": "2f1ec2cd12fd0f8e910c23956fc010f942c1cc7bf88454445fd012361fb0244d"
+    },
+    {
+      "file": "3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5",
+      "product": "IMERG Final",
+      "collection": "GPM_3IMERGM collection 07; granule V07B",
+      "variable": "Grid/precipitation",
+      "units": "mm/hr",
+      "period": "2005-01",
+      "bytes": 18028945,
+      "sha256": "bac3b9bc5ee8cc3eb1e5fe844778d54fd86e2b722813055b37f3872e6e4c73d5"
+    },
+    {
+      "file": "3B-MO.MS.MRG.3IMERG.20210101-S000000-E235959.01.V07B.HDF5",
+      "product": "IMERG Final",
+      "collection": "GPM_3IMERGM collection 07; granule V07B",
+      "variable": "Grid/precipitation",
+      "units": "mm/hr",
+      "period": "2021-01",
+      "bytes": 18135691,
+      "sha256": "fd4932244b891beca7d87b61e290df182592d11227d037a4c02069bfd131bf5f"
+    },
+    {
+      "file": "GLDAS_NOAH025_M.A200501.021.nc4",
+      "product": "GLDAS Noah",
+      "collection": "GLDAS_NOAH025_M 2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "units": "kg m-2",
+      "period": "2005-01",
+      "bytes": 25075859,
+      "sha256": "5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593"
+    },
+    {
+      "file": "GLDAS_NOAH025_M.A202101.021.nc4",
+      "product": "GLDAS Noah",
+      "collection": "GLDAS_NOAH025_M 2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "units": "kg m-2",
+      "period": "2021-01",
+      "bytes": 24908188,
+      "sha256": "4580e2cea40b8f50a13f6438298b09c086037cf0565796ad9763259b5aec4d64"
+    }
+  ],
+  "basin_geometry": {
+    "source_item_id": "ba731d77d80947fbbcbf7524364372ff",
+    "source_url": "https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json",
+    "feature_service": "https://services8.arcgis.com/5xxEi7I2m6ml97fE/arcgis/rest/services/boundary_gdb/FeatureServer/0",
+    "publisher": "MDBAGISPUBLISHER",
+    "attributed_agency": "Australian Government DCCEEW",
+    "declared_license": "CC BY 4.0 (verify conditions for derivatives before redistribution)",
+    "retrieved_utc": "2026-11-14",
+    "export_crs": "EPSG:4326",
+    "geometry_type": "Polygon",
+    "polygon_count": 1,
+    "ring_count": 1,
+    "hole_count": 0,
+    "vertex_count_including_closure": 14138,
+    "sha256": "d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53"
+  },
+  "notes": [
+    "NASA sample SHA-256 values were calculated from the authentic local files used in the audit; verify them against local inputs before reproducing.",
+    "The full geometry file and NASA granules are kept in ignored local data/cache and data/raw directories, not committed.",
+    "The documented 12-vertex LineString is only a snippet and is not the mask geometry.",
+    "Full NASA DOI/collection provenance is documented in docs/validacion_cientifica_ful104.md."
+  ]
+}

@@ -12,15 +12,15 @@
 
 | Insumo | Evidencia observada | Interpretación / límite |
 |---|---|---|
-| Límite MDBA | GeoJSON local ignorado por Git `data/cache/ful-102/mdba_boundary_4326.geojson`; SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`; un `Polygon`, 14.138 vértices, CRS exportado EPSG:4326; la comprobación automatizada requiere polígono válido. | No confundir con el `LineString` de 12 vértices versionado en `docs/examples`. La caché no es parte del commit ni se redistribuye. El ítem ArcGIS declara CC BY 4.0; verificar atribución/condiciones de derivados antes de publicarlos. Fuente y fecha de consulta previas: ficha ArcGIS MDBA consultada el 2026-11-14 UTC, documentada en `docs/region_murray_darling.md`. |
-| CRS de análisis | Polígono y esquinas de celda se transforman de EPSG:4326 a EPSG:3577 (GDA94 / Australian Albers), mediante pyproj; las celdas se forman en coordenadas geográficas y se proyectan por sus esquinas. | No se densifican bordes. La operación de datum seleccionada por PROJ y los segmentos proyectados son supuestos del ensayo, no prueba de precisión posicional. |
-| NASA | MERRA-2 `T2M` enero 2005/2021; IMERG Final `Grid/precipitation` V07B enero 2005/2021; GLDAS Noah `SoilMoi0_10cm_inst` enero 2005/2021. | Los seis archivos se hallaron en `data/raw/nasa/ful104` del checkout local de FUL-104. Los valores y hashes se regeneran en `data/cache/ful111/spatial_audit.json`, excluido de Git. |
+| Límite MDBA | GeoJSON local ignorado por Git `data/cache/ful-102/mdba_boundary_4326.geojson`; SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`; un `Polygon`, 1 anillo, 0 agujeros y 14.138 vértices contando cierre; CRS exportado EPSG:4326. | No confundir con el `LineString` de 12 vértices versionado en `docs/examples`. La caché no es parte del commit ni se redistribuye. El ítem ArcGIS declara CC BY 4.0; verificar atribución/condiciones de derivados antes de publicarlos. Fuente y fecha de consulta: ficha ArcGIS MDBA consultada el 2026-11-14 UTC, documentada también en `docs/region_murray_darling.md`. |
+| CRS de análisis | Polígono y esquinas de celda se transforman de EPSG:4326 a EPSG:3577 (GDA94 / Australian Albers), mediante `pyproj.Transformer.from_crs(..., always_xy=True)`. Operación PROJ observada: “Inverse of GDA94 to WGS 84 (1) + Australian Albers (with axis order normalized for visualization)”; definición `proj=pipeline step proj=unitconvert xy_in=deg xy_out=rad step proj=aea lat_0=0 lon_0=132 lat_1=-18 lat_2=-36 x_0=0 y_0=0 ellps=GRS80`; exactitud declarada 3 m. | No se densifican bordes. La operación de datum seleccionada es aproximada (3 m) y los segmentos proyectados son supuestos del ensayo, no prueba de precisión posicional. |
+| NASA | MERRA-2 `T2M` enero 2005/2021; IMERG Final `Grid/precipitation` V07B enero 2005/2021; GLDAS Noah `SoilMoi0_10cm_inst` enero 2005/2021. | Los seis archivos se hallaron en `data/raw/nasa/ful104` del checkout local de FUL-104. Sus SHA-256 y tamaños están versionados en [`nasa-03-manifiesto-insumos.json`](nasa-03-manifiesto-insumos.json). La salida de cálculo detallada sigue en `data/cache/ful111/spatial_audit.json`, excluida de Git. |
 
-La ventana de medición usa exclusivamente los meses inspeccionados. No se encontraron/analizaron aquí los otros diez meses IMERG de 2005; por tanto, no se afirma sensibilidad estacional.
+La ventana de medición usa exclusivamente los meses inspeccionados. Se buscaron gránulos IMERG de 2005 en `data/raw/nasa` del checkout original, `E:\Descargas` y `C:\Users\LzzZ\Downloads`; solo estaba enero de 2005. No se afirma sensibilidad estacional y no se exigen descargas nuevas.
 
 ## Método reproducible
 
-El script `research/auditar_espacial_ful104.py` comprueba la geometría poligonal, calcula centros cubiertos con `covers`, construye celdas desde bounds declarados o, cuando no existen, desde coordenadas y resolución nominal inferida. Intersecta esas celdas con el polígono proyectado y calcula pesos por área. Missing, valores no finitos y fill no cuentan como válidos; cero se conserva como valor numérico válido. No se aplica QA científica.
+El script `research/auditar_espacial_ful104.py` comprueba tipo, validez topológica y anillos de la geometría, calcula centros cubiertos con `covers`, construye celdas desde bounds declarados o, cuando no existen, desde coordenadas y resolución nominal inferida. Intersecta esas celdas con el polígono proyectado y calcula pesos por área. El informe desglosa por celdas intersectadas valores no finitos, fill, finitos no-fill y ceros válidos. No se aplica QA científica.
 
 En esta corrida las celdas MERRA-2 y GLDAS no declaran bounds en la función lectora: sus límites se infieren de la grilla nominal. IMERG usa bounds del HDF5, pero los límites float32 presentan discrepancias de continuidad ya descritas en FUL-104. Estos supuestos afectan tanto las celdas parciales como el cierre de áreas.
 
@@ -34,7 +34,7 @@ uv run python -m research.auditar_espacial_ful104 `
   --output data\cache\ful111\spatial_audit.json
 ```
 
-Los datos NASA, geometrías cacheadas y resultado JSON no se versionan. `--data-dir`, `--mdba-geojson`, `--nsw-zip` y `--output` permiten ejecutarlo desde otro checkout sin copiar insumos al repositorio. El comando exige las seis muestras NASA obligatorias y termina con error si alguna falta o no se procesa.
+Los datos NASA, geometrías cacheadas y resultado JSON no se versionan. `--data-dir`, `--mdba-geojson`, `--nsw-zip` y `--output` permiten ejecutarlo desde otro checkout sin copiar insumos al repositorio. `docs/nasa-03-manifiesto-insumos.json` preserva metadatos y checksums de las muestras auténticas inspeccionadas. El comando exige las seis muestras NASA obligatorias y termina con error si alguna falta o no se procesa.
 
 ## Resultados de seis muestras
 
@@ -48,6 +48,8 @@ Las áreas están en km²; las medias conservan la unidad original de cada varia
 | IMERG, 2021-01, mm/hr | 10.092/10.092 | 10.467/10.467 | 747 (372/375) | 1.058.622,38 | 1.058.622,38 | 1.058.574,00 | 100,0000 % | **100,0046 %** | 0,08535692 | 0,08552790 |
 | GLDAS, 2005-01, kg/m² | 1.615/1.617 | 1.749/1.756 | 281 (142/139) | 1.058.574,00 | 1.057.349,08 | 1.058.574,00 | 99,8844 % | 99,8844 % | 15,90424858 | 15,94506722 |
 | GLDAS, 2021-01, kg/m² | 1.615/1.617 | 1.749/1.756 | 281 (142/139) | 1.058.574,00 | 1.057.349,08 | 1.058.574,00 | 99,8844 % | 99,8844 % | 18,71877499 | 18,75333999 |
+
+Los estados de valores en las celdas intersectadas son mutuamente distinguibles: el conteo de fill/non-finite/cero válido fue MERRA-2 2005 `0/0/0`, MERRA-2 2021 `0/0/0`, IMERG 2005 `0/0/227`, IMERG 2021 `0/0/0`, GLDAS 2005 `7/0/0` y GLDAS 2021 `7/0/0`. En todas las muestras restantes, `finite_non_fill` coincide con total menos fill y no finitos. Un cero válido se mantiene en el conjunto de datos; no se elimina por valor.
 
 ### Interpretación
 
@@ -85,19 +87,20 @@ La prueba con grilla redondeada en FUL-104 queda como sensibilidad previa, no co
 
 | Criterio | Evidencia en esta entrega | Estado |
 |---|---|---|
-| Método/insumos trazables | Comando configurable; hashes y manifiesto JSON para seis muestras; SHA de polígono documentado. | TEC/PARCIAL |
+| Método/insumos trazables | Comando configurable; manifiesto versionado de seis muestras con nombres, versiones, tamaños y SHA-256; SHA de polígono documentado. | TEC |
 | Reproducir FUL-104 | Conteos y seis ensayos regenerados; límites y diferencias explicados. | TEC |
-| CRS/datum/bounds/polígono | Polygon íntegro validado; CRS y supuestos descritos; LineString excluido. | TEC/PARCIAL |
+| CRS/datum/bounds/polígono | Polygon íntegro con anillos/agujeros/validez; CRS, operación PROJ, exactitud declarada, bounds y supuestos descritos; LineString excluido. | TEC/PARCIAL |
 | Conteos y áreas con denominadores | Tabla separa conteos, `A_intersection`, `A_valid`, `A_basin` y ambos cocientes. | TEC |
-| Centro vs fracción/sensibilidad | Seis muestras en dos fechas; no hay meses adicionales IMERG abiertos. | TEC/PARCIAL |
-| Missing/fill/cero y QA | Missing/fill no válidos; ceros permanecen válidos; sin filtro QA. | TEC |
-| Pruebas offline | Casos sintéticos de selección, faltantes y geometría poligonal/LineString. | TEC |
+| Centro vs fracción/sensibilidad | Seis muestras en dos fechas; se buscaron archivos locales IMERG 2005 en checkout y Descargas, solo enero está disponible. | TEC |
+| Missing/fill/cero y QA | Salida por muestra reporta total, no finito, fill, finito no-fill y cero válido; sin filtro QA. | TEC |
+| Pruebas offline | Casos sintéticos de selección, borde tocante, área parcial, cierre de áreas, faltantes/fill/cero y geometría válida/inválida. | TEC |
 | Límites/licencia/preguntas | Riesgos y cinco preguntas concretas para decisión humana. | DOC/INF/PEND |
 | CI y PR para revisión | Verificaciones locales y checks backend/frontend de GitHub exitosos; PR [#19 hacia `dev`](https://github.com/Cesitar16/anomaly-zero/pull/19) abierta y revisión solicitada a César. | TEC/PEND |
 
 ## Fuentes
 
 - [`docs/region_murray_darling.md`](region_murray_darling.md): ítem y servicio MDBA, fecha, licencia declarada, hash de geometría y resultados exploratorios previos.
+- [`docs/nasa-03-manifiesto-insumos.json`](nasa-03-manifiesto-insumos.json): checksums y metadatos de los seis gránulos NASA y del polígono MDBA realmente inspeccionados.
 - [`docs/validacion_cientifica_ful104.md`](validacion_cientifica_ful104.md) y FUL-104: inventario científico de muestras, unidades y límites.
 - [`research/auditar_espacial_ful104.py`](../research/auditar_espacial_ful104.py) y [`test_ful104_spatial_audit.py`](../research/tests/test_ful104_spatial_audit.py): cálculo y pruebas reproducibles.
 - Fuentes MDBA citadas en el informe regional: [ítem ArcGIS MDBA](https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json) y [FeatureServer capa 0](https://services8.arcgis.com/5xxEi7I2m6ml97fE/arcgis/rest/services/boundary_gdb/FeatureServer/0).
