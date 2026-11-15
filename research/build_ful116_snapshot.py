@@ -7,9 +7,12 @@ import calendar
 import hashlib
 import io
 import json
+import os
 import re
+import tempfile
 import zipfile
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +50,7 @@ class Granule:
     manifest: dict[str, Any]
     sha256: str
     manifest_sha256: str
+    synthetic: bool
 
 
 def sha256_file(path: Path) -> str:
@@ -76,6 +80,66 @@ def _header(value: Any) -> dict[str, str]:
     }
 
 
+def _manifest_is_synthetic(manifest: dict[str, Any], path: Path, month: str) -> bool:
+    marker = manifest.get("synthetic_fixture", False)
+    if not isinstance(marker, bool):
+        raise TypeError(f"Marca synthetic_fixture inválida en {path.name}")
+    if marker:
+        source = manifest.get("source")
+        if (
+            type(manifest.get("manifest_version")) is not int
+            or manifest.get("manifest_version") != 1
+            or not isinstance(manifest.get("fixture_id"), str)
+            or not manifest["fixture_id"].strip()
+            or not isinstance(source, dict)
+            or source.get("provider") != "synthetic test fixture"
+        ):
+            raise ValueError(f"Procedencia sintética incompleta o contradictoria: {path.name}")
+        return True
+
+    product = manifest.get("product")
+    period = manifest.get("period")
+    source = manifest.get("source")
+    if not all(isinstance(value, dict) for value in (product, period, source)):
+        raise ValueError(f"Manifest sin metadatos de procedencia completos: {path.name}")
+    expected_start = f"2005-{month}-01T00:00:00.000Z"
+    expected_end = (
+        f"2005-{month}-{calendar.monthrange(2005, int(month))[1]:02d}T23:59:59.999Z"
+    )
+    granule_id = manifest.get("granule_id")
+    collection_metadata = source.get("collection_metadata")
+    granule_metadata = source.get("granule_metadata")
+    retrieved_at = manifest.get("downloaded_at_utc")
+    try:
+        retrieved = datetime.fromisoformat(retrieved_at)
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError(f"Timestamp de recuperación inválido: {path.name}") from exc
+    if (
+        type(manifest.get("manifest_version")) is not int
+        or manifest.get("manifest_version") != 1
+        or product.get("doi") != DOI
+        or period.get("start") != expected_start
+        or period.get("end") != expected_end
+        or source.get("provider") != "NASA GES DISC via Earthdata CMR"
+        or not isinstance(granule_id, str)
+        or re.fullmatch(r"G\d+-GES_DISC", granule_id) is None
+        or manifest.get("producer_granule_id") != f"GPM_3IMERGM.07:{path.name}"
+        or collection_metadata != f"https://cmr.earthdata.nasa.gov/search/concepts/{COLLECTION_ID}.umm_json"
+        or granule_metadata != f"https://cmr.earthdata.nasa.gov/search/concepts/{granule_id}.umm_json"
+        or retrieved.utcoffset() != timedelta(0)
+    ):
+        raise ValueError(f"Procedencia NASA/CMR insuficiente o incompatible: {path.name}")
+    return False
+
+
+def _resolve_synthetic_flag(flags: list[bool]) -> bool:
+    if not flags or any(not isinstance(flag, bool) for flag in flags):
+        raise ValueError("No se pudo clasificar la procedencia de todos los granules")
+    if len(set(flags)) != 1:
+        raise ValueError("No se permite mezclar granules NASA reales y fixtures sintéticos")
+    return flags[0]
+
+
 def discover_granules(input_dir: Path, *, require_complete: bool = True) -> list[Granule]:
     if not input_dir.is_dir():
         raise FileNotFoundError(f"No existe el directorio de granules: {input_dir}")
@@ -93,8 +157,14 @@ def discover_granules(input_dir: Path, *, require_complete: bool = True) -> list
         if not manifest_path.is_file():
             raise FileNotFoundError(f"Falta manifest NASA para {path.name}")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict):
+            raise TypeError(f"Manifest debe ser un objeto JSON: {manifest_path.name}")
+        synthetic = _manifest_is_synthetic(manifest, path, month)
         expected_filename = manifest.get("filename")
         product = manifest.get("product") or {}
+        source = manifest.get("source") or {}
+        if not isinstance(product, dict) or not isinstance(source, dict):
+            raise TypeError(f"Secciones product/source inválidas: {path.name}")
         if expected_filename != path.name:
             raise ValueError(f"Nombre difiere del manifest: {path.name}")
         if (
@@ -105,7 +175,7 @@ def discover_granules(input_dir: Path, *, require_complete: bool = True) -> list
             or manifest.get("collection_id") != COLLECTION_ID
         ):
             raise ValueError(f"Identidad de colección/producto incompatible: {path.name}")
-        if manifest.get("source", {}).get("provider") != "NASA GES DISC via Earthdata CMR":
+        if not synthetic and source.get("provider") != "NASA GES DISC via Earthdata CMR":
             raise ValueError(f"Origen no verificado como NASA GES DISC: {path.name}")
         if (manifest.get("period") or {}).get("month") != f"2005-{month}":
             raise ValueError(f"Período del manifest incompatible: {path.name}")
@@ -120,6 +190,7 @@ def discover_granules(input_dir: Path, *, require_complete: bool = True) -> list
             manifest=manifest,
             sha256=digest,
             manifest_sha256=manifest_digest,
+            synthetic=synthetic,
         )
 
     expected = [f"{month:02d}" for month in range(1, 13)]
@@ -131,7 +202,9 @@ def discover_granules(input_dir: Path, *, require_complete: bool = True) -> list
         )
     if not found:
         raise FileNotFoundError("No hay ningún granule IMERG NASA de 2005 verificable")
-    return [found[month] for month in sorted(found)]
+    granules = [found[month] for month in sorted(found)]
+    _resolve_synthetic_flag([granule.synthetic for granule in granules])
+    return granules
 
 
 def load_point(path: Path) -> dict[str, Any]:
@@ -279,6 +352,20 @@ def _deterministic_npz(arrays: dict[str, np.ndarray]) -> bytes:
     return output.getvalue()
 
 
+def _atomic_write(path: Path, payload: bytes) -> None:
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as temporary:
+            temporary.write(payload)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+            temporary_path = Path(temporary.name)
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
+
+
 def _build_preview(
     granule: Granule,
     *,
@@ -299,9 +386,18 @@ def _build_preview(
         values = np.asarray(
             grid["precipitation"][0, lon_idx[0] : lon_idx[-1] + 1, lat_idx[0] : lat_idx[-1] + 1]
         )
-        fill_raw = grid["precipitation"].attrs.get("_FillValue", FILL_CODE_MISSING)
+        field = grid["precipitation"]
+        fill_raw = field.attrs.get("_FillValue", field.attrs.get("CodeMissingValue", FILL_CODE_MISSING))
         fill = np.asarray(fill_raw, dtype=values.dtype).item()
         fill_mask = values == fill
+        code_missing = field.attrs.get("CodeMissingValue")
+        code_missing_value: float | None = None
+        if code_missing is not None:
+            try:
+                code_missing_value = float(code_missing)
+                fill_mask |= np.isclose(values, code_missing_value, rtol=1e-6, atol=1e-8)
+            except (TypeError, ValueError):
+                raise ValueError(f"CodeMissingValue inválido en {granule.path.name}")
         nonfinite_mask = ~np.isfinite(values) & ~fill_mask
         valid_mask = np.isfinite(values) & ~fill_mask
         arrays = {
@@ -326,6 +422,7 @@ def _build_preview(
             "dtype": str(values.dtype),
             "units": UNITS,
             "fill_value": float(fill),
+            "code_missing_value": code_missing_value,
             "qa_status": "unassessed",
             "qa_fields_present_not_applied": [name for name in QA_FIELDS if name in h5],
             "label": "Muestra NASA exploratoria; no es un promedio regional ni precipitación acumulada.",
@@ -352,8 +449,6 @@ def build_snapshot(
     preview_bytes, preview = _build_preview(granules[0], bbox=bbox)
     output_dir.mkdir(parents=True, exist_ok=True)
     preview_name = "imerg_2005-01_bbox_preview.npz"
-    preview_path = output_dir / preview_name
-    preview_path.write_bytes(preview_bytes)
     preview["path"] = preview_name
     preview["sha256"] = hashlib.sha256(preview_bytes).hexdigest()
     preview["bytes"] = len(preview_bytes)
@@ -363,6 +458,7 @@ def build_snapshot(
     source_records = [
         {
             "period": f"2005-{granule.month}",
+            "source_class": "synthetic_fixture" if granule.synthetic else "verified_nasa_granule",
             "granule_id": granule.manifest.get("granule_id"),
             "producer_granule_id": granule.manifest.get("producer_granule_id"),
             "filename": granule.path.name,
@@ -376,7 +472,7 @@ def build_snapshot(
             "bytes": granule.path.stat().st_size,
             "manifest_sha256": granule.manifest_sha256,
             "retrieved_at": granule.manifest.get("downloaded_at_utc"),
-            "source_metadata_url": granule.manifest.get("source", {}).get("granule_metadata"),
+            "source_metadata_url": granule.manifest["source"].get("granule_metadata"),
         }
         for granule in granules
     ]
@@ -392,14 +488,16 @@ def build_snapshot(
             "longitude_index": actual_coordinates["longitude_index"],
         },
         "granule_sha256s": [record["sha256"] for record in source_records],
+        "manifest_sha256s": [record["manifest_sha256"] for record in source_records],
     }
+    is_synthetic = _resolve_synthetic_flag([granule.synthetic for granule in granules])
     dataset_id = "imerg-2005-point-" + hashlib.sha256(canonical_json(input_fingerprint)).hexdigest()[:20]
     fill = samples[0]["fill_value"]
     qa_fields = sorted({field for sample in samples for field in sample["qa_source_fields_present"]})
     snapshot: dict[str, Any] = {
         "snapshot_schema_version": "1.0.0",
         "dataset_id": dataset_id,
-        "synthetic": all(granule.manifest.get("synthetic_fixture") is True for granule in granules),
+        "synthetic": is_synthetic,
         "product": {
             "product_id": PRODUCT,
             "short_name": PRODUCT,
@@ -463,8 +561,8 @@ def build_snapshot(
             "uninterpreted_provider_fields": qa_fields,
         },
         "provenance": {
-            "agency": "NASA",
-            "distributor": "GES DISC via Earthdata CMR",
+            "agency": None if is_synthetic else "NASA",
+            "distributor": "synthetic test fixture" if is_synthetic else "GES DISC via Earthdata CMR",
             "collection_id": COLLECTION_ID,
             "doi": DOI,
             "source_records": source_records,
@@ -497,8 +595,12 @@ def build_snapshot(
         ],
     }
     snapshot["snapshot_sha256"] = hashlib.sha256(canonical_json(snapshot)).hexdigest()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    preview_path = output_dir / preview_name
     output_path = output_dir / "imerg_2005_point_snapshot.json"
-    output_path.write_bytes(canonical_json(snapshot) + b"\n")
+    snapshot_bytes = canonical_json(snapshot) + b"\n"
+    _atomic_write(preview_path, preview_bytes)
+    _atomic_write(output_path, snapshot_bytes)
     return snapshot
 
 

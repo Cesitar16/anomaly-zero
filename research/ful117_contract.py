@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,9 @@ EXPECTED_PRODUCTS = {
     "GPM_3IMERGM": ("precipitation", "mm/hr"),
     "GLDAS_NOAH025_M": ("SoilMoi0_10cm_inst", "kg m-2"),
 }
+# Gate R is explicitly not approved in docs/alcance-cientifico-provisional.md;
+# add a specific decision ID here only alongside a reviewed approval record.
+APPROVED_REGIONAL_REFERENCES: frozenset[str] = frozenset()
 
 
 def load_spec(path: Path = OPENAPI_PATH) -> dict[str, Any]:
@@ -87,8 +91,17 @@ def assert_scientific_semantics(payload: dict[str, Any], *, production: bool = F
     if production and payload["synthetic"]:
         raise ValueError("Un fixture sintético no puede usarse como observación real")
     generated_at = payload.get("generated_at")
-    if generated_at is not None and not re.fullmatch(r"\d{4}-\d{2}-\d{2}T.+(?:Z|\+00:00)", generated_at):
-        raise ValueError("generated_at debe ser una fecha UTC explícita")
+    if generated_at is not None:
+        if not isinstance(generated_at, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}T.+(?:Z|\+00:00)", generated_at
+        ):
+            raise ValueError("generated_at debe ser una fecha UTC explícita")
+        try:
+            generated_timestamp = datetime.fromisoformat(generated_at)
+        except ValueError as exc:
+            raise ValueError("generated_at no es una fecha válida") from exc
+        if generated_timestamp.utcoffset() != timedelta(0):
+            raise ValueError("generated_at debe usar UTC")
 
     product = payload.get("product")
     if isinstance(product, dict):
@@ -126,6 +139,10 @@ def assert_scientific_semantics(payload: dict[str, Any], *, production: bool = F
             date = point.get("date")
             if not isinstance(date, str) or not re.fullmatch(r"\d{4}-\d{2}-01", date):
                 raise ValueError("Las series mensuales deben etiquetarse con el primer día del mes")
+            try:
+                datetime.strptime(date, "%Y-%m-%d")
+            except ValueError as exc:
+                raise ValueError("Fecha mensual inválida") from exc
             dates.append(date)
             value = point.get("value")
             quality_point = point.get("quality", {})
@@ -149,13 +166,17 @@ def assert_scientific_semantics(payload: dict[str, Any], *, production: bool = F
     if isinstance(support, dict):
         kind = support.get("support_type")
         if kind == "regional_aggregate":
-            if support.get("approval_state") != "approved" or not support.get("approval_reference"):
-                raise ValueError("regional_aggregate requiere aprobación y referencia verificable")
             coverage = payload.get("coverage", {}).get("spatial_coverage")
             if isinstance(coverage, dict):
                 basin_fraction = coverage.get("valid_area_fraction_of_basin")
                 if basin_fraction is not None and basin_fraction > 1:
                     raise ValueError("Cobertura A_valid/A_basin > 1 bloquea agregación regional")
+            if support.get("approval_state") != "approved" or not support.get("approval_reference"):
+                raise ValueError("regional_aggregate requiere aprobación y referencia verificable")
+            if support["approval_reference"] not in APPROVED_REGIONAL_REFERENCES:
+                raise ValueError("No existe una referencia documental aprobada para Gate R")
+        elif support.get("approval_state") == "approved":
+            raise ValueError("approval_state=approved solo aplica a un regional_aggregate")
 
     analysis_id = payload.get("analysis_id")
     if analysis_id is not None and production:

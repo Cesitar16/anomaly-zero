@@ -111,6 +111,7 @@ def test_scientific_semantics_accept_zero_null_and_fill_reason():
         (_series_payload(product={"short_name": "GPM_3IMERGM", "variable": "precipitation", "unit": "mm", "quantity": "monthly_mean_rate"}), "Variable/unidad incoherentes"),
         (_series_payload(quality={"verification_state": "provider_qa_applied", "provider_flags_applied": True, "qa_checks": []}), "evidenciados"),
         (_series_payload(spatial_aggregation={"support_type": "regional_aggregate", "approval_state": "approved"}), "referencia verificable"),
+        (_series_payload(spatial_aggregation={"support_type": "regional_aggregate", "approval_state": "approved", "approval_reference": "synthetic-test-only"}), "No existe una referencia documental"),
         (
             _series_payload(
                 coverage={"spatial_coverage": {"valid_area_fraction_of_basin": 1.000046}},
@@ -124,6 +125,8 @@ def test_scientific_semantics_accept_zero_null_and_fill_reason():
         ),
         (_series_payload(series=[{"date": "2005-01-01", "value": None, "quality": {"state": "missing", "missing_reason": None}}]), "requiere missing_reason"),
         (_series_payload(series=[{"date": "2005-01-15", "value": 1.0, "quality": {"state": "unassessed", "missing_reason": None}}]), "primer día del mes"),
+        (_series_payload(series=[{"date": "2005-13-01", "value": 1.0, "quality": {"state": "unassessed", "missing_reason": None}}]), "Fecha mensual inválida"),
+        (_series_payload(generated_at="2026-13-40T00:00:00Z"), "fecha válida"),
         (_series_payload(synthetic=True), "no puede usarse como observación real"),
     ],
 )
