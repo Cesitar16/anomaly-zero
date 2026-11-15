@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 import pytest
 
 from research import build_ful116_snapshot as snapshot
@@ -54,6 +56,19 @@ def test_all_openapi_response_examples_validate_and_are_explicitly_synthetic():
         assert_scientific_semantics(value)
 
 
+def test_openapi_rejects_non_string_product_version():
+    spec = load_spec()
+    example = next(
+        item
+        for item in iter_openapi_examples(spec)
+        if item[0] == "/series" and "product" in item[-1]
+    )
+    invalid = deepcopy(example[-1])
+    invalid["product"]["product_version"] = 7
+    errors = validate_schema(example[-2], invalid, spec)
+    assert errors
+
+
 def test_markdown_json_fixtures_validate_against_matching_openapi_schema():
     spec = load_spec()
     examples = markdown_json_examples(ROOT / "docs/contracts-v0.md")
@@ -92,6 +107,8 @@ def test_scientific_semantics_accept_zero_null_and_fill_reason():
     "payload,match",
     [
         (_series_payload(product={"short_name": "GPM_3IMERGM", "variable": "precipitation", "unit": "mm/hr", "quantity": "monthly_accumulation"}), "acumulado"),
+        (_series_payload(contract_version="0.2-draft"), "contract_version incompatible"),
+        (_series_payload(product={"short_name": "GPM_3IMERGM", "variable": "precipitation", "unit": "mm", "quantity": "monthly_mean_rate"}), "Variable/unidad incoherentes"),
         (_series_payload(quality={"verification_state": "provider_qa_applied", "provider_flags_applied": True, "qa_checks": []}), "evidenciados"),
         (_series_payload(spatial_aggregation={"support_type": "regional_aggregate", "approval_state": "approved"}), "referencia verificable"),
         (
@@ -106,6 +123,7 @@ def test_scientific_semantics_accept_zero_null_and_fill_reason():
             "bloquea agregación",
         ),
         (_series_payload(series=[{"date": "2005-01-01", "value": None, "quality": {"state": "missing", "missing_reason": None}}]), "requiere missing_reason"),
+        (_series_payload(series=[{"date": "2005-01-15", "value": 1.0, "quality": {"state": "unassessed", "missing_reason": None}}]), "primer día del mes"),
         (_series_payload(synthetic=True), "no puede usarse como observación real"),
     ],
 )
