@@ -1,0 +1,12 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.507554Z",
+  "error": {
+    "code": "PERIOD_OUT_OF_COVERAGE",
+    "message": "El período solicitado excede la cobertura publicada.",
+    "retryable": false,
+    "request_id": "d8b13a7d-b295-4793-afd6-e7b3ad1a70bd",
+    "details": null
+  }
+}

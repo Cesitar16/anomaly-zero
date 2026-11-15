@@ -1,7 +1,7 @@
 # FE-03 · Experiencia de usuario de `/explore`
 
 **Estado:** propuesta de diseño para revisión de César. **No está aprobada** y no implementa nada.
-**Tarjeta:** FUL-118 (FE-03). **Depende de:** contrato AZ-04 v0 (`0.1-draft`, no implementado, "propuesta; no aprobada").
+**Tarjeta:** FUL-118 (FE-03). **Depende de:** contrato AZ-04 v0 (`0.1-draft`, borrador no aprobado). Con `dev` en `884c34f` están implementados `GET /regions`, `GET /products` (BE-03) y `GET /series` (BE-04); `/analyses` y `raster_layers` no (sección 4.1).
 **Alcance:** solo documentación y wireframes. La implementación de `/explore` es FE-04 (FUL-119) y queda bloqueada hasta que César apruebe FE-03 y FE-05.
 **Autora:** Alejandra Reyes (frontend). **Revisión científica:** César. **Compatibilidad con la API:** Alaín.
 
@@ -13,7 +13,7 @@
 
 - La serie real disponible es una **muestra de un punto** (`point_sample`) de IMERG 2005, no un promedio de cuenca.
 - No hay método estadístico aprobado: el análisis de tendencia siempre aparece como **no disponible**.
-- La API todavía no publica capas de mapa. El mapa debe saber mostrar su ausencia sin inventar una imagen.
+- La API todavía no publica capas de mapa: el backend no incluye `raster_layers` en ninguna respuesta. El mapa debe saber mostrar su ausencia sin inventar una imagen.
 
 El documento define: el flujo de la pantalla (sección 3), los 10 estados con sus wireframes (secciones 4 y 5), qué campo del OpenAPI alimenta a qué componente (sección 6), los 15 componentes con sus props (sección 7), el texto literal en español (sección 8), accesibilidad (sección 9), diferencias y huecos del contrato para César (sección 11) y las decisiones que dependen de él (sección 12).
 
@@ -26,11 +26,12 @@ El documento define: el flujo de la pantalla (sección 3), los 10 estados con su
 | `docs/fe-03-explorer-ux.md` | Este documento |
 | `docs/fe-03/wireframes.html` | Los wireframes de todos los estados, escritorio y móvil, autocontenido (se abre con doble clic) |
 | `docs/fe-03/E1-desktop.png` ... `E10-mobile.png` | Capturas de cada estado (20 imágenes) |
-| `docs/fe-03/validar_ejemplos.py` | Valida los ejemplos JSON contra el OpenAPI |
+| `docs/fe-03/validar_ejemplos.py` | Valida los ejemplos JSON (oficiales, observados y derivados) contra el OpenAPI |
+| `docs/fe-03/ejemplos-observados/*.json` | Respuestas reales del backend de `dev` (capturas), usadas como ejemplos y validadas contra el OpenAPI |
 
 ### Fuentes de verdad usadas
 
-`docs/openapi-contract-v0.yaml` (contrato), `docs/contracts-v0.md` (reglas de error y estados), `docs/alcance-cientifico-provisional.md`, `docs/ds-03-snapshot-imerg-demo.md` (serie real IMERG 2005), `docs/region_murray_darling.md`, `docs/fe-05-evaluacion-mapa-graficos.md` (evaluación de mapa y gráficos) y los tokens de la landing (`frontend/src/styles/tokens.css`).
+`docs/openapi-contract-v0.yaml` (contrato), `docs/contracts-v0.md` (reglas de error y estados), `docs/alcance-cientifico-provisional.md`, `docs/ds-03-snapshot-imerg-demo.md` (serie real IMERG 2005), `docs/region_murray_darling.md`, `docs/backend-catalog-v1.md` y `docs/be-04-snapshot-reader.md` (lo que el backend de `dev` responde de verdad), `docs/fe-05-evaluacion-mapa-graficos.md` (evaluación de mapa y gráficos) y los tokens de la landing (`frontend/src/styles/tokens.css`).
 
 ## 2. Reglas que gobiernan el diseño
 
@@ -90,20 +91,20 @@ Con una serie 200:
 
 - Cambiar Región reinicia Variable, rango y mes seleccionado. Cambiar Variable o rango descarta la serie anterior (no se muestra una serie vieja bajo filtros nuevos).
 - El mes seleccionado del mapa es una elección del usuario y no avanza solo. "Reproducir" solo existe si hay al menos 2 meses con capa disponible y el usuario lo pulsa.
-- Los filtros viven en la URL para poder compartir una vista: `/explore?region=REG01&product=P02&start=2005-01&end=2005-03&month=2005-01`. Al entrar con una URL, los parámetros se validan igual que si los hubiera escrito la persona. *Decisión pendiente de César (D6).*
+- Los filtros viven en la URL para poder compartir una vista: `/explore?region=murray-darling-basin&product=P02&start=2005-01&end=2005-03&month=2005-01`. Al entrar con una URL, los parámetros se validan igual que si los hubiera escrito la persona. *Decisión pendiente de César (D6).*
 - Mientras `GET /series` no responda, la pantalla muestra carga (esqueleto) en las zonas de resultado, no un spinner a pantalla completa. Los filtros siguen visibles.
 
 ## 4. Mapa de estados
 
 | Id | Estado | Qué lo provoca en la API | Captura |
 |---|---|---|---|
-| **E1** | Sin regiones publicadas | `GET /regions` → `200` con `regions: []` | `E1-desktop.png`, `E1-mobile.png` |
+| **E1** | Sin regiones publicadas | `GET /regions` → `200` con `regions: []` (derivado; `dev` no lo produce) | `E1-desktop.png`, `E1-mobile.png` |
 | **E2** | Serie sintética con huecos, cero y gráfico | `GET /series` → `200`, `data_state: available_with_gaps`, `synthetic: true` (ejemplo oficial `pointSample`) | `E2-*` |
 | **E3** | Sin datos para el rango | `GET /series` → `200`, `data_state: no_data` (ejemplo oficial `noData`) | `E3-*` |
-| **E4** | Filtros inválidos o recurso inexistente | `422 INVALID_PARAMETER` (ejemplo oficial) y `404 RESOURCE_NOT_FOUND` (derivado) | `E4-*` |
+| **E4** | Filtros inválidos o recurso inexistente | `422 INVALID_PARAMETER` (ejemplo oficial) y `404 RESOURCE_NOT_FOUND` (observado en `dev`) | `E4-*` |
 | **E5** | Servicio no disponible | `503 SERVICE_UNAVAILABLE`, `retryable: true` (ejemplo oficial); variantes 500 y sin red | `E5-*` |
-| **E6** | Capa de mapa no disponible | `200` con `raster_layers[*].state: unavailable` (derivado del esquema) | `E6-*` |
-| **E7** | Análisis no disponible | `POST /analyses` → `409 ANALYSIS_METHOD_UNAVAILABLE` (ejemplo oficial) | `E7-*` |
+| **E6** | Capa de mapa no disponible | `200` con `raster_layers` ausente (lo que sirve `dev`) o con `raster_layers[*].state: unavailable` (derivado del esquema) | `E6-*` |
+| **E7** | Análisis no disponible | `POST /analyses` → `409 ANALYSIS_METHOD_UNAVAILABLE` (ejemplo oficial; `/analyses` aún no existe en `dev`) | `E7-*` |
 | **E8** | Datos reales con soporte puntual (IMERG 2005) | `200`, `synthetic: false`, `support_type: point_sample`, `mm/hr` | `E8-*` |
 | **E9** | Capas mixtas, mes con capa | `raster_layers` mezcladas, mes seleccionado `available` (derivado) | `E9-*` |
 | **E10** | Capas mixtas, mes sin capa | igual, mes seleccionado `unavailable` (derivado) | `E10-*` |
@@ -122,6 +123,22 @@ Los estados E1 a E7 son los siete obligatorios de la tarjeta. E8 es la actualiza
 | `data_state: available` (serie completa) | Como E2 sin aviso de huecos; la insignia dice "Serie completa" |
 | `spatial_aggregation.support_type: descriptive_mean` o `regional_aggregate` | Variante de `SourceProvenance` y `CoverageSummary` descrita en la sección 7; sin wireframe porque no hay ejemplo oficial |
 
+### 4.1 Qué produce hoy el backend de `dev` (`884c34f`)
+
+Lo comprobé ejecutando la aplicación con `TestClient` (con y sin snapshot sintético) y leyendo `backend/app`. Las respuestas capturadas están en `docs/fe-03/ejemplos-observados/`.
+
+| Estado | ¿Lo produce hoy? | Detalle |
+|---|---|---|
+| **E1** | No | `GET /regions` publica siempre una región (`murray-darling-basin`). El estado queda como defensa ante un catálogo vacío. |
+| **E2** | Solo con un snapshot sintético | El backend sirve `synthetic: true` solo si se configura un snapshot sintético (así lo hacen sus pruebas). Con el snapshot real sirve E8. |
+| **E3** | Sí, es el estado por defecto | Sin snapshot configurado, toda consulta válida de hasta 240 meses responde `200 no_data`, para cualquier producto y período. Con snapshot, `no_data` es lo que responden `P01` y `P03`. |
+| **E4** | Sí | `404 RESOURCE_NOT_FOUND`, `422 INVALID_PARAMETER`, `422 LIMIT_EXCEEDED` y `422 PERIOD_OUT_OF_COVERAGE` (este último solo con snapshot). `details` viene siempre `null` (O5). |
+| **E5** | Sí | `503 SERVICE_UNAVAILABLE` (reintentable) si se configura un snapshot que no se puede leer; `500 INTERNAL_ERROR` si el snapshot es ilegible o inconsistente. |
+| **E6** | Sí, con `raster_layers` ausente | El backend no incluye `raster_layers`. No produce descriptores `unavailable` explícitos. |
+| **E7** | No | `/analyses` no existe: responde `404` con `{"detail": "Not Found"}`, que no es un sobre de error del contrato (O13). |
+| **E8** | Sí, con el snapshot real | `synthetic: false`, `point_sample`. Requiere configurar `ANOMALY_ZERO_IMERG_SNAPSHOT` con un snapshot verificado; los datos reales no están en Git. |
+| **E9**, **E10** | No | Requieren que el backend publique `raster_layers`. |
+
 ## 5. Wireframes
 
 Cada estado tiene versión de escritorio (1200 px) y móvil (390 px). La franja amarilla superior de cada captura indica qué respuesta del API la provoca y no es parte de la interfaz. Las etiquetas punteadas con nombre en monoespaciado son los componentes de la sección 7. El archivo `docs/fe-03/wireframes.html` contiene todos los estados juntos.
@@ -131,7 +148,7 @@ Las tipografías de los wireframes son de respaldo (Georgia y la fuente del sist
 **Orden en móvil:** Filtros → estado de la serie → gráfico → mapa → tabla → cobertura → calidad → procedencia → análisis. El gráfico va antes que el mapa porque es la pieza que siempre existe; el mapa puede estar ausente. La tabla de la serie se convierte en una tarjeta por mes (sin desplazamiento horizontal).
 
 ### E1 · Sin regiones publicadas
-`GET /regions` devuelve `regions: []`. No hay mapa ni región inventada. Los filtros quedan deshabilitados y se explica por qué.
+`GET /regions` devuelve `regions: []`. No hay mapa ni región inventada. Los filtros quedan deshabilitados y se explica por qué. El backend actual no lo produce (publica siempre una región); queda como defensa ante un catálogo vacío.
 
 | Escritorio | Móvil |
 |---|---|
@@ -152,7 +169,7 @@ La consulta fue válida y no devolvió meses. No es un error: no hay gráfico ni
 | ![E3 escritorio](fe-03/E3-desktop.png) | ![E3 móvil](fe-03/E3-mobile.png) |
 
 ### E4 · `404` y `422`
-Se corrige el filtro; no hay reintento porque repetir la misma petición no cambia el resultado (`retryable: false`). El campo con problema se marca en su control (`details.field`) y se explica con texto propio; el mensaje del servicio queda como detalle.
+Se corrige el filtro; no hay reintento porque repetir la misma petición no cambia el resultado (`retryable: false`). El control con problema se marca desde la validación local del formulario y, según el `code`, desde el grupo de controles afectado (`LIMIT_EXCEEDED` y `PERIOD_OUT_OF_COVERAGE` marcan «Desde» y «Hasta»). Si la respuesta trae `details.field` (el ejemplo oficial lo trae) se usa para marcar el control exacto, pero el backend actual envía `details: null` (O5): la interfaz no depende de él. El mensaje del servicio queda como detalle.
 
 | Escritorio | Móvil |
 |---|---|
@@ -166,14 +183,14 @@ El servicio tuvo un problema temporal (`retryable: true`). La página no se romp
 | ![E5 escritorio](fe-03/E5-desktop.png) | ![E5 móvil](fe-03/E5-mobile.png) |
 
 ### E6 · `raster_layers` con `state: unavailable`
-Sin capa no se piden tiles, la línea de tiempo queda deshabilitada y las capas de anomalía, tendencia y significancia aparecen como "No disponible todavía". La serie y la tabla siguen siendo válidas.
+Cubre dos casos con la misma interfaz: `raster_layers` ausente (lo que sirve hoy el backend) y descriptores con `state: unavailable` (derivado del esquema). Sin capa no se piden tiles, la línea de tiempo queda deshabilitada y las capas de anomalía, tendencia y significancia aparecen como "No disponible todavía". La serie y la tabla siguen siendo válidas.
 
 | Escritorio | Móvil |
 |---|---|
 | ![E6 escritorio](fe-03/E6-desktop.png) | ![E6 móvil](fe-03/E6-mobile.png) |
 
 ### E7 · `409 ANALYSIS_METHOD_UNAVAILABLE`
-No se creó ningún análisis (`analysis_id: null`, `method: null`) y todas las métricas son `null`. La interfaz lo dice y no dibuja curva ni cifras de ejemplo.
+No se creó ningún análisis (`analysis_id: null`, `method: null`) y todas las métricas son `null`. La interfaz lo dice y no dibuja curva ni cifras de ejemplo. `POST /analyses` aún no existe en el backend (O13): el wireframe corresponde al ejemplo oficial del contrato.
 
 | Escritorio | Móvil |
 |---|---|
@@ -182,14 +199,14 @@ No se creó ningún análisis (`analysis_id: null`, `method: null`) y todas las 
 ### E8 · Datos reales con soporte puntual (IMERG 2005)
 `synthetic: false`, por eso **no** aparece `MockDataNotice`. Muestra la estructura de la serie real de DS-03: 12 meses de 2005, un solo punto (`point_sample`), `mm/hr` como tasa, calidad no evaluada, fuente y DOI, identificador de celda, `null` distinto de cero y los límites de interpretación. **El wireframe no trae cifras**: los valores se muestran como ‹valor›. Los 12 valores reales viven en el snapshot local de DS-03 (archivos derivados que Git ignora) y no se copian a este documento.
 
-Lo que `docs/ds-03-snapshot-imerg-demo.md` documenta sobre ese punto y que la pantalla debe mostrar tal cual venga de la API: identificador `ful105-panel-row-001`, latitud -37,65 (-37.64999771118164), longitud 145,75, rotulado "muestra NASA exploratoria". El valor exacto de `cell_id` en la API lo define el backend (ver observación O9).
+Lo que `docs/be-04-snapshot-reader.md` documenta sobre ese punto y que la pantalla debe mostrar tal cual venga de la API: `cell_id` `IMERG-v07b-center-lon3257-lat523`, latitud -37,65 (-37.64999771118164), longitud 145,75, rotulado "muestra NASA exploratoria". El identificador del panel FUL-105 (`ful105-panel-row-001`) no forma parte de la respuesta de la API (O9). El backend toma `product_version` del snapshot (`V07B` en sus pruebas), mientras que `/products` sin snapshot informa la colección `07` (O15). La procedencia de esta serie trae un hash por archivo de origen (`source_sha256`, 12) y `original_file_count`; el resto de los campos de `provenance` vienen `null`.
 
 | Escritorio | Móvil |
 |---|---|
 | ![E8 escritorio](fe-03/E8-desktop.png) | ![E8 móvil](fe-03/E8-mobile.png) |
 
 ### E9 y E10 · Capas mixtas (ejemplo derivado)
-El OpenAPI no trae ningún ejemplo de `raster_layers`. Este ejemplo se deriva del esquema `RasterLayer`: enero y marzo `available`, febrero `unavailable`. E9 muestra el mes con capa (leyenda, línea de tiempo habilitada); E10 muestra el mes sin capa: el mapa lo dice y no muestra la capa de otro mes.
+El OpenAPI no trae ningún ejemplo de `raster_layers` y el backend actual no las publica. Este ejemplo se deriva del esquema `RasterLayer`: enero y marzo `available`, febrero `unavailable`. E9 muestra el mes con capa (leyenda, línea de tiempo habilitada); E10 muestra el mes sin capa: el mapa lo dice y no muestra la capa de otro mes.
 
 | E9 escritorio | E9 móvil |
 |---|---|
@@ -215,8 +232,8 @@ Lectura: cada fila dice qué campo del contrato se muestra, dónde, cuándo, qu�
 | `RegionsResponse.regions[]` | `RegionSelect` | `length ≥ 1` | `[]` → control deshabilitado y `ExplorePage` muestra el vacío | «Todavía no hay regiones publicadas.» | E1 |
 | `Region.region_id` | `RegionSelect` (valor de la opción) | siempre | n/a | (no se muestra) | E2 |
 | `Region.name` | `RegionSelect` (texto de la opción) | siempre | n/a | «Región sintética» (P) | E2 |
-| `Region.area_km2` | `RegionSelect` (texto secundario) | no `null` | se omite la línea | «Área: ‹n› km²» | (sin ejemplo con valor) |
-| `Region.geometry_version`, `geometry_source`, `crs` | `SourceProvenance` | no `null` | «No informado» | «Geometría: ‹versión› · ‹fuente› · ‹CRS›» | E2 (todos `null` en P y N) |
+| `Region.area_km2` | `RegionSelect` (texto secundario) | no `null` | se omite la línea | «Área: ‹n› km²» | (sin ejemplo con valor; el backend real lo envía `null`) |
+| `Region.geometry_version`, `geometry_source`, `crs` | `SourceProvenance` | cada uno por separado, si no es `null` | cada `null` → «No informado» | «Geometría: versión ‹versión› · CRS ‹CRS› · fuente ‹enlace›» | E2 (todos `null` en P y N); en el backend real solo `geometry_source` trae valor (un enlace al ítem oficial de la MDBA) |
 
 ### 6.2 Productos
 
@@ -225,7 +242,7 @@ Lectura: cada fila dice qué campo del contrato se muestra, dónde, cuándo, qu�
 | `ProductsResponse.products[]` | `ProductSelect` | `length ≥ 1` | `[]` → control deshabilitado | «Esta región todavía no tiene productos publicados.» | auxiliar |
 | `Product.product_id` | `ProductSelect` (valor) | siempre | n/a | (no se muestra) | E2 |
 | `Product.short_name`, `variable` | `ProductSelect` (etiqueta) y `SourceProvenance` | siempre | n/a | «Precipitación (IMERG Final)» etiqueta; «GPM_3IMERGM» y «precipitation» en procedencia | E2, E3 |
-| `Product.product_version` | `SourceProvenance` | siempre | n/a | «versión V07B» | E2 |
+| `Product.product_version` | `SourceProvenance` | siempre | n/a; se muestra tal cual llegue (O15) | «versión V07B» | E2 |
 | `Product.quantity` | `SourceProvenance` y `TimeSeriesChart` (rótulo del eje) | siempre | n/a | «tasa media mensual» (IMERG) | E2 |
 | `Product.unit` | `TimeSeriesChart`, `SeriesTable`, `RasterLegend`, `SourceProvenance` | siempre | n/a | «mm/hr» · «kg m-2» · «K» | E2, E3 |
 | `Product.availability` (`available`, `partial`, `unavailable`) | `ProductSelect` (estado entre paréntesis en cada opción) | siempre | n/a | «Disponible» · «Parcial» · «No disponible» | E2 (P: `partial`), E3 (N: `unavailable`) |
@@ -238,12 +255,14 @@ Lectura: cada fila dice qué campo del contrato se muestra, dónde, cuándo, qu�
 | `Source.source_urls[]` | `SourceProvenance` (lista de enlaces) | `length ≥ 1` | `[]` → se omite la lista | «Enlaces de la fuente» | (vacío en N) |
 | `Source.granule_ids[]` | `SourceProvenance` (detalle plegable) | `length ≥ 1` | `[]` → se omite | «Gránulos de origen (‹n›)» | (vacío en N) |
 
+En el backend de `dev`, los tres productos (`P01` MERRA-2, `P02` IMERG, `P03` GLDAS) vienen `unavailable` con `current_dataset_id`, `coverage` y `quality` en `null` hasta que se configure un snapshot válido; entonces IMERG pasa a `available` o `partial`. Con `coverage: null` el selector de meses no puede limitar el rango (O16).
+
 ### 6.3 Serie
 
 | Campo | Componente | Visible cuando | Vacío | Copy literal | Estado |
 |---|---|---|---|---|---|
 | `SeriesResponse.data_state` | `ExplorePage` (insignia de estado) | siempre | n/a | «Serie completa» · «Serie con huecos» · «Sin datos» | E2, E3 |
-| `SeriesResponse.message` | `ExplorePage` (línea bajo la insignia) | presente (hoy solo en `no_data`) | se omite | texto del servicio entre « » | E3 |
+| `SeriesResponse.message` | `ExplorePage` (línea bajo la insignia) | presente (hoy solo en `no_data`; el backend la omite si está vacía) | se omite | texto del servicio entre « » | E3 |
 | `SeriesResponse.region`, `product` | ver 6.1 y 6.2 | siempre | n/a | n/a | E2, E3 |
 | `SeriesResponse.temporal.frequency` | (no se muestra: es `monthly` fijo) | n/a | n/a | n/a | n/a |
 | `Temporal.calendar` | `SourceProvenance` | no `null` | «No informado» | «Calendario: ‹valor›» | E2 (`null`) |
@@ -262,7 +281,7 @@ Lectura: cada fila dice qué campo del contrato se muestra, dónde, cuándo, qu�
 
 | Campo | Componente | Visible cuando | Vacío | Copy literal | Estado |
 |---|---|---|---|---|---|
-| `SeriesResponse.raster_layers[]` | `MapPanel` | presente y con al menos una capa `available` | ausente, `[]` o todas `unavailable` → ausencia honesta | «Sin capa geográfica disponible para este mes.» | E2, E6 |
+| `SeriesResponse.raster_layers[]` | `MapPanel` | presente y con al menos una capa `available` | ausente (lo que envía hoy el backend), `[]` o todas `unavailable` → ausencia honesta | «Sin capa geográfica disponible para este mes.» | E2, E6 |
 | `RasterLayer.date` | `MonthTimeline` (dentro de `MapPanel`) | siempre | n/a | «2005-01» | E9, E10 |
 | `RasterLayer.layer_type` (`value`, `anomaly`, `slope`, `significance`) | selector de capa de `MapPanel` | siempre | tipos sin capa → opción deshabilitada | «Anomalía · No disponible todavía» | E2, E9 |
 | `RasterLayer.state` | `MapPanel` | `available` dibuja; `unavailable` ausenta | n/a | «Sin capa geográfica disponible para este mes.» | E6, E10 |
@@ -286,11 +305,11 @@ Lectura: cada fila dice qué campo del contrato se muestra, dónde, cuándo, qu�
 | `Quality.uninterpreted_provider_fields[]` | `QualityNotice` (detalle) | `length ≥ 1` | se omite | «Campos del proveedor presentes pero no interpretados: ‹lista›» | (sin ejemplo) |
 | `Coverage.expected_periods`, `present_periods`, `valid_periods` | `CoverageSummary` | siempre | n/a | «Meses pedidos: 3 · Con registro: 3 · Con valor válido: 2» (P) | E2, E3 |
 | `Coverage.missing_periods[]` | `CoverageSummary` | `length ≥ 1` | `[]` → «Ninguno» | «Sin dato: 2005-02» | E2 |
-| `Coverage.spatial_coverage` | `CoverageSummary` (bloque "Cobertura espacial") | presente y no `null` | ausente o `null` → se omite el bloque y se mantiene la nota de meses | «La cobertura cuenta meses; no mide el área de la región.» | (sin ejemplo; P y N no lo traen) |
+| `Coverage.spatial_coverage` | `CoverageSummary` (bloque "Cobertura espacial") | presente y no `null` | ausente (el backend actual la omite siempre) o `null` → se omite el bloque y se mantiene la nota de meses | «La cobertura cuenta meses; no mide el área de la región.» | (sin ejemplo; P y N no lo traen) |
 | `SpatialCoverage.evaluated_cells`, `valid_cells` | `CoverageSummary` (bloque espacial) | no `null` | «No informado» | «Celdas evaluadas: ‹n› · con valor válido: ‹n›» | (sin ejemplo) |
 | `SpatialCoverage.intersection_area_km2`, `valid_area_km2`, `basin_area_km2` | `CoverageSummary` (bloque espacial) | no `null` | «No informado» | «Área: intersección ‹n› km² · con valor válido ‹n› km² · cuenca ‹n› km²» | (sin ejemplo) |
 | `SpatialCoverage.valid_area_fraction_of_intersection`, `valid_area_fraction_of_basin` | `CoverageSummary` (bloque espacial) | no `null`; se muestran **ambas** fracciones con su denominador | «No informado» | «Con valor válido: ‹%› de la intersección · ‹%› de la cuenca» | (sin ejemplo) |
-| `Provenance.source_sha256[]`, `manifest_sha256`, `manifest_version`, `original_file_count` | `SourceProvenance` (detalle plegable) | `provenance` no `null` | P trae el objeto con todos los campos `null` y `source_sha256: []`; N trae `provenance: null`; ambos → «No informado» | «Huella del manifiesto: ‹hash›» | E2 y E3 |
+| `Provenance.source_sha256[]`, `manifest_sha256`, `manifest_version`, `original_file_count` | `SourceProvenance` (detalle plegable) | `provenance` no `null` | P trae el objeto con todos los campos `null` y `source_sha256: []`; N trae `provenance: null`; ambos → «No informado». El backend real con snapshot trae un hash por archivo en `source_sha256` (12) y `original_file_count`, y el resto `null` | «Huella del manifiesto: ‹hash›» · «Archivos de origen (‹n›)» | E2 y E3 |
 | `Provenance.source_updated_at`, `retrieved_at`, `snapshot_created_at` | `SourceProvenance` | no `null` | «No informado» | «Recuperado el ‹fecha›» | E2 |
 | `DatasetSnapshot.dataset_id` | `SourceProvenance` | no `null` | `null` (N) → «No informado» | «Snapshot: ds-synthetic-001» (P) | E2, E3 |
 | `DatasetSnapshot.transformations[]` (`Transformation.operation`, `parameters`, `input_unit`, `output_unit`, `code_version`) | `SourceProvenance` | `length ≥ 1` | `[]` → «Ninguna»; `input_unit`, `output_unit` o `code_version` `null` → «No informado» | «Transformaciones: ‹operación› (entrada ‹u›, salida ‹u›, versión ‹v›)» | E2 y E3 (`[]`) |
@@ -307,8 +326,8 @@ Lectura: cada fila dice qué campo del contrato se muestra, dónde, cuándo, qu�
 | `Error.message` | `ErrorState` (línea "Mensaje del servicio") | siempre | n/a | texto del servicio | E4, E5 |
 | `Error.retryable` | `ErrorState` | `true` muestra "Reintentar" | `false` → sin botón | «Reintentar» | E5 |
 | `Error.request_id` | `ErrorState` (código de soporte) | siempre | n/a | «código de soporte: req-synthetic-001» | E4, E5 |
-| `Error.details` y `ErrorDetails.dataset_id`, `provider_status` | `ErrorState` (detalle) | no `null` | `null` → se omite | «Snapshot: ‹id›» | E5 |
-| `details.field` (no declarado en `ErrorDetails`, ver O5) | `ExploreFilters` (marca el control) | `INVALID_PARAMETER` y campo conocido | falta → solo `ErrorState` | «Mes no válido. Usa AAAA-MM.» | E4 |
+| `Error.details` y `ErrorDetails.dataset_id`, `provider_status` | `ErrorState` (detalle) | no `null` | `null` → se omite (el backend actual envía siempre `null`) | «Snapshot: ‹id›» | E5 |
+| `details.field` (no declarado en `ErrorDetails`, ver O5) | `ExploreFilters` (marca el control) | `INVALID_PARAMETER` y campo conocido | falta → solo `ErrorState`; el backend actual nunca lo envía, así que el marcado sale de la validación local y del `code` (E4) | «Mes no válido. Usa AAAA-MM.» | E4 |
 | `UnavailableAnalysis.state`, `analysis_id`, `dataset_id`, `region_id`, `product_id`, `window`, `method` | `AnalysisUnavailable` (detalle técnico) | `409` | `analysis_id: null` → «No se creó»; `method: null` → «Ninguno habilitado» | «Análisis de tendencia: no disponible» | E7 |
 | `Metrics.slope`, `slope_unit`, `confidence_interval`, `p_value`, `significance` | `AnalysisUnavailable` (detalle técnico) | siempre que haya `UnavailableAnalysis` | todos `null` → «No calculada» / «No calculado». Nunca se escribe un número ni se dibuja una curva | «Pendiente: No calculada» | E7 |
 | `AnalysisResponse.status` (`pending`, `complete`), `method`, `metrics`, `limitations[]`, `input_unit`, `source` y demás campos | fuera de alcance de esta versión de `/explore` | n/a | n/a | n/a | ver O7 |
@@ -698,7 +717,7 @@ Los textos son propuesta. Los que afirman algo científico (calidad, soporte esp
 | `INTERNAL_ERROR` | 500 | Algo falló de nuestro lado | Ocurrió un error inesperado. No hay datos que mostrar en este momento. | No |
 | `ANALYSIS_METHOD_UNAVAILABLE` | 409 | Análisis de tendencia: no disponible | No hay un método estadístico aprobado y habilitado; no se creó un análisis. | No |
 | `INSUFFICIENT_DATA` | 422 | No hay datos suficientes | No hay suficientes observaciones para esta operación. | No |
-| (sin respuesta) | n/a | No pudimos conectar | No hubo respuesta del servicio. Revisa tu conexión y vuelve a intentar. | Sí |
+| (sin respuesta, o respuesta sin sobre de error) | n/a | No pudimos conectar | No hubo respuesta del servicio. Revisa tu conexión y vuelve a intentar. | Sí |
 
 Etiquetas de campo para `details.field`: `region_id` → Región, `product_id` → Variable NASA, `start` → Desde, `end` → Hasta.
 
@@ -754,18 +773,23 @@ No modifico el contrato. Esto es lo que encontré al diseñar y conviene decidir
 
 | Id | Observación | Por qué importa para la pantalla |
 |---|---|---|
-| **O1** | El OpenAPI no trae ejemplo oficial de `404`, `500`, `raster_layers` (en ningún estado), `GET /regions` con datos ni `GET /products`. | Los wireframes E1, E4 (variante 404), E6, E9 y E10 usan ejemplos **derivados** del esquema, validados con `docs/fe-03/validar_ejemplos.py` y marcados como derivados. No son ejemplos oficiales. |
-| **O2** | `Region` no trae geometría (solo `geometry_version`, `geometry_source`, `crs`, `area_km2`) y no hay endpoint de geometría. | El mapa no puede dibujar el contorno de la región. Se decide cómo encuadrar el mapa (extensión fija por región o dato nuevo en la API). No se usa el `LineString` de demostración como cuenca. |
+| **O1** | El OpenAPI no trae ejemplo oficial de `404`, `500`, `raster_layers` (en ningún estado), `GET /regions` con datos ni `GET /products`. | Con BE-03 y BE-04 en `dev`, el `404`, el `500`, las regiones y los productos de este documento son respuestas **observadas** del backend (`docs/fe-03/ejemplos-observados/`). Siguen siendo **derivados** del esquema solo las regiones vacías y `raster_layers` (E1, E6, E9 y E10), validados con `docs/fe-03/validar_ejemplos.py` y marcados como derivados. |
+| **O2** | `Region` no trae geometría (solo `geometry_version`, `geometry_source`, `crs`, `area_km2`) y no hay endpoint de geometría. En el backend real `geometry_version`, `crs` y `area_km2` vienen `null` y `geometry_source` es un enlace al ítem oficial de la MDBA, no una geometría. | El mapa no puede dibujar el contorno de la región. Se decide cómo encuadrar el mapa (extensión fija por región o dato nuevo en la API). No se usa el `LineString` de demostración como cuenca. |
 | **O3** | Con `raster_layers` ausente, `[]` y "todas `unavailable`" el contrato no distingue significados. | La pantalla trata los tres igual (ausencia honesta). Confirmar si deben significar lo mismo. |
 | **O4** | `RasterLayer.state: available` con `tile_template: null` o `format: null` es posible por esquema. | El diseño lo trata como `unavailable`. Confirmar que ese caso no debería existir. |
-| **O5** | El ejemplo oficial `422` trae `details.field` y `details.received`, pero `ErrorDetails` no los declara (solo `dataset_id`, `provider_status`, `analysis`; `additionalProperties: true`). El mensaje del ejemplo está en español pero dice `YYYY-MM`. | La marca del campo con error depende de `details.field`; si no existe, solo se muestra `ErrorState`. Conviene declarar `field` en el esquema. La interfaz usa su propio texto por `code` (`AAAA-MM`). |
+| **O5** | El ejemplo oficial `422` trae `details.field` y `details.received`, pero `ErrorDetails` no los declara (solo `dataset_id`, `provider_status`, `analysis`; `additionalProperties: true`). El mensaje del ejemplo está en español pero dice `YYYY-MM`. **El backend de `dev` envía `details: null` en todos sus errores** (comprobado en 404, 422, 500 y 503), y sus mensajes ya vienen en español. | La marca del campo con error no puede depender de `details.field`: la interfaz la deduce de su validación local y del `code`. Conviene declarar `field` en el esquema y decidir si el backend lo enviará. La interfaz usa su propio texto por `code` (`AAAA-MM`) y deja el mensaje del servicio como detalle. |
 | **O6** | `PointQuality.missing_reason` es texto libre (`provider_fill_value` en el ejemplo). | La tabla lo muestra tal cual. Conviene un conjunto cerrado para poder traducirlo. |
 | **O7** | La interfaz no puede saber de antemano si hay un método de análisis: solo lo descubre al hacer `POST /analyses` (`409`). | En esta versión la pantalla muestra "no disponible" como texto fijo, sin llamar al endpoint. Si se quisiera un botón "Calcular tendencia", haría falta una señal previa (por ejemplo un campo de capacidades). Además, el flujo `202 pending` y `GET /analyses/{id}` quedan fuera de `/explore` mientras no exista método. |
-| **O8** | `SeriesResponse.message` aparece solo en el ejemplo `noData`; no está definido si puede venir con `available_with_gaps`. | La pantalla lo muestra si está presente; no depende de él para explicar huecos. |
-| **O9** | El formato de `cell_id` no está especificado. DS-03 documenta el punto como `ful105-panel-row-001` (latitud -37,65; longitud 145,75). | La pantalla muestra lo que venga. Confirmar que `cell_id` conserve ese identificador y que `latitude`/`longitude` se publiquen (el esquema permite `null`). |
+| **O8** | `SeriesResponse.message` aparece en el ejemplo `noData`. El backend real lo envía solo en `no_data` («No hay datos disponibles para el período solicitado.») y lo omite en el resto. | La pantalla lo muestra si está presente; no depende de él para explicar huecos. |
+| **O9** | El formato de `cell_id` no está especificado en el contrato. El backend publica, para el snapshot verificado, `IMERG-v07b-center-lon3257-lat523` con latitud -37,65 (-37.64999771118164) y longitud 145,75 (`docs/be-04-snapshot-reader.md`). El identificador del panel FUL-105 (`ful105-panel-row-001`) no se publica. | La pantalla muestra lo que venga. Confirmar que ese es el identificador que se quiere mostrar y que `latitude` y `longitude` seguirán publicándose (el esquema permite `null`). |
 | **O10** | `Product.availability` (`available`, `partial`, `unavailable`) y `data_state` pueden parecer redundantes (en `noData`, el producto viene `unavailable` y la serie `no_data`). | La pantalla muestra los dos con palabras distintas ("Variable: No disponible" vs "Sin datos para el rango"). Confirmar que es la lectura prevista. |
 | **O11** | `ApprovedRegionalSupport` y `DescriptiveMeanSupport` no tienen ejemplo oficial. | Sus textos (sección 6.5) son propuesta y no se pueden validar contra un ejemplo. Los revisa César. |
-| **O12** | El contrato es `0.1-draft`, "propuesta; no aprobada". | Todo este diseño depende de él. Si el contrato cambia, la matriz de la sección 6 es la parte que hay que revisar. |
+| **O12** | El contrato es `0.1-draft` y sigue siendo borrador. `dev` ya implementa `/regions`, `/products` y `/series` (BE-03 y BE-04); su descripción indica que `/analyses` y las decisiones científicas siguen sujetas a aprobación. | Todo este diseño depende de él. Si el contrato cambia, la matriz de la sección 6 es la parte que hay que revisar. |
+| **O13** | `/analyses` no existe en el backend: toda ruta no implementada responde `404` con `{"detail": "Not Found"}`, sin el sobre de error del contrato y sin `Cache-Control`. | `ErrorState` debe tolerar cuerpos sin `error` y tratarlos como «sin respuesta» (sección 8.3). Esta versión no llama a `/analyses` (D5), pero cualquier ruta o método equivocado del cliente se vería así. |
+| **O14** | El backend omite en `/series` los campos que valen su valor por defecto (por ejemplo `message` vacío y `coverage.spatial_coverage` nulo) y nunca envía `raster_layers`. | El OpenAPI los declara opcionales, así que es válido. El cliente trata «ausente» igual que `null` o vacío (como ya define la matriz) y no escribe tipos que los exijan. |
+| **O15** | `Product.product_version` cambia según haya snapshot: `07` (colección) sin snapshot y el valor del snapshot (`V07B` en las pruebas del backend) con snapshot. | La pantalla muestra el valor que llegue; «V07B» no es una constante de la interfaz. Confirmar si debe mostrarse la colección o el archivo. |
+| **O16** | Sin snapshot configurado, el backend responde `200 no_data` a cualquier período de hasta 240 meses y los productos vienen `unavailable` con `coverage: null`. Con snapshot, un período fuera de 2005 da `422 PERIOD_OUT_OF_COVERAGE` solo para IMERG. | `MonthSelector` no puede limitar el rango con `Product.coverage` (es `null`) y la persona puede pedir períodos sin sentido; la respuesta correcta es E3. Confirmar si la API publicará una cobertura por producto aunque no haya snapshot. |
+| **O17** | El `404` de `/series` usa dos mensajes con el mismo `code`: «La región solicitada no existe.» (región) y «La región o el producto solicitado no existe.» (producto). `/products` usa el primero. | La pantalla no puede saber qué filtro falló solo por `code`: usa el texto genérico de la sección 8.3 y deja el mensaje del servicio como detalle. |
 
 ## 12. Decisiones pendientes de César
 
@@ -778,7 +802,8 @@ No modifico el contrato. Esto es lo que encontré al diseñar y conviene decidir
 | **D5** | Si la pantalla puede llamar a `POST /analyses` (O7) | No en esta versión; texto fijo "no disponible" |
 | **D6** | Filtros en la URL (compartir vistas) | Sí, validados como entrada de usuario |
 | **D7** | Orden del contenido en móvil | Gráfico antes que mapa (sección 5) |
-| **D8** | Estados E9 y E10 (capas mixtas): ¿son parte del diseño de FE-04 aunque la API aún no publique capas? | Sí, como estados a soportar |
+| **D8** | Estados E9 y E10 (capas mixtas): ¿son parte del diseño de FE-04 aunque la API aún no publique capas? (hoy el backend no envía `raster_layers`) | Sí, como estados a soportar |
+| **D9** | Mientras la API no publique capas: ¿el mapa muestra solo el mapa base con un marcador en el punto de la muestra (`latitude` y `longitude` de `spatial_aggregation.point`)? Los wireframes lo dejan en ausencia honesta, sin marcador. | Un marcador rotulado «Punto de muestra», sin contorno de región. Hasta que César decida, ausencia honesta |
 
 **FE-04 (FUL-119) no se inicia** hasta que César apruebe FE-03 y FE-05.
 
@@ -786,14 +811,15 @@ No modifico el contrato. Esto es lo que encontré al diseñar y conviene decidir
 
 - Es un **borrador de diseño**, no un flujo aprobado.
 - Los wireframes son de baja fidelidad y estructurales. No hay diseño visual final, ni animaciones, ni estados de foco dibujados.
-- Los ejemplos derivados (404, 500, regiones, `raster_layers`) no son oficiales y pueden cambiar con el contrato.
+- Los ejemplos derivados (regiones vacías y `raster_layers`) no son oficiales ni los produce el backend actual. Los observados son capturas de `dev` (`884c34f`) y cambian si cambia el backend.
 - E8 no trae cifras reales. Los 12 valores de IMERG 2005 están en el snapshot local de DS-03 y no se copian aquí. Un wireframe con esos números requeriría decidir cómo publicarlos.
-- No verifiqué nada contra una API real: no hay una implementada.
+- Las respuestas observadas salen del backend de `dev` ejecutado con `TestClient`; el `422 PERIOD_OUT_OF_COVERAGE` y la serie con datos se obtuvieron con el snapshot sintético de las pruebas del backend. No las verifiqué contra un servicio desplegado ni con el snapshot real, que no está en Git.
 - No se probaron lectores de pantalla. La sección 9 define lo que hay que probar en FE-04.
 
 ## 14. Verificación realizada
 
-- **Ejemplos JSON:** los 6 oficiales y los 7 derivados validan contra los esquemas del OpenAPI con `python docs/fe-03/validar_ejemplos.py` (salida 0). Probé también que el validador **rechaza** datos inválidos (un `data_state` inventado, un código de error inexistente, una capa sin campos obligatorios).
+- **Ejemplos JSON:** los 6 oficiales, los 10 observados y los 3 derivados validan contra los esquemas del OpenAPI con `python docs/fe-03/validar_ejemplos.py` (salida 0), tanto con el OpenAPI de esta rama como con el de `dev` (solo cambió su texto descriptivo; los esquemas son idénticos). El script comprueba además que la respuesta de una ruta inexistente no es un sobre de error y avisa si el backend empieza a enviar `details` o `raster_layers`. Probé también que el validador **rechaza** datos inválidos (un `data_state` inventado, un código de error inexistente, una capa sin campos obligatorios).
+- **Backend de `dev`:** ejecuté `/regions`, `/products` y `/series` con y sin snapshot sintético, y los errores `404`, `422` (tres códigos y la validación de parámetros), `500` y `503`. Todas las respuestas validan contra el OpenAPI. Revisé la matriz y los estados contra lo que realmente responde (sección 4.1 y observaciones O13 a O17).
 - **Wireframes:** abiertos en Chrome a 1200 px y 390 px; sin desbordes horizontales en ninguno de los 20 cuadros (se midió `scrollWidth` contra `clientWidth`).
 - **Datos:** los únicos números de las capturas son 0,42 y 0 (ejemplo oficial); lo demás es texto o marcadores ‹…›.
 - **Contrato:** no se modificó `docs/openapi-contract-v0.yaml` ni `docs/contracts-v0.md`.
@@ -809,34 +835,36 @@ python docs/fe-03/validar_ejemplos.py
 # Abrir docs/fe-03/wireframes.html en el navegador (no necesita servidor ni internet)
 ```
 
-## 16. Anexo: ejemplos JSON derivados
+Las respuestas de `docs/fe-03/ejemplos-observados/` se capturaron con `TestClient`. Se pueden reproducir con el backend local (`uv run uvicorn backend.app.main:app`, ver `docs/backend-catalog-v1.md`) y `curl`: sin snapshot configurado salen las regiones, los productos, el `no_data` y los errores `404` y `422`. El `503` se obtiene apuntando `ANOMALY_ZERO_IMERG_SNAPSHOT` a una ruta que no existe y el `500` apuntándola a un archivo que no sea JSON. El `422 PERIOD_OUT_OF_COVERAGE` necesita un snapshot válido.
 
-Los ejemplos oficiales **no se copian aquí**: están en el OpenAPI (`/series` → `pointSample` y `noData`; `InvalidRequest` → `invalidParameters`; `ServiceUnavailable` → `snapshotUnavailable`; `AnalysisUnavailable` → `methodUnavailable`; `AnalysisPending` → `pendingAnalysis`). Los siguientes son **derivados** (no oficiales), construidos desde los esquemas y validados.
+## 16. Anexo: ejemplos JSON observados y derivados
+
+Los ejemplos oficiales **no se copian aquí**: están en el OpenAPI (`/series` → `pointSample` y `noData`; `InvalidRequest` → `invalidParameters`; `ServiceUnavailable` → `snapshotUnavailable`; `AnalysisUnavailable` → `methodUnavailable`; `AnalysisPending` → `pendingAnalysis`).
+
+**Observados** (capturas del backend de `dev`, `884c34f`, en `docs/fe-03/ejemplos-observados/`). No son el contrato: son lo que la implementación responde hoy.
+
+| Archivo | HTTP | `code` | `message` del servicio |
+|---|---|---|---|
+| `regions_dev.json` | 200 | n/a | una región, `murray-darling-basin`, con `geometry_version`, `crs` y `area_km2` en `null` |
+| `products_dev_sin_snapshot.json` | 200 | n/a | tres productos `unavailable` con `current_dataset_id`, `coverage` y `quality` en `null` |
+| `series_no_data_dev.json` | 200 | n/a | «No hay datos disponibles para el período solicitado.» (`data_state: no_data`, sin `raster_layers`) |
+| `error_404_region_dev.json` | 404 | `RESOURCE_NOT_FOUND` | «La región solicitada no existe.» (`GET /products`) |
+| `error_404_producto_dev.json` | 404 | `RESOURCE_NOT_FOUND` | «La región o el producto solicitado no existe.» (`GET /series`) |
+| `error_422_parametro_dev.json` | 422 | `INVALID_PARAMETER` | «Los parámetros de la petición no son válidos.» |
+| `error_422_limit_exceeded_dev.json` | 422 | `LIMIT_EXCEEDED` | «La consulta excede el máximo de 240 meses.» |
+| `error_422_periodo_fuera_de_cobertura_dev.json` | 422 | `PERIOD_OUT_OF_COVERAGE` | «El período solicitado excede la cobertura publicada.» |
+| `error_500_dev.json` | 500 | `INTERNAL_ERROR` | «Ocurrió un error interno.» |
+| `error_503_dev.json` | 503 | `SERVICE_UNAVAILABLE` | «El snapshot de datos no está disponible temporalmente.» (`retryable: true`) |
+| `ruta_inexistente_dev.json` | 404 | sin sobre | `{"detail": "Not Found"}` (por ejemplo `GET /analyses/abc`) |
+
+Todos los errores traen `details: null` y `request_id` generado por el servidor. `INVALID_PARAMETER` también responde «El período inicial debe ser anterior o igual al final.» cuando `start` es posterior a `end`.
+
+**Derivados** (no oficiales y que el backend actual no produce), construidos desde los esquemas y validados.
 
 **`GET /regions` sin regiones (E1), derivado**
 
 ```json
 { "contract_version": "0.1-draft", "synthetic": true, "generated_at": "2026-01-01T00:00:00Z", "regions": [] }
-```
-
-**`404 RESOURCE_NOT_FOUND` (E4), derivado**
-
-```json
-{
-  "contract_version": "0.1-draft", "synthetic": true, "generated_at": "2026-01-01T00:00:00Z",
-  "error": { "code": "RESOURCE_NOT_FOUND", "message": "La región solicitada no existe.", "retryable": false,
-             "request_id": "req-synthetic-notfound-001", "details": null }
-}
-```
-
-**`500 INTERNAL_ERROR` (variante de E5), derivado**
-
-```json
-{
-  "contract_version": "0.1-draft", "synthetic": true, "generated_at": "2026-01-01T00:00:00Z",
-  "error": { "code": "INTERNAL_ERROR", "message": "Error interno inesperado.", "retryable": false,
-             "request_id": "req-synthetic-internal-001", "details": null }
-}
 ```
 
 **Fragmento `raster_layers` mixto (E9 y E10), derivado.** Va dentro de la respuesta del ejemplo oficial `pointSample`. La URL usa el dominio reservado `.invalid` a propósito: no apunta a ningún servicio.
@@ -859,5 +887,6 @@ Los ejemplos oficiales **no se copian aquí**: están en el OpenAPI (`/series` �
 - `docs/alcance-cientifico-provisional.md`: pregunta científica, región propuesta, límites.
 - `docs/ds-03-snapshot-imerg-demo.md`: serie real IMERG 2005 (`point_sample`, `mm/hr`, QA `unassessed`).
 - `docs/region_murray_darling.md`: región propuesta.
+- `docs/backend-catalog-v1.md` y `docs/be-04-snapshot-reader.md`: lo que el backend de `dev` implementa (BE-03 y BE-04).
 - `docs/fe-05-evaluacion-mapa-graficos.md`: evaluación de mapa y gráficos (FE-05).
 - `frontend/src/styles/tokens.css`: tokens visuales de la landing.

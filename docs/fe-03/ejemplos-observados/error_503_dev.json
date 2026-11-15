@@ -1,0 +1,12 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.527081Z",
+  "error": {
+    "code": "SERVICE_UNAVAILABLE",
+    "message": "El snapshot de datos no está disponible temporalmente.",
+    "retryable": true,
+    "request_id": "1990230b-79a4-4240-8d5f-52533fedaa00",
+    "details": null
+  }
+}

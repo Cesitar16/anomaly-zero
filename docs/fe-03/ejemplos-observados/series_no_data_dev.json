@@ -1,0 +1,87 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.325509Z",
+  "data_state": "no_data",
+  "region": {
+    "region_id": "murray-darling-basin",
+    "name": "Murray–Darling Basin",
+    "geometry_version": null,
+    "geometry_source": "https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json",
+    "crs": null,
+    "area_km2": null
+  },
+  "product": {
+    "product_id": "P02",
+    "short_name": "GPM_3IMERGM",
+    "product_version": "07",
+    "variable": "precipitation",
+    "quantity": "monthly_mean_rate",
+    "unit": "mm/hr",
+    "availability": "unavailable",
+    "source": {
+      "agency": "NASA/JAXA",
+      "distributor": "GES DISC",
+      "collection_id": "C2723754851-GES_DISC",
+      "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
+      "source_urls": [
+        "https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07"
+      ],
+      "granule_ids": []
+    },
+    "current_dataset_id": null,
+    "coverage": null,
+    "quality": null
+  },
+  "dataset_id": null,
+  "provenance": null,
+  "temporal": {
+    "frequency": "monthly",
+    "calendar": null,
+    "date_label": "month_start"
+  },
+  "requested_coverage": {
+    "start": "2005-01",
+    "end": "2005-12",
+    "end_inclusive": true
+  },
+  "available_coverage": null,
+  "coverage": {
+    "expected_periods": 12,
+    "present_periods": 0,
+    "valid_periods": 0,
+    "missing_periods": [
+      "2005-01",
+      "2005-02",
+      "2005-03",
+      "2005-04",
+      "2005-05",
+      "2005-06",
+      "2005-07",
+      "2005-08",
+      "2005-09",
+      "2005-10",
+      "2005-11",
+      "2005-12"
+    ]
+  },
+  "quality": {
+    "source_flag_fields": [],
+    "provider_flags_applied": false,
+    "source_missing_attributes": {
+      "fill_value": null,
+      "missing_value": null,
+      "scale_factor": null,
+      "add_offset": null
+    },
+    "finite_non_fill_filter_applied": false,
+    "verification_state": "unassessed",
+    "mask_applied": null,
+    "qa_checks": [],
+    "uninterpreted_provider_fields": []
+  },
+  "spatial_aggregation": null,
+  "transformations": [],
+  "series": [],
+  "message": "No hay datos disponibles para el período solicitado."
+}
