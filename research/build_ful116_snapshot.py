@@ -19,6 +19,12 @@ from typing import Any
 import h5py
 import numpy as np
 
+from research.snapshot_format import (
+    canonical_json,
+    dataset_id_for_input_fingerprint,
+    snapshot_sha256,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT = ROOT / "data/raw/nasa/imerg_final"
 DEFAULT_POINT = ROOT / "research/manifests/ful105_imerg_panel_point.json"
@@ -59,12 +65,6 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def canonical_json(value: Any) -> bytes:
-    return json.dumps(
-        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
-    ).encode("utf-8")
 
 
 def _header(value: Any) -> dict[str, str]:
@@ -491,7 +491,7 @@ def build_snapshot(
         "manifest_sha256s": [record["manifest_sha256"] for record in source_records],
     }
     is_synthetic = _resolve_synthetic_flag([granule.synthetic for granule in granules])
-    dataset_id = "imerg-2005-point-" + hashlib.sha256(canonical_json(input_fingerprint)).hexdigest()[:20]
+    dataset_id = dataset_id_for_input_fingerprint(input_fingerprint)
     fill = samples[0]["fill_value"]
     qa_fields = sorted({field for sample in samples for field in sample["qa_source_fields_present"]})
     snapshot: dict[str, Any] = {
@@ -594,7 +594,7 @@ def build_snapshot(
             for sample in samples
         ],
     }
-    snapshot["snapshot_sha256"] = hashlib.sha256(canonical_json(snapshot)).hexdigest()
+    snapshot["snapshot_sha256"] = snapshot_sha256(snapshot)
     output_dir.mkdir(parents=True, exist_ok=True)
     preview_path = output_dir / preview_name
     output_path = output_dir / "imerg_2005_point_snapshot.json"
