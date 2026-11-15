@@ -65,6 +65,18 @@ El conteo de faltantes cubre todos los centros seleccionados; los CSV están lim
 
 Para IMERG mensual, el tamaño observado enero+febrero fue 36,735,563 bytes; promedio de dos muestras: 18,367,781.5 bytes por mes. Extrapolación a 12 meses: aproximadamente 220,413,378 bytes (210.2 MiB / 0.205 GiB), suponiendo tamaño constante. Con límite de 24 MiB por archivo, el máximo para 12 meses es 288 MiB (0.281 GiB), antes de manifiestos y temporales. Los tamaños mensuales pueden variar; todavía falta comprobar el resto de 2005. No se midieron tiempos de transferencia.
 
+Para descargar solo marzo–diciembre de 2005 desde una PowerShell autenticada con Earthdata, situada en la raíz del repositorio, ejecutar:
+
+```powershell
+foreach ($month in 3..12) {
+    $period = "2005-{0:D2}" -f $month
+    python -m backend.app.data_sources.earthdata_samples imerg_final --month $period --max-mib 24
+    if ($LASTEXITCODE -ne 0) { throw "Descarga o validación fallida para $period; se detuvo el lote." }
+}
+```
+
+El proceso descarga cada mes de forma secuencial. CMR y el archivo local se limitan a 24 MiB; si un archivo supera el límite, la consulta lo rechaza antes de autenticarse. La herramienta también rechaza archivos o manifiestos existentes, sin sobrescribirlos. Si un mes falla, se detiene el lote y pueden reanudarse los restantes ajustando el rango de meses; enero y febrero no forman parte del comando.
+
 Para 240 meses por producto (enero de 2005–diciembre de 2024), con tamaño constante igual a la muestra de enero: aproximadamente 23,405,856,240 bytes (21.80 GiB): MERRA-2 12.16 GiB, IMERG 4.03 GiB y GLDAS 5.60 GiB. No incluye manifiestos, temporales ni índices. Es una extrapolación, no una descarga histórica.
 
 ## Verificación y pendientes
