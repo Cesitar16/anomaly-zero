@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { EXPLORER_AVAILABLE, ROUTES } from '../../config/site'
+import { EXPLORER_STATUS_LABEL, ROUTES } from '../../config/site'
 import { NAV_LINKS } from '../../content/navigation'
 import Logo from './Logo'
 
@@ -58,7 +58,7 @@ export default function Navbar() {
             <li>
               <NavLink to={ROUTES.explore} className="site-nav__link" onClick={closeMenu}>
                 Explorador
-                {!EXPLORER_AVAILABLE && <span className="site-nav__tag">En desarrollo</span>}
+                {EXPLORER_STATUS_LABEL && <span className="site-nav__tag">{EXPLORER_STATUS_LABEL}</span>}
               </NavLink>
             </li>
           </ul>

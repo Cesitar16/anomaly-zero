@@ -10,6 +10,13 @@ HTMLCanvasElement.prototype.getContext = vi.fn(
   () => null,
 ) as unknown as typeof HTMLCanvasElement.prototype.getContext
 
+// jsdom no implementa ResizeObserver y Recharts (ResponsiveContainer) lo necesita.
+globalThis.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
