@@ -111,4 +111,67 @@ La coincidencia completa respalda que el **contenido actualmente servido** es es
 | El archivo actual 2005 es consistente con celdas de agua rellenadas y tierra válida bajo la máscara candidata. | Coincidencia exacta global y en la ventana interior; enero 2021 también coincide. | Hipótesis compatible con datos; no identifica con certeza el algoritmo/revisión histórica específica. |
 | La máscara descargada es demostrablemente el artefacto exacto usado para reprocesar Noah 2005. | El archivo oficial se fecha en 6-oct-2020 y coincide espacialmente; su `long_name` indica “modified for HYMAP”. | No confirmado: falta una asociación explícita granule→revisión de máscara o un checksum/registro de ejecución de NASA. |
 
-**Estado al cerrar Fase 2:** evidencia primaria general y comparación técnica reproducible disponibles; QA `unassessed`; sin filtro ni decisión de producto. La fase siguiente debe consolidar el dictamen `CONFIRMADO / DESCARTADO / INDETERMINADO`, separar la consecuencia para demo y serie, y preparar —sin enviar— la consulta técnica que pide el criterio de FUL-113 si la incertidumbre persiste.
+**Estado al cerrar Fase 2:** evidencia primaria general y comparación técnica reproducible disponibles; QA `unassessed`; sin filtro ni decisión de producto. La Fase 3 consolida el dictamen y sus consecuencias, y deja una consulta técnica en borrador si persiste la incertidumbre.
+
+## Fase 3 · Dictamen y transferencia a César
+
+### Dictamen
+
+**INDETERMINADO** para la afirmación específica: *“el granule GLDAS Noah 2.1 de enero de 2005 actualmente identificado como `G1413723174-GES_DISC` recibió exactamente la revisión de máscara MOD44W usada en el posprocesamiento anunciado por NASA en octubre de 2020”*.
+
+La evidencia no permite confirmar ni descartar esa ruta histórica. El aviso NASA cubre en términos generales datos GLDAS-2 mensuales y de 3 horas y recomienda descargar de nuevo los archivos previos a noviembre de 2020. El registro CMR actual del granule 2005 tiene `ProviderDates` Insert/Update y `ProductionDateTime` el 19-oct-2020. Además, la muestra actual coincide celda a celda con la máscara candidata publicada: todas las celdas `water_0` están en fill y todas las `land_1` tienen valores finitos. Estas piezas hacen que el archivo actual sea **consistente con** el posprocesamiento descrito.
+
+La relación causal no queda demostrada: CMR no ofrece en la consulta realizada el historial anterior de revisiones ni un checksum anterior/posterior; los atributos `history` de los gránulos no identifican la máscara; y el propio archivo candidato se describe como una máscara MOD44W “modified for HYMAP”, sin un registro que lo vincule como artefacto exacto del proceso Noah mensual. La coincidencia de fill no identifica el código, la versión de máscara ni cuándo se aplicó.
+
+**Grado de certeza expresado por alcance:** `TEC` alto para la identidad de las muestras y la coincidencia numérica con el archivo candidato; `DOC` para el aviso de alcance general de NASA; `PEND` para asociar una revisión concreta de máscara con el granule 2005. Esto no es una probabilidad estadística. La QA científica del producto permanece `unassessed`.
+
+### Consecuencia separada para demo y serie
+
+| Contexto | Consecuencia científica de este dictamen | Límite de decisión |
+|---|---|---|
+| Demo exploratoria | Si FUL-107 decide mostrar la muestra 2005, acompañarla con producto/versión, periodo, `SoilMoi0_10cm_inst`, unidad `kg m-2`, procedencia/hash, QA `unassessed` y una nota de que el contenido actual coincide con una máscara candidata pero la revisión histórica exacta no está confirmada. | Esto no aprueba que GLDAS sea el producto de demo ni valida valores para una inferencia. La decisión de uso corresponde a César/equipo. |
+| Serie histórica validada | La muestra 2005 no puede presentarse como prueba de homogeneidad temporal 2005–2024 a partir de esta evidencia. Antes de tratarla como parte de una serie validada se requiere resolver el linaje o que el equipo determine y documente una política explícita de inclusión, exclusión o sensibilidad. | Este dictamen no elige producto, no fija una política de faltantes y no decide si se excluye el mes. No rellenar ni sustituir silenciosamente valores. |
+
+### Consulta técnica preparada, no enviada
+
+FUL-113 pide redactar una consulta si persiste la incertidumbre. Este borrador es para pedir metadatos técnicos; **no solicita a NASA que apruebe una decisión del proyecto y no se ha enviado**.
+
+**Subject:** GLDAS Noah 2.1 January 2005 granule — MOD44W post-processing lineage
+
+> Hello GES DISC / GLDAS team,
+>
+> Could you help us verify the processing lineage of the currently distributed monthly 0.25-degree Noah 2.1 granule `GLDAS_NOAH025_M.A200501.021.nc4` (CMR concept ID `G1413723174-GES_DISC`, granule UR `GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200501.021.nc4`)? The local file we inspected is 25,075,859 bytes with SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593`.
+>
+> The GLDAS-2 documentation states that monthly and 3-hourly outputs were post-processed with MOD44W in October 2020 and recommends re-downloading files obtained before November 2020. CMR currently reports Insert/Update and ProductionDateTime as 2020-10-19 for this granule. We also found that the current file’s fill pattern matches the publicly linked 0.25-degree GLDAS mask, whose variable metadata says “modified for HYMAP.”
+>
+> Could you confirm whether this exact Noah monthly granule was replaced or post-processed in that October 2020 update? If available, could you identify the mask artifact/revision or processing release used, and whether any pre/post-update granule checksum or processing record is retained? Does `GLDASp5_landmask_025d.nc4` correspond to the mask used for this monthly Noah granule, despite the “modified for HYMAP” description?
+>
+> We are seeking provenance information only; we are not asking NASA to approve a project product or scientific decision. Thank you.
+
+### Próximos pasos propuestos para César
+
+| Paso opcional | Esfuerzo estimado | Riesgo/dependencia | Qué resolvería |
+|---|---:|---|---|
+| Revisar este dictamen y decidir si la formulación refleja el nivel de certeza aceptable para FUL-107. | Bajo | Revisión del responsable; no requiere nuevos datos. | Acordar cómo representar la incertidumbre en las decisiones del equipo. |
+| Si considera útil resolver la trazabilidad, autorizar que el borrador se envíe a GES DISC. | Bajo para enviar; plazo de respuesta externo desconocido. | La respuesta puede no identificar revisión histórica o puede no existir un checksum previo. | Posible confirmación técnica específica del granule; no sustituye aprobación del equipo. |
+| Si NASA no conserva el historial, evaluar una política explícita para la serie (p. ej., mantener pendiente, excluir con trazabilidad o presentar sensibilidad). | Medio | Requiere decisión metodológica del equipo y no se resuelve con el análisis actual. | Evitar atribuir homogeneidad sin evidencia. No se elige una alternativa en FUL-113. |
+
+## Auditoría de criterios de aceptación FUL-113
+
+| Criterio | Resultado documentado | Estado |
+|---|---|---|
+| Asociar atributos, IDs y hashes 2005/2021 al archivo correcto. | Manifiesto y verificación local repetible en Fase 1. | Cumplido para las dos muestras. |
+| Distinguir aviso NASA 2020 de evidencia del granule específico. | Aviso general separado de `ProviderDates`, `ProductionDateTime`, CMR revision y atributos locales. | Cumplido con limitaciones explícitas. |
+| Documentar prueba reproducible o razón concreta de imposibilidad. | Comparación reproducible con máscara pública candidata, pruebas sintéticas y advertencia de compatibilidad HYMAP. | Cumplido; prueba no identifica revisión histórica. |
+| Dictamen con fuente, límite y grado de certeza. | `INDETERMINADO`, evidencia `DOC/TEC/PEND` y fundamento explícito. | Cumplido para la afirmación definida arriba. |
+| Consecuencia separada para demo y serie. | Tabla de demo exploratoria y serie validada, sin aprobar selección. | Cumplido como evaluación de consecuencias. |
+| Consulta externa redactada, no enviada; NASA no es aprobador. | Borrador técnico incluido; ninguna consulta enviada. | Cumplido. |
+| No aprobar umbral, producto ni procesamiento histórico. | QA sigue `unassessed`; no se tomó ninguna de esas decisiones. | Cumplido. |
+| Validaciones/PR documentadas y revisión de César requerida. | Validaciones locales abajo; PR a `dev` preparada para solicitar revisión de César. | Lista para revisión; aprobación de César pendiente. |
+
+## Validaciones y publicación
+
+- `uv run --locked --python 3.12 ruff check backend research`: correcto (`All checks passed!`).
+- `uv run --locked --python 3.12 pytest --basetemp E:\\tmp\\pytest-ful113 backend/tests research/tests`: correcto (89 passed, 1 warning). El directorio temporal ASCII en el mismo volumen evita una incompatibilidad de `netCDF4` con rutas Windows que contienen caracteres acentuados y con temporales en otro volumen; la primera repetición en `data/cache` falló al crear fixtures, antes de evaluar sus aserciones.
+- `git diff --check`: correcto. Revisión del diff limitada al informe de FUL-113; los gránulos, la máscara y los JSON bajo `data/raw`/`data/cache` permanecen locales e ignorados.
+- La PR se publicará desde la rama propia de Lucas hacia `dev`, con resumen de evidencia, limitaciones y validaciones, y solicitud de revisión de César mediante `gh` CLI. **No se hará merge ni se cerrará FUL-113 sin revisión humana.**
