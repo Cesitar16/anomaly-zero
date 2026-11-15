@@ -126,7 +126,7 @@ Lo que **no** se puede mostrar como captura: una serie real con `synthetic: fals
 | `GET /products?region_id=` | `ExploreFilters` (`ProductSelect`) | Los productos `unavailable` se listan con su rótulo y siguen consultables (ver D10) |
 | `GET /series` | `TimeSeriesChart`, `SeriesTable`, `MapPanel`, `QualityNotice`, `SupportNotice`, `CoverageSummary`, `SourceProvenance` | `raster_layers` solo alimenta el mapa |
 | `POST /analyses` | `AnalysisUnavailable` (`AnalysisStatus`) | Siempre "no disponible". No se llama en modo HTTP |
-| `GET /analyses/{id}` | (ninguno) | No existe en `dev`; el simulado responde 404 |
+| `GET /analyses/{id}` | (ninguno) | En `dev` siempre responde `404 RESOURCE_NOT_FOUND`; el frontend no lo llama |
 
 ## 5. Qué se conservó del dato (y cómo se verifica)
 
@@ -165,7 +165,7 @@ CI: `Checks` ejecuta `npm test` del frontend antes de compilar (paso "Frontend t
 3. **Errores**: `details` llega siempre `null` en `dev` (O5). El simulado sí envía `details.field` en `INVALID_PARAMETER`, como el ejemplo oficial.
 4. **Rutas inexistentes**: `dev` responde `{"detail":"Not Found"}`, que no es un sobre de error del contrato (O13). El cliente HTTP lo clasifica como "sin respuesta del servicio".
 5. **Versión de producto**: `dev` toma `product_version` del snapshot (`V07B`), mientras que `/products` sin snapshot informa la colección `07` (O15). La pantalla muestra lo que llegue.
-6. **`/analyses`**: no está en `dev` (BE-05, PR #31, no integrada). Si existiera, la pantalla debería seguir mostrando `ANALYSIS_METHOD_UNAVAILABLE` con honestidad.
+6. **`/analyses`**: BE-05 (PR #31) ya está en `dev`: `POST /api/v1/analyses` valida la petición y responde `409 ANALYSIS_METHOD_UNAVAILABLE` (no crea análisis) y `GET /api/v1/analyses/{id}` responde `404`. Esta pantalla igual no llama a `/analyses` en modo real: mantiene el botón "Calcular tendencia" deshabilitado hasta que exista un método estadístico aprobado.
 7. **Tarjeta vs FE-03**: la tabla antigua de la tarjeta decía "deshabilitar consulta" para productos no disponibles, y FE-03 los deja consultables (para ver el `200 no_data` real). Se siguió FE-03 (D10).
 
 ## 8. Decisiones
@@ -176,7 +176,7 @@ La tarjeta (decisión de César del 15-11) aprueba FE-03 como base de UX, MapLib
 |---|---|---|
 | D1, D5, D6, D7, D8 | Flujo y 10 estados, análisis no disponible, filtros en URL, gráfico antes que mapa en móvil, mocks de E9/E10 | Aprobadas e implementadas |
 | D2 | Copy científico, condicionado a usarlo según el estado real de la respuesta | Implementado en `content/exploreCopy.ts` (un solo archivo). Pendiente su revisión de textos |
-| D3 | MapLibre GL JS 6.18.0 (directo) y Recharts 3.10.1 | Aprobado. Recharts coincide con la PR #33 de FUL-130 (ver sección 12) |
+| D3 | MapLibre GL JS 6.18.0 (directo) y Recharts `^3.10.1` (resuelve a 3.10.1) | Aprobado. Recharts coincide con la PR #33 de FUL-130, ya fusionada en `dev` (ver sección 12) |
 | D4 | Encuadre del mapa sin geometría | Extensión ilustrativa solo para la demostración sintética, rotulada. Sin límite de cuenca |
 | D9 | Marcador «Punto de muestra» | **No implementado.** La tarjeta lo permite solo con coordenadas de una respuesta auténtica. Hoy el punto se muestra como texto (celda y coordenadas) en el aviso de soporte. Pendiente opcional |
 | D10 | Productos `unavailable` | Se pueden consultar (FE-03), para mostrar el `200 no_data` real que exige la tarjeta sin snapshot. Pendiente de confirmar |
@@ -221,11 +221,11 @@ Pendiente, a propósito, hasta que lo apruebe quien corresponda:
 
 1. **Despliegue**: no se afirma que el proyecto esté desplegado. En un sitio sin backend, `fuente=api` muestra el error de conexión; es lo esperado.
 2. **Capas raster**: cuando el backend publique `raster_layers` `available`, hay que entregar un `RasterResolver` real al cliente HTTP (hoy devuelve `null` a propósito: el modo real nunca dibuja).
-3. **Análisis**: cuando exista `POST /analyses` aprobado (BE-05, PR #31), se cambia `capabilities.analyses` del cliente HTTP y se agrega la vista del resultado. Antes de eso, no.
+3. **Análisis**: `POST /analyses` ya existe en `dev` (BE-05, PR #31) pero solo responde `409`. Cuando haya un método estadístico aprobado, se cambia `capabilities.analyses` del cliente HTTP y se agrega la vista del resultado. Antes de eso, no.
 4. **Datos reales de DS-03**: probar con el snapshot real verificado y reportarlo aparte (no hay snapshot en el repositorio).
 
 ## 12. Coordinación y revisiones solicitadas
 
-- **FUL-130 (César, PR #33)**: agrega Recharts 3.10.1 como dependencia y el módulo `scientific-series` (`ScientificSeriesPanel`). Esta rama también agrega Recharts 3.10.1 (misma versión exacta) y su propio gráfico (`TimeSeriesChart`). Al integrar, `package.json` y `package-lock.json` darán conflicto: se conserva una sola entrada de Recharts y el resto de las dependencias de esta rama (`maplibre-gl`, `ajv`, `ajv-formats`, `yaml`). Falta decidir si `TimeSeriesChart` se reemplaza por `ScientificSeriesPanel` o conviven.
+- **FUL-130 (César, PR #33, ya en `dev`)**: agregó Recharts `^3.10.1` y el módulo `scientific-series` (`ScientificSeriesPanel`). Al actualizar esta rama con `dev` los únicos conflictos fueron `frontend/package.json` y `frontend/package-lock.json`: quedó una sola entrada de Recharts (`^3.10.1`) y se conservaron `maplibre-gl`, `ajv`, `ajv-formats` y `yaml`; el lockfile se regeneró. `ScientificSeriesPanel` es un componente independiente que `/explore` todavía no usa; esta rama sigue con su propio `TimeSeriesChart`. Queda por decidir con César si `TimeSeriesChart` se reemplaza por `ScientificSeriesPanel` o conviven; no se hizo en esta PR para no cambiar su contrato.
 - **César**: UX y ciencia (D2, D9, D10), y la decisión de FUL-130 anterior.
 - **Alaín**: contrato (sección 7) y el proxy de Vite sin CORS abierto en FastAPI.
