@@ -1,0 +1,128 @@
+{
+  "synthetic": true,
+  "label": "Frames sintéticos de prueba. No son IMERG, ni precipitación, ni ninguna observación.",
+  "generator": "scripts/generate-frames.mjs",
+  "crs": "EPSG:4326",
+  "bbox": {
+    "west": 138,
+    "south": -38,
+    "east": 153,
+    "north": -24
+  },
+  "resolution_deg": 0.1,
+  "variants": {
+    "native": {
+      "width": 150,
+      "height": 140,
+      "description": "Rejilla discreta de 0,1° con filas lineales en latitud (EPSG:4326 sin remuestrear)."
+    },
+    "mercator": {
+      "width": 150,
+      "height": 141,
+      "description": "La misma rejilla remuestreada por vecino más cercano a filas lineales en Web Mercator."
+    }
+  },
+  "scale": {
+    "unit": "u.a. sintéticas",
+    "min": 0,
+    "max": 1,
+    "classes": [
+      {
+        "color": "#440154",
+        "from": 0,
+        "to": 0.16666666666666666
+      },
+      {
+        "color": "#414487",
+        "from": 0.16666666666666666,
+        "to": 0.3333333333333333
+      },
+      {
+        "color": "#2a788e",
+        "from": 0.3333333333333333,
+        "to": 0.5
+      },
+      {
+        "color": "#22a884",
+        "from": 0.5,
+        "to": 0.6666666666666666
+      },
+      {
+        "color": "#7ad151",
+        "from": 0.6666666666666666,
+        "to": 0.8333333333333334
+      },
+      {
+        "color": "#fde725",
+        "from": 0.8333333333333334,
+        "to": 1
+      }
+    ],
+    "fixed_across_months": true
+  },
+  "nodata": {
+    "representation": "alpha=0"
+  },
+  "months": [
+    {
+      "date": "2005-01",
+      "frame": "2005-01.png",
+      "reason": null
+    },
+    {
+      "date": "2005-02",
+      "frame": "2005-02.png",
+      "reason": null
+    },
+    {
+      "date": "2005-03",
+      "frame": "2005-03.png",
+      "reason": null
+    },
+    {
+      "date": "2005-04",
+      "frame": null,
+      "reason": "intentional_absent_synthetic"
+    },
+    {
+      "date": "2005-05",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-06",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-07",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-08",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-09",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-10",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-11",
+      "frame": null,
+      "reason": "no_frame_provided"
+    },
+    {
+      "date": "2005-12",
+      "frame": null,
+      "reason": "no_frame_provided"
+    }
+  ]
+}

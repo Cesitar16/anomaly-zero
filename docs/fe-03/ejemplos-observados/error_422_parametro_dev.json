@@ -1,0 +1,12 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.491488Z",
+  "error": {
+    "code": "INVALID_PARAMETER",
+    "message": "Los parámetros de la petición no son válidos.",
+    "retryable": false,
+    "request_id": "2fc0116d-626e-4471-a65d-7c6dd5a0dcd1",
+    "details": null
+  }
+}

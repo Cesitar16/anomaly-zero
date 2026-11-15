@@ -1,0 +1,12 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.501027Z",
+  "error": {
+    "code": "LIMIT_EXCEEDED",
+    "message": "La consulta excede el máximo de 240 meses.",
+    "retryable": false,
+    "request_id": "c30dde72-0b13-4198-a4ce-21ba1810dfac",
+    "details": null
+  }
+}
