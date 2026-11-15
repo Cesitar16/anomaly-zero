@@ -28,6 +28,14 @@ DATA = ROOT / "data/raw/nasa/ful104"
 MDBA_PATH = ROOT / "data/cache/ful-102/mdba_boundary_4326.geojson"
 NSW_ZIP = ROOT / "data/cache/ful-102/nsw_boundary.zip"
 WGS84_TO_AEA = Transformer.from_crs("EPSG:4326", "EPSG:3577", always_xy=True).transform
+REQUIRED_SAMPLE_NAMES = (
+    "MERRA2_300.tavgM_2d_slv_Nx.200501.nc4",
+    "MERRA2_400.tavgM_2d_slv_Nx.202101.nc4",
+    "3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5",
+    "3B-MO.MS.MRG.3IMERG.20210101-S000000-E235959.01.V07B.HDF5",
+    "GLDAS_NOAH025_M.A200501.021.nc4",
+    "GLDAS_NOAH025_M.A202101.021.nc4",
+)
 
 
 def sha256(path: Path) -> str:
@@ -38,10 +46,10 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def load_geometries():
-    gj = json.loads(MDBA_PATH.read_text(encoding="utf-8"))
+def load_geometries(mdba_path: Path = MDBA_PATH, nsw_zip: Path = NSW_ZIP):
+    gj = json.loads(mdba_path.read_text(encoding="utf-8"))
     basin = shape(gj["features"][0]["geometry"])
-    with zipfile.ZipFile(NSW_ZIP) as archive:
+    with zipfile.ZipFile(nsw_zip) as archive:
         shp_name = next(n for n in archive.namelist() if n.endswith(".shp"))
         dbf_name = next(n for n in archive.namelist() if n.endswith(".dbf"))
         shp = shapefile.Reader(
@@ -55,10 +63,54 @@ def load_geometries():
     return basin, nsw
 
 
+def valid_data_mask(values, fill):
+    """Compara el fill usando la precisión del tipo numérico almacenado."""
+    array = np.asarray(values)
+    valid = np.isfinite(array)
+    if fill is not None:
+        fill_in_storage_dtype = np.asarray(fill, dtype=array.dtype).item()
+        valid &= array != fill_in_storage_dtype
+    return valid
+
+
+def spatial_selection_masks(basin, cells, lon, lat):
+    """Devuelve las celdas seleccionadas por centro y por intersección."""
+    centers = shapely.covers(basin, shapely.points(lon, lat))
+    intersects = shapely.intersects(cells, basin)
+    return centers, intersects
+
+
+def require_samples(data_dir: Path):
+    missing = [name for name in REQUIRED_SAMPLE_NAMES if not (data_dir / name).is_file()]
+    if missing:
+        raise FileNotFoundError("Faltan muestras NASA obligatorias: " + ", ".join(missing))
+    return [data_dir / name for name in REQUIRED_SAMPLE_NAMES]
+
+
+def validate_results(results):
+    failed = [result.get("file", "<desconocido>") for result in results if result.get("error")]
+    processed = {result.get("file") for result in results if not result.get("error")}
+    missing = [name for name in REQUIRED_SAMPLE_NAMES if name not in processed]
+    if failed or missing:
+        details = []
+        if failed:
+            details.append("fallaron: " + ", ".join(failed))
+        if missing:
+            details.append("no procesadas: " + ", ".join(missing))
+        raise RuntimeError("Auditoría incompleta; " + "; ".join(details))
+
+
 def read_sample(path: Path):
     if path.suffix.lower() == ".hdf5":
         with h5py.File(path, "r") as f:
             g = f["Grid"]
+            qa = {}
+            for name in ("randomError", "gaugeRelativeWeighting", "precipitationQualityIndex"):
+                dataset = g[name]
+                qa[name] = {
+                    "values": dataset[0].T,
+                    "fill": float(dataset.attrs["_FillValue"]) if "_FillValue" in dataset.attrs else None,
+                }
             return {
                 "dataset": "IMERG",
                 "field": "Grid/precipitation",
@@ -67,15 +119,13 @@ def read_sample(path: Path):
                 "units": g["precipitation"].attrs["units"].decode(),
                 "lon": g["lon"][:], "lat": g["lat"][:],
                 "lon_bnds": g["lon_bnds"][:], "lat_bnds": g["lat_bnds"][:],
-                "qa": {
-                    name.split("/")[-1]: g[name.split("/")[-1]][0].T
-                    for name in ("Grid/randomError", "Grid/gaugeRelativeWeighting", "Grid/precipitationQualityIndex")
-                },
+                "qa": qa,
             }
-    # netCDF4's Windows C library can fail on Unicode absolute paths; use the
-    # ASCII relative repository path after resolving from this source checkout.
-    netcdf_path = path.resolve().relative_to(ROOT).as_posix()
-    with netCDF4.Dataset(netcdf_path) as ds:
+    # Abrir en memoria evita incompatibilidad con rutas Unicode de Windows y
+    # permite que --data-dir apunte a cualquier checkout/directorio local.
+    with path.open("rb") as stream:
+        payload = stream.read()
+    with netCDF4.Dataset("sample.nc4", mode="r", memory=payload) as ds:
         field = "T2M" if "T2M" in ds.variables else "SoilMoi0_10cm_inst"
         values = np.asarray(ds.variables[field][0])
         lon, lat = np.asarray(ds.variables["lon"][:]), np.asarray(ds.variables["lat"][:])
@@ -130,8 +180,7 @@ def audit_one(path: Path, basin):
     i_flat, j_flat = i_flat[positive], j_flat[positive]
     vals = values[j_flat, i_flat].astype(float)
     valid = np.isfinite(vals) & (vals != sample["fill"])
-    centers = shapely.points(lon[i_flat], lat[j_flat])
-    center = shapely.covers(basin, centers)
+    center, _ = spatial_selection_masks(basin, cells, lon[i_flat], lat[j_flat])
     n_cells = len(areas)
     def summary(selection, weights):
         take = selection & valid
@@ -140,9 +189,10 @@ def audit_one(path: Path, basin):
         return {"cells": int(selection.sum()), "valid": int(take.sum()), "coverage_pct": float(100 * take.sum() / max(1, selection.sum())), "weighted_mean": float(np.average(vals[take], weights=weights[take]))}
     qa_report = {}
     for key, qa in sample["qa"].items():
-        qvals = np.asarray(qa[j_flat, i_flat], dtype=float)
-        qfill = -9999 if key == "gaugeRelativeWeighting" else -9999.9
-        qvalid = np.isfinite(qvals) & (qvals != qfill)
+        qfield = qa["values"]
+        qvals = qfield[j_flat, i_flat]
+        qvalid = valid_data_mask(qvals, qa["fill"])
+        qvals = qvals.astype(float)
         qa_report[key] = {"valid_basin_cells": int(qvalid.sum()), "min": float(qvals[qvalid].min()) if qvalid.any() else None, "max": float(qvals[qvalid].max()) if qvalid.any() else None}
     return {
         "file": path.name, "sha256": sha256(path), "bytes": path.stat().st_size,
@@ -160,17 +210,20 @@ def audit_one(path: Path, basin):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--data-dir", type=Path, default=DATA, help="Directorio con las seis muestras NASA obligatorias")
+    parser.add_argument("--mdba-geojson", type=Path, default=MDBA_PATH, help="GeoJSON MDBA completo")
+    parser.add_argument("--nsw-zip", type=Path, default=NSW_ZIP, help="ZIP ABS del shapefile estatal")
     parser.add_argument("--output", type=Path, default=ROOT / "data/cache/ful104/spatial_audit.json")
     args = parser.parse_args()
-    basin, nsw = load_geometries()
+    files = require_samples(args.data_dir)
+    basin, nsw = load_geometries(args.mdba_geojson, args.nsw_zip)
     basin_p, nsw_p = transform(WGS84_TO_AEA, basin), transform(WGS84_TO_AEA, nsw)
     overlap = basin_p.intersection(nsw_p)
-    files = sorted(p for p in DATA.iterdir() if p.suffix.lower() in {".nc4", ".hdf5"})
     results = []
     for path in files:
         try:
             results.append(audit_one(path, basin))
-        except (OSError, ValueError, KeyError) as exc:
+        except Exception as exc:  # noqa: BLE001 - se registra por archivo y el proceso termina con error al final
             results.append({"file": path.name, "error": f"{type(exc).__name__}: {exc}"})
     report = {
         "generated_utc": "2026-11-15",
@@ -181,6 +234,7 @@ def main():
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps({"output": str(args.output), "nsw_basin_overlap": report["nsw_basin_overlap"], "samples": [{"file": x["file"], "dataset": x.get("dataset"), "error": x.get("error"), "center": x.get("center_equal_weight"), "fractional": x.get("intersect_fraction_area_weighted"), "valid_area_pct": x.get("area_coverage_by_valid_data_pct")} for x in results]}, indent=2))
+    validate_results(results)
 
 
 if __name__ == "__main__":
