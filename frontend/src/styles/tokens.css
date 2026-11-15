@@ -1,0 +1,74 @@
+/*
+  Design tokens de Anomaly Zero.
+  Cualquier color, tamaño o espacio se define aquí y se consume con var(--...).
+  Los pares de color con texto están verificados por src/test/contrast.test.js
+  (mínimo WCAG AA 4,5:1 para texto normal).
+*/
+:root {
+  /* Superficies claras */
+  --color-paper: #f6f3ec;
+  --color-surface: #ffffff;
+  --color-line: #d8d2c4;
+
+  /* Texto sobre superficies claras */
+  --color-ink: #10222b;
+  --color-muted: #435760;
+
+  /* Marca */
+  --color-primary: #0b5c63;
+  --color-primary-hover: #084850;
+  --color-accent: #f2a65a; /* ámbar: la "anomalía". Se usa sobre fondos oscuros */
+  --color-accent-ink: #8f3a10; /* ámbar oscuro: texto de acento sobre fondos claros */
+
+  /* Superficies oscuras */
+  --color-deep: #0d2830;
+  --color-deep-raised: #143843;
+  --color-deep-sunken: #091d23;
+  --color-deep-line: #2f5b66;
+
+  /* Texto sobre superficies oscuras */
+  --color-on-deep: #eef5f3;
+  --color-on-deep-muted: #b9cccd;
+
+  /* Estados (fondo y texto) */
+  --badge-available-bg: #dcf1e2;
+  --badge-available-fg: #14532d;
+  --badge-progress-bg: #fde5c3;
+  --badge-progress-fg: #6e2a0c;
+  --badge-planned-bg: #e3e7ee;
+  --badge-planned-fg: #2b394b;
+  --badge-candidate-bg: #dcecee;
+  --badge-candidate-fg: #0a4a50;
+
+  /* Foco visible: cambia según la superficie */
+  --color-focus: #0b5c63;
+
+  /* Tipografía */
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --step--1: clamp(0.8rem, 0.78rem + 0.1vw, 0.88rem);
+  --step-0: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  --step-1: clamp(1.15rem, 1.07rem + 0.45vw, 1.35rem);
+  --step-2: clamp(1.4rem, 1.2rem + 1vw, 1.9rem);
+  --step-3: clamp(1.8rem, 1.4rem + 2vw, 2.8rem);
+  --step-4: clamp(2.6rem, 1.8rem + 4vw, 4.8rem);
+
+  /* Espacio y forma */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius: 0.875rem;
+  --radius-pill: 999px;
+
+  /* Layout */
+  --container: 72rem;
+  --gutter: 1.25rem;
+  --header-h: 4.25rem;
+  --bp-nav: 64rem; /* referencia: el CSS usa este valor literal en @media */
+}
