@@ -3,7 +3,7 @@
 **Estado:** recomendación científica provisional para revisión de César y del equipo; no aprueba el MVP, una máscara final ni una serie regional.
 **Responsable de FUL-110:** Lucas Moncada. **Tarjeta de decisión:** [FUL-107](https://linear.app/fullstack-track/issue/FUL-107), a cargo de César Rojas.
 **Consulta de fuentes y archivos:** 2026-11-15.
-**Rama de trabajo:** `feature/ful-110-apoyo-cientifico-az03`, creada desde `origin/dev` en `b51ca0617a96d582e0239d661c00647da2a32e11`.
+**Rama de trabajo:** `feature/ful-110-apoyo-cientifico-az03-lucas`, creada desde `origin/dev` en `b51ca0617a96d582e0239d661c00647da2a32e11`.
 
 ## 1. Resumen ejecutivo científico
 
