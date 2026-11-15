@@ -4,7 +4,7 @@
 
 ## Alcance y procedencia
 
-Se inspeccionaron los archivos `data/raw/nasa` del checkout del usuario y la caché local preservada en `anomaly-zero-ful-105-eda/data/cache/ful-105/be02-handoff/data_root`. Los archivos no están versionados. Sus sidecars de NASA GES DISC/CMR se cotejaron con nombre, período, tamaño y SHA-256; los bytes observados coinciden con los checksums declarados. La caché se leyó en sitio y no se movió ni alteró.
+Se inspeccionaron los archivos `data/raw/nasa` del checkout del usuario y la caché local preservada en `anomaly-zero-ful-105-eda/data/cache/ful-105/be02-handoff/data_root`. Los archivos no están versionados. El auditor coteja nombre, producto/colección/versión/variable, período, DOI, ID de granule y URLs CMR del manifiesto, checksum/tamaño y metadatos de variable/unidad/periodo del payload. La matriz cuenta solo archivos que pasan todos esos controles. Halló 14 granules únicos elegibles; los 13 registros duplicados byte-a-byte de los dos directorios se marcan `duplicate_identical_granule` y no inflan disponibilidad. No quedaron conflictos de contenido en los períodos elegibles. La caché se leyó en sitio y no se movió ni alteró.
 
 | Producto | Variable / unidad nativa | Colección y versión | Archivos locales y período real | Tamaño y SHA-256 de enero 2005 |
 |---|---|---|---|---|
@@ -42,7 +42,7 @@ Estimación usando bytes observados (sin compromiso de descarga): 12 meses de ca
 
 ## Reproducción y siguientes pasos
 
-Regenerar la matriz y verificar hashes/tamaños de todos los granules con:
+Regenerar la matriz, identidad y hashes de todos los granules con:
 
 ```powershell
 uv run python -m research.ful122_inventory `
@@ -50,6 +50,8 @@ uv run python -m research.ful122_inventory `
   --input-dir "C:\ruta\al\cache\data_root" `
   --output "C:\ruta\al\resultado\ful122_inventory.json"
 ```
+
+El resultado por archivo distingue `found`, `filename_recognized`, `manifest_found`, `identified`, `manifest_identity_verified`, `hash_verified`, `size_verified`, `native_payload_check_attempted`, `native_payload_verified`, `eligible` y `rejection_reasons`. Archivos sin manifiesto, no NASA, sintéticos, con metadatos contradictorios, corruptos, de integridad incorrecta o duplicados/conflictos no se cuentan como disponibles. Los tests usan payloads sintéticos solo como fixtures del validador; las verificaciones reales de los 14 archivos locales se ejecutaron separadamente y no se guardaron los archivos fuente en Git.
 
 Revisar identidad/variable/dimensiones con los manifiestos FUL-116, FUL-113 y FUL-105, y volver a abrir los NetCDF con `uv run python` + xarray (`decode_cf`/escala automáticas deben registrarse). Recalcular SHA-256 antes de reutilizar. Para pasar el go/no-go se necesitan archivos auténticos, hash y manifiesto verificables, al menos varios años completos con los tres productos, política espacial revisada sin aprobarla unilateralmente, QA documentada y una partición cronológica independiente. La primera adquisición recomendada es enero–diciembre de 2005 de MERRA-2 y GLDAS (11 archivos faltantes de cada uno), luego comprobar integridad, solapamiento, tamaño y soporte antes de extender la ventana.
 
