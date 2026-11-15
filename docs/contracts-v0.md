@@ -19,16 +19,20 @@ Los cuatro ejemplos al final son fixtures sintéticos. Cada raíz lleva `"synthe
 - Las peticiones de series usan `start` y `end` en `YYYY-MM`, meses inclusivos, con `start <= end`. La respuesta etiqueta cada mes con su primer día (`YYYY-MM-01`). `calendar` es `null` mientras no se haya verificado para la fuente.
 - La frecuencia disponible en v0 es `monthly`. No se remuestrea ni se interpola.
 - `null` significa no disponible/no calculado/desconocido según el campo y su razón; nunca significa cero. Cero es un valor numérico válido. JSON no puede contener NaN ni Infinity.
-- Fechas de actualización se expresan en RFC 3339 UTC o como `null` si no se conocen. Las etiquetas mensuales no contienen hora ni zona.
+- `generated_at` es la hora de esa respuesta API en RFC 3339 UTC. `source_updated_at` refleja una fecha de actualización publicada por la fuente; `retrieved_at`, cuándo se recuperó el original; `snapshot_created_at`, cuándo se materializó el snapshot. Cada fecha es `null` si se desconoce y no se sustituye por la hora de consulta.
+- Las etiquetas mensuales no contienen hora ni zona.
 - La API lee snapshots internos verificados; una petición de React no descarga NASA ni abre NetCDF/HDF5.
+- Política propuesta de frescura: un `dataset_id` identifica contenido inmutable, incluidos fuentes, selección y transformaciones; si cambian bytes fuente, selección espacial o transformaciones, se publica otro ID. `generated_at` no cambia el dataset. El cliente no asume frescura por una respuesta de catálogo; las respuestas usan `Cache-Control: no-store` mientras no se acuerde una política distinta. No se propone infraestructura de caché.
 
 ### Envolventes comunes
 
-Toda respuesta JSON propuesta lleva `contract_version` y `synthetic`. En producción, `synthetic` es `false`; los fixtures de esta página usan `true`.
+Toda respuesta JSON propuesta lleva `contract_version`, `synthetic` y `generated_at`. En producción, `synthetic` es `false`; los fixtures de esta página usan `true`.
 
 La respuesta de error tiene `contract_version`, `synthetic` y `error`. El objeto `error` contiene `code`, `message`, `retryable`, `request_id` y `details`; este último es un objeto seguro con campos de contexto o `null`. El ejemplo 3 muestra el envelope completo.
 
 `request_id` identifica la petición y sirve para soporte; no es un token de acceso. `details` puede ser `null` si no hay detalles seguros que exponer. Nunca se devuelven cookies, credenciales ni mensajes internos del proveedor.
+
+Mapa propuesto: `422` (`INVALID_PARAMETER`, `PERIOD_OUT_OF_COVERAGE`, `LIMIT_EXCEEDED`, `INSUFFICIENT_DATA`) y `409` (`ANALYSIS_METHOD_UNAVAILABLE`) no son reintentables sin cambiar la petición o habilitar un método; `404 RESOURCE_NOT_FOUND` tampoco. `503 SERVICE_UNAVAILABLE` representa una indisponibilidad temporal y usa `retryable: true`. `500 INTERNAL_ERROR` usa `retryable: false`; el cliente no deduce éxito, ausencia de datos ni estado pendiente desde un mensaje. El campo `code` guía la UI; `message` es informativo.
 
 ## Catálogo de dominio y significado
 
@@ -42,19 +46,20 @@ Propuesta de descriptor: `region_id`, `name`, `geometry_version`, `geometry_sour
 
 Descriptor de producto propuesto:
 
-- `product_id`, `short_name`, `product_version`, `variable`, `quantity`, `unit`, `availability`.
+- `product_id`, `short_name`, `product_version`, `variable`, `quantity`, `unit`, `availability`, `current_dataset_id`, `coverage` y `quality`.
 - `source`: agencia, distribuidor, ID de colección, DOI/URLs y nombres/IDs de granules cuando estén disponibles.
 - `availability`: `available` si hay snapshot para todo el rango publicado, `partial` si hay snapshot con huecos, `unavailable` si no hay snapshot utilizable.
+- `current_dataset_id`, `coverage` y `quality` pueden ser `null` si no hay snapshot publicado.
 
-La respuesta de serie lleva `dataset_id` (snapshot exacto), `provenance` (hashes originales, `retrieved_at` y versión del manifiesto), `coverage`, `quality`, `transformations` y `spatial_aggregation` en su envelope, no dentro de `Product`. Los campos desconocidos son `null`, no estimaciones. El objeto `quality` incluye `source_flag_fields` (nombres disponibles), `provider_flags_applied`, `source_missing_attributes` (atributos `_FillValue`, `missing_value`, `scale_factor`, `add_offset` con valores crudos o `null`), `finite_non_fill_filter_applied`, `verification_state` y `mask_applied`. Flags disponibles y flags efectivamente aplicados son campos distintos. `quality.verification_state` puede ser `unassessed`, `basic_checks_only` o `provider_qa_applied`; el último solo se usa si se aplicaron de verdad los flags de la fuente. En `series[].quality.provider_flags` se devuelven pares `{name, value}` originales sin reinterpretarlos.
+La respuesta de serie lleva `dataset_id` (snapshot exacto), `provenance` (hashes originales, tiempos y manifiesto), `coverage`, `quality`, `transformations` y `spatial_aggregation` en su envelope, no dentro de `Product`. La identidad del snapshot se resuelve con `dataset_id` y `manifest_sha256`; cada checksum de archivo referencia el original conservado. Los campos desconocidos son `null`, no estimaciones. El objeto `quality` incluye `source_flag_fields` (nombres disponibles), `provider_flags_applied`, `source_missing_attributes` (atributos `_FillValue`, `missing_value`, `scale_factor`, `add_offset` con valores crudos o `null`), `finite_non_fill_filter_applied`, `verification_state` y `mask_applied`. Flags disponibles y flags efectivamente aplicados son campos distintos. `quality.verification_state` puede ser `unassessed`, `basic_checks_only` o `provider_qa_applied`; el último solo se usa si se aplicaron de verdad los flags de la fuente. En `series[].quality.provider_flags` se devuelven pares `{name, value}` originales sin reinterpretarlos.
 
 Catálogo candidato y significado/unidad de trabajo (IDs, versiones y catálogo no quedan aprobados por este borrador):
 
-| ID propuesto | Colección CMR candidata / versión | Variable | Significado que debe conservarse | Unidad observada en muestra | DOI candidato |
+| ID propuesto | Colección CMR candidata / versión | Variable original → nombre en contrato | Significado que debe conservarse | Unidad observada en muestra | DOI candidato |
 | --- | --- | --- | --- | --- | --- |
-| `P01` | MERRA-2 `M2TMNXSLV`, concept ID `C1276812859-GES_DISC`, `5.12.4` | `T2M` | Temperatura del aire a 2 m; no temperatura superficial | `K` | `10.5067/AP1B0BA5PD2K` |
-| `P02` | IMERG Final `GPM_3IMERGM`, concept ID `C2723754851-GES_DISC`, colección `07`; los archivos de muestra declaran `V07B` | `Grid/precipitation` | Tasa media mensual; no acumulado mensual | `mm/hr` | `10.5067/GPM/IMERG/3B-MONTH/07` |
-| `P03` | GLDAS Noah `GLDAS_NOAH025_M`, concept ID `C1342986036-GES_DISC`, `2.1` | `SoilMoi0_10cm_inst` | Humedad modelada de suelo, capa 0–10 cm; salida mensual promedia salidas de 3 horas, no es medición puntual directa | `kg m-2` | `10.5067/SXAVCZFAQLNO` |
+| `P01` | MERRA-2 `M2TMNXSLV`, concept ID `C1276812859-GES_DISC`, `5.12.4` | `T2M` → `T2M` | Temperatura del aire a 2 m; no temperatura superficial | `K` | `10.5067/AP1B0BA5PD2K` |
+| `P02` | IMERG Final `GPM_3IMERGM`, concept ID `C2723754851-GES_DISC`, colección `07`; los archivos de muestra declaran `V07B` | `Grid/precipitation` → `precipitation` | Tasa media mensual; no acumulado mensual | `mm/hr` | `10.5067/GPM/IMERG/3B-MONTH/07` |
+| `P03` | GLDAS Noah `GLDAS_NOAH025_M`, concept ID `C1342986036-GES_DISC`, `2.1` | `SoilMoi0_10cm_inst` → `SoilMoi0_10cm_inst` | Humedad modelada de suelo, capa 0–10 cm; salida mensual promedia salidas de 3 horas, no es medición puntual directa | `kg m-2` | `10.5067/SXAVCZFAQLNO` |
 
 MERRA-2 `T2M` significa temperatura del aire a 2 m. IMERG `precipitation` se conserva como tasa en `mm/hr`, no se multiplica por horas para presentarla como acumulado. No completar huecos de IMERG Final con Early/Late; el inventario consultado registra Final V07 hasta 2025-09, que no equivale a cobertura válida. GLDAS Noah 2.1 es modelado; no confundir la producción principal con Early Product. Contrastar las referencias con [catálogo y límites](datasets.md) y [muestras BE-02](be-02-sample-workflow.md) antes de implementar.
 
@@ -70,9 +75,11 @@ Cada elemento de `series` es `{date, value, quality}`. `value` está en la unida
 
 ### Resultado de análisis
 
-`analysis_id` lo asigna el backend en la respuesta sincrónica de creación. El frontend lo guarda para abrir la vista y consultar `GET /api/v1/analyses/{analysis_id}` al navegar o recargar. No hay colas, polling, ni transición automática de estado en esta propuesta. Si un método no está disponible/aprobado, el registro queda `pending`; repetir GET devuelve ese registro. Cuando un método aceptado esté implementado, una nueva petición crea otro ID y otro resultado.
+`analysis_id` lo asigna el backend al crear un recurso mediante `201` o `202`. El frontend lo guarda para abrir la vista y consultar `GET /api/v1/analyses/{analysis_id}` al navegar o recargar. El contrato no propone colas ni polling automático. Un cálculo que de verdad se aceptó puede pasar de `pending` a `complete`; si no hay procesador, no se crea el recurso y se usa `409 ANALYSIS_METHOD_UNAVAILABLE`. Repetir GET devuelve el estado actual mientras se retenga el registro. Cuando se solicita otra ejecución, recibe otro ID.
 
-El objeto propuesto incluye `analysis_id`, `dataset_id`, `region_id`, `product_id`, `product_version`, `variable`, `quantity`, `input_unit`, ventana mensual inclusiva, `source`, `provenance`, `transformations`, `status`, `method`, `metrics` y `limitations`. `input_unit` y `quantity` describen los datos analizados; `metrics.slope_unit` describe la salida y queda `null` hasta definir método y unidad de tiempo. En `pending`, `method` y todas las métricas no calculadas son `null`. Nunca usar `p_value: 0` para representar ausencia. No se fija método, mínimo de muestra, unidad de pendiente, intervalo de confianza, valor p ni umbral de significancia en esta propuesta.
+El objeto propuesto incluye `analysis_id`, `dataset_id`, `region_id`, `product_id`, `product_version`, `variable`, `quantity`, `input_unit`, ventana mensual inclusiva, `source`, `provenance`, `transformations`, `status`, `method`, `metrics` y `limitations`. `input_unit` y `quantity` describen los datos analizados; `metrics.slope_unit` describe la salida y queda `null` hasta definir método y unidad de tiempo. En `pending`, el método aceptado debe estar identificado y las métricas todavía no calculadas son `null`; nunca usar `p_value: 0` para representar ausencia. No se fija método, mínimo de muestra, unidad de pendiente, intervalo de confianza, valor p ni umbral de significancia en esta propuesta.
+
+Estados y creación se distinguen así: `not_available` es un rechazo previo a crear el recurso (`409 ANALYSIS_METHOD_UNAVAILABLE`, sin `analysis_id`); `insufficient_data` es rechazo previo (`422 INSUFFICIENT_DATA`); `pending` solo significa que el cálculo fue aceptado y un procesador confirmó que ya está trabajando (respuesta `202` con `analysis_id`); `complete` significa cálculo terminado. El contrato v0 no habilita un método ni exige un procesador: por ello no produce `pending` hasta que exista esa capacidad. No hay colas ni consulta automática periódica; el cliente puede hacer un GET explícito al navegar a un análisis aceptado. Un error técnico usa el envelope de error y nunca se disfraza de `pending`, `no_data` o `complete`.
 
 ## Recursos propuestos
 
@@ -80,39 +87,44 @@ El objeto propuesto incluye `analysis_id`, `dataset_id`, `region_id`, `product_i
 
 - **Parámetros:** ninguno.
 - **Validaciones:** ninguna; devuelve regiones publicadas. Una lista vacía es válida.
-- **200:** `{contract_version, synthetic, regions: Region[]}`. Cada `Region` usa el descriptor de región definido arriba.
+- **200:** `{contract_version, synthetic, generated_at, regions: Region[]}`. Cada `Region` usa el descriptor de región definido arriba.
 - **Errores:** `503 SERVICE_UNAVAILABLE` si no se puede leer el catálogo interno; respuesta de error común con `retryable: true`.
+- **Caché:** se propone `Cache-Control: no-store` mientras no se apruebe otra política.
 
 ### `GET /api/v1/products?region_id=REG01`
 
 - **Parámetros:** requerido `region_id`.
 - **Validaciones:** ID no vacío; la región debe existir. Un ID desconocido produce 404.
-- **200:** `{contract_version, synthetic, region_id, products: Product[]}`. Cada producto informa disponibilidad `available`, `partial` o `unavailable`, variable/unidad, fuente, cobertura temporal, calidad y el `dataset_id` del snapshot actual o `null`.
+- **200:** `{contract_version, synthetic, generated_at, region_id, products: Product[]}`. Cada producto informa disponibilidad `available`, `partial` o `unavailable`, variable/unidad, fuente, cobertura temporal, calidad y el `current_dataset_id` del snapshot actual o `null`.
 - **Errores:** 422 `INVALID_PARAMETER` si falta/formato inválido; 404 `RESOURCE_NOT_FOUND` si la región no existe; 503 `SERVICE_UNAVAILABLE` si falla el catálogo interno.
+- **Caché:** se propone `Cache-Control: no-store` mientras no se apruebe otra política.
 
 ### `GET /api/v1/series?region_id=REG01&product_id=P02&start=2005-01&end=2005-12&frequency=monthly`
 
 - **Parámetros requeridos:** `region_id`, `product_id`, `start`, `end`, `frequency`.
-- **Validaciones:** región y producto deben existir y estar relacionados; formato mensual ISO válido; inicio no posterior al fin; frecuencia exactamente `monthly`; máximo propuesto de 240 meses por respuesta. El rango solicitado debe estar dentro del período de cobertura publicado; no se trunca silenciosamente.
-- **200 con datos:** respuesta `SeriesResponse` con `data_state: "available"` o `"available_with_gaps"`, `dataset_id`, producto, procedencia, coberturas, calidad, agregación, transformaciones y períodos ordenados ascendentemente.
-- **200 sin registros:** mismo envelope con `data_state: "no_data"`, `dataset_id: null`, `provenance: null`, cobertura disponible nula, `valid_periods: 0`, lista `series: []` y mensaje. Es distinto de un valor cero.
+- **Validaciones:** región y producto deben existir y estar relacionados; formato mensual ISO válido; inicio no posterior al fin; frecuencia exactamente `monthly`; máximo propuesto de 240 meses por respuesta. Si existe un período de cobertura publicado, una solicitud fuera de ese rango produce `PERIOD_OUT_OF_COVERAGE`; no se trunca silenciosamente. Un rango válido sin registros devuelve `data_state: "no_data"`.
+- **200 con datos:** respuesta `SeriesResponse` con `generated_at`, `data_state: "available"` o `"available_with_gaps"`, `dataset_id`, producto, procedencia, coberturas, calidad, agregación, transformaciones y períodos ordenados ascendentemente.
+- **200 sin registros:** mismo envelope con `data_state: "no_data"`, `dataset_id: null`, `provenance: null`, cobertura disponible nula, `valid_periods: 0`, lista `series: []` y mensaje. Es distinto de un valor cero y de un error temporal del snapshot.
 - **Huecos dentro de datos:** un período esperado sin valor se devuelve como punto con `value: null` y razón; no se rellena con cero.
 - **Errores:** 422 `INVALID_PARAMETER`, `PERIOD_OUT_OF_COVERAGE` o `LIMIT_EXCEEDED`; 404 `RESOURCE_NOT_FOUND` para región/producto desconocidos; 503 `SERVICE_UNAVAILABLE` si el snapshot no se puede leer.
+- **Caché:** se propone `Cache-Control: no-store`; el identificador de snapshot permite detectar contenido idéntico, pero no sustituye una política de frescura aprobada.
 
 ### `POST /api/v1/analyses`
 
-- **Parámetros:** JSON `{dataset_id, window: {start, end}}`. La ventana usa los meses `YYYY-MM` inclusivos definidos arriba. `dataset_id` debe ser el que entregó una respuesta de serie; no se aceptan archivos NASA ni IDs del cliente.
+- **Parámetros:** JSON `{dataset_id, window: {start, end, end_inclusive: true}}`. La ventana usa los meses `YYYY-MM` inclusivos definidos arriba. `dataset_id` debe ser el que entregó una respuesta de serie; no se aceptan archivos NASA ni IDs del cliente.
 - **Validaciones:** snapshot existente; ventana mensual ISO inclusiva dentro de cobertura del dataset; máximo 240 meses. Si no hay observaciones suficientes para una operación habilitada, responder 422 `INSUFFICIENT_DATA` con forma de error común.
-- **201:** creación sincrónica del recurso y devolución de `AnalysisResponse` con `analysis_id`. Si el método no está aprobado/disponible, `status: "pending"`, `method: null` y métricas `null`. Si está habilitado en el futuro, el cálculo se ejecuta dentro de la petición y devuelve `status: "complete"`; no se promete un método en v0.
-- **Errores:** 422 `INVALID_PARAMETER`, `PERIOD_OUT_OF_COVERAGE`, `LIMIT_EXCEEDED` o `INSUFFICIENT_DATA`; 404 `RESOURCE_NOT_FOUND` si `dataset_id` no existe; 503 `SERVICE_UNAVAILABLE` si el snapshot no está disponible. Un 503/5xx no se debe convertir en “sin datos”.
-- La respuesta incluye `Location: /api/v1/analyses/{analysis_id}`; el recurso creado y su ID deben estar disponibles para el GET posterior.
+- **201:** solo para análisis completado sincrónicamente; devuelve `AnalysisResponse` con `status: "complete"` y `analysis_id`.
+- **202:** solo cuando hay un procesador que aceptó el cálculo y confirmó que está activo; devuelve `status: "pending"`, método identificado, métricas todavía nulas y `analysis_id`. `Location` apunta al GET del análisis. La existencia de este estado no exige diseñar colas ni polling automático.
+- **Errores:** 422 `INVALID_PARAMETER`, `PERIOD_OUT_OF_COVERAGE`, `LIMIT_EXCEEDED` o `INSUFFICIENT_DATA`; 404 `RESOURCE_NOT_FOUND` si `dataset_id` no existe; 409 `ANALYSIS_METHOD_UNAVAILABLE` si no hay método habilitado/aprobado, antes de crear ID; 503 `SERVICE_UNAVAILABLE` si el snapshot no está disponible. Un 503/5xx no se debe convertir en “sin datos”.
+- El método no disponible no crea ni persiste un análisis: la UI muestra que aún no está habilitado y no espera una transición. La durabilidad/retención del registro tras `201` o `202` no se garantiza en v0 y requiere decisión de implementación; mientras el registro exista, GET representa el mismo snapshot/ventana/resultado; si expiró o no existe devuelve 404.
 
 ### `GET /api/v1/analyses/{analysis_id}`
 
 - **Parámetros:** ID opaco en la ruta.
 - **Validaciones:** no vacío y formato de ID admitido por el servicio.
 - **200:** el mismo `AnalysisResponse` creado por POST, incluidos `dataset_id`, ventana y procedencia.
-- **Errores:** 404 `RESOURCE_NOT_FOUND` si no existe; 503 `SERVICE_UNAVAILABLE` si el snapshot/registro no se puede leer.
+- **Caché:** se propone `Cache-Control: no-store`; el cliente consulta al navegar o recargar, no en un bucle.
+- **Errores:** 404 `RESOURCE_NOT_FOUND` si el ID no existe o el registro expiró; 503 `SERVICE_UNAVAILABLE` si el snapshot/registro no se puede leer temporalmente.
 
 ### Límites, latencia y raster opcional
 
@@ -131,9 +143,52 @@ No se transmiten rasters NetCDF/HDF5 completos a React. Se propone un descriptor
 | Rasters, tile descriptor/formato, tamaño máximo y latencia aceptable | Descriptor de raster opcional; respuestas y límites | Lucas (validez/cobertura), Alejandra (uso UI) y backend (servicio/límites) | Publicación raster, capa de mapa y política de rendimiento |
 | Propuesta de versión `/api/v1`, campos obligatorios y límites | Todos los recursos | Alejandra, César, Lucas y responsable backend | Esquemas OpenAPI/Pydantic y compatibilidad del cliente |
 
+La colección y el alcance científico siguen condicionados por [FUL-107](https://linear.app/fullstack-track/issue/FUL-107/az-03-aprobar-alcance-cientifico-inicial-con-matriz-de-productos-region-y-calidad); arquitectura y API base dependen además de FUL-99 y FUL-103. Esta propuesta no cierra esos bloqueos.
+
+## Glosario
+
+| Término | Significado en este contrato |
+| --- | --- |
+| `product_id` | Identidad estable de la definición de producto y variable; no identifica bytes concretos. |
+| `dataset_id` | Identidad opaca de un snapshot inmutable con sus fuentes, selección espacial y transformaciones. |
+| `analysis_id` | Identificador asignado por el servicio solo tras aceptar y crear un análisis. No existe si el método se rechaza como no disponible. |
+| `generated_at` | Instante UTC en que se generó la respuesta API. |
+| `source_updated_at` | Marca publicada por el proveedor/original, si se conoce; no equivale a recuperación ni materialización. |
+| `retrieved_at` | Instante de recuperación del original. |
+| `snapshot_created_at` | Instante de materialización del snapshot derivado. |
+| `present_periods` / `valid_periods` | Meses con entrada temporal / con valor finito distinto de fill. Ninguno demuestra que se aplicaron QA flags ni mide superficie cubierta. |
+| `pending` | Análisis creado y aceptado cuyo procesamiento está confirmado en curso. No significa método no disponible ni datos insuficientes. |
+| `not_available` | Rechazo previo a crear el recurso porque no existe método aprobado y habilitado; se representa con `409` y no incluye `analysis_id`. |
+| `synthetic` | Marca explícita de fixtures; no indica calidad ni observación real. |
+
+## ADR AZ-04-001 — Contrato de intercambio v0
+
+**Estado:** Proposed; pendiente de revisión multidisciplinaria. No es un acuerdo del equipo.
+
+- **Objetivo:** permitir que React, FastAPI y Data Science implementen contra un intercambio común sin hacer depender las vistas de la disponibilidad del pipeline NASA o de métricas científicas aún no aprobadas.
+- **Recursos:** se proponen catálogo de regiones/productos, lectura de series por rango y creación/consulta de análisis. No se proponen exportación ni nuevos endpoints raster; el descriptor raster permanece opcional.
+- **Identificadores:** IDs opacos. El backend entrega `dataset_id` al responder una serie y entrega `analysis_id` solo en un `201` completado o `202` realmente aceptado. React conserva el ID de análisis y lo usa en GET.
+- **Versionado:** prefijo propuesto `/api/v1` y `contract_version: "0.1-draft"`; cambios incompatibles requieren revisión y una versión mayor de ruta.
+- **Análisis:** no se crea registro para método no aprobado (`409 not_available`) ni datos insuficientes (`422`). `pending` solo se devuelve si un procesador ya aceptó el trabajo; el v0 no requiere cola, polling ni cálculo. `complete` se devuelve solo con cálculo ejecutado. Un error técnico usa el envelope común.
+- **Datos y frescura:** `dataset_id` y `manifest_sha256` identifican snapshot inmutable; cambios de originales o transformaciones generan otro dataset. La respuesta separa marcas de fuente, recuperación, snapshot y generación API. No se promete persistencia durable ni política HTTP de caché más allá de `no-store` propuesto.
+- **Faltantes y calidad:** `null` no es cero; no-data es una respuesta exitosa vacía solo para una consulta válida; errores upstream siguen siendo errores. Finito/no-fill no implica QA aplicada y el conteo de centros no expresa superficie.
+- **Alternativas descartadas por ahora:** frontend descargando NASA/HDF/NetCDF, crear un análisis pendiente sin procesador, inferir un snapshot desde `product_id`, añadir jobs/colas/polling, y publicar métricas o agregaciones sin decisión científica.
+- **Consecuencias:** mocks tipados pueden avanzar; implementación real queda sujeta a aprobación de unidades, calendario, geometría, agregación, estadística, retención y raster. Los endpoints descritos aún no existen.
+
+## Registro de revisión y aprobación
+
+Este registro no contiene conformidades ni firmas; cada persona debe completar su resultado tras revisar el documento y [OpenAPI](openapi-contract-v0.yaml).
+
+| Revisor | Comprobación solicitada | Resultado | Evidencia / observaciones |
+| --- | --- | --- | --- |
+| César | Semántica estadística, métricas, unidades derivadas y limitaciones | Pending review | Pendiente de respuesta registrada en PR o Linear. |
+| Lucas | Fuentes, versiones, calidad/flags, geometría, calendario y procedencia | Pending review | Pendiente de respuesta registrada en PR o Linear. |
+| Alejandra | Consumo React, estados UI y flujo `analysis_id` | Pending review | Pendiente de respuesta registrada en PR o Linear. |
+| Alaín | Viabilidad técnica FastAPI, errores y consistencia OpenAPI | Pending review | Pendiente de respuesta registrada en PR o Linear. |
+
 ## Ejemplos JSON sintéticos
 
-Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `synthetic: true` aparece en la raíz de cada respuesta. En producción el servicio lo devolvería como `false`.
+Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `synthetic: true` aparece en la raíz de cada respuesta. `generated_at` es una marca sintética en estos fixtures; una respuesta real usaría la hora UTC de la petición.
 
 ### 1. Serie con cero válido y un valor ausente
 
@@ -164,13 +219,35 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
       "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
       "source_urls": [],
       "granule_ids": []
+    },
+    "current_dataset_id": "ds-synthetic-001",
+    "coverage": {
+      "start": "2005-01",
+      "end": "2005-03"
+    },
+    "quality": {
+      "source_flag_fields": [],
+      "provider_flags_applied": false,
+      "source_missing_attributes": {
+        "fill_value": -9999.9,
+        "missing_value": null,
+        "scale_factor": null,
+        "add_offset": null
+      },
+      "finite_non_fill_filter_applied": true,
+      "verification_state": "basic_checks_only",
+      "mask_applied": null
     }
   },
   "dataset_id": "ds-synthetic-001",
   "provenance": {
     "source_sha256": [],
     "retrieved_at": null,
-    "manifest_version": null
+    "manifest_version": null,
+    "source_updated_at": null,
+    "snapshot_created_at": null,
+    "manifest_sha256": null,
+    "original_file_count": null
   },
   "temporal": {
     "frequency": "monthly",
@@ -190,10 +267,12 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
     "expected_periods": 3,
     "present_periods": 3,
     "valid_periods": 2,
-    "missing_periods": ["2005-02"]
+    "missing_periods": [
+      "2005-02"
+    ]
   },
   "quality": {
-    "source_flag_fields": ["precipitationQualityIndex", "randomError"],
+    "source_flag_fields": [],
     "provider_flags_applied": false,
     "source_missing_attributes": {
       "fill_value": -9999.9,
@@ -215,19 +294,32 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
     {
       "date": "2005-01-01",
       "value": 0.42,
-      "quality": {"state": "unassessed", "provider_flags": [], "missing_reason": null}
+      "quality": {
+        "state": "unassessed",
+        "provider_flags": [],
+        "missing_reason": null
+      }
     },
     {
       "date": "2005-02-01",
       "value": null,
-      "quality": {"state": "missing", "provider_flags": [], "missing_reason": "provider_fill_value"}
+      "quality": {
+        "state": "missing",
+        "provider_flags": [],
+        "missing_reason": "provider_fill_value"
+      }
     },
     {
       "date": "2005-03-01",
       "value": 0.0,
-      "quality": {"state": "unassessed", "provider_flags": [], "missing_reason": null}
+      "quality": {
+        "state": "unassessed",
+        "provider_flags": [],
+        "missing_reason": null
+      }
     }
-  ]
+  ],
+  "generated_at": "2026-01-01T00:00:00Z"
 }
 ```
 
@@ -260,18 +352,33 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
       "doi": "10.5067/SXAVCZFAQLNO",
       "source_urls": [],
       "granule_ids": []
-    }
+    },
+    "current_dataset_id": null,
+    "coverage": null,
+    "quality": null
   },
   "dataset_id": null,
   "provenance": null,
-  "temporal": {"frequency": "monthly", "calendar": null, "date_label": "month_start"},
-  "requested_coverage": {"start": "2005-01", "end": "2005-03", "end_inclusive": true},
+  "temporal": {
+    "frequency": "monthly",
+    "calendar": null,
+    "date_label": "month_start"
+  },
+  "requested_coverage": {
+    "start": "2005-01",
+    "end": "2005-03",
+    "end_inclusive": true
+  },
   "available_coverage": null,
   "coverage": {
     "expected_periods": 3,
     "present_periods": 0,
     "valid_periods": 0,
-    "missing_periods": ["2005-01", "2005-02", "2005-03"]
+    "missing_periods": [
+      "2005-01",
+      "2005-02",
+      "2005-03"
+    ]
   },
   "quality": {
     "source_flag_fields": [],
@@ -286,10 +393,15 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
     "verification_state": "unassessed",
     "mask_applied": null
   },
-  "spatial_aggregation": {"method": null, "area_weighted": null, "mask_version": null},
+  "spatial_aggregation": {
+    "method": null,
+    "area_weighted": null,
+    "mask_version": null
+  },
   "transformations": [],
   "series": [],
-  "message": "No hay datos disponibles para el período solicitado."
+  "message": "No hay datos disponibles para el período solicitado.",
+  "generated_at": "2026-01-01T00:00:00Z"
 }
 ```
 
@@ -304,55 +416,57 @@ Los cuatro objetos son fixtures de forma, no datos ni resultados científicos. `
     "message": "El snapshot de datos no está disponible temporalmente.",
     "retryable": true,
     "request_id": "req-synthetic-001",
-    "details": {"dataset_id": "ds-synthetic-001", "provider_status": null}
-  }
+    "details": {
+      "dataset_id": "ds-synthetic-001",
+      "provider_status": null
+    }
+  },
+  "generated_at": "2026-01-01T00:00:00Z"
 }
 ```
 
-### 4. Análisis creado sin cálculo disponible
+### 4. Método de análisis no disponible (no se crea recurso)
+
+La respuesta representa un rechazo previo a crear un análisis: `409`, sin `analysis_id`. El estado `not_available` explica la UI; no es un trabajo en curso ni debe consultarse repetidamente.
 
 ```json
 {
   "contract_version": "0.1-draft",
   "synthetic": true,
-  "analysis_id": "analysis-synthetic-001",
-  "dataset_id": "ds-synthetic-001",
-  "region_id": "REG01",
-  "product_id": "P02",
-  "product_version": "V07B",
-  "variable": "precipitation",
-  "quantity": "monthly_mean_rate",
-  "input_unit": "mm/hr",
-  "window": {"start": "2005-01", "end": "2005-03", "end_inclusive": true},
-  "source": {
-    "agency": "NASA/JAXA",
-    "distributor": "GES DISC",
-    "collection_id": "C2723754851-GES_DISC",
-    "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
-    "source_urls": [],
-    "granule_ids": []
-  },
-  "provenance": {
-    "source_sha256": [],
-    "retrieved_at": null,
-    "manifest_version": null
-  },
-  "transformations": [],
-  "status": "pending",
-  "method": null,
-  "metrics": {
-    "slope": null,
-    "slope_unit": null,
-    "confidence_interval": null,
-    "p_value": null,
-    "significance": null
-  },
-  "limitations": ["Método, unidades y criterios pendientes de aprobación científica."]
+  "generated_at": "2026-01-01T00:00:00Z",
+  "error": {
+    "code": "ANALYSIS_METHOD_UNAVAILABLE",
+    "message": "No hay un método estadístico aprobado y habilitado; no se creó un análisis.",
+    "retryable": false,
+    "request_id": "req-synthetic-analysis-001",
+    "details": {
+      "analysis": {
+        "state": "not_available",
+        "analysis_id": null,
+        "dataset_id": "ds-synthetic-001",
+        "region_id": "REG01",
+        "product_id": "P02",
+        "window": {
+          "start": "2005-01",
+          "end": "2005-03",
+          "end_inclusive": true
+        },
+        "method": null,
+        "metrics": {
+          "slope": null,
+          "slope_unit": null,
+          "confidence_interval": null,
+          "p_value": null,
+          "significance": null
+        }
+      }
+    }
+  }
 }
 ```
 
-## Revisión y siguiente implementación
+## Archivos del contrato y siguiente implementación
 
-Lucas revisa procedencia, producto, unidades, calendario, QA y cobertura; César revisa el significado estadístico y límites de los resultados; Alejandra comprueba los envelopes, estados y flujo React de obtención/uso de `analysis_id`. Alaín convierte solo las decisiones aprobadas en modelos OpenAPI/Pydantic posteriormente. La aprobación de AZ-04 aún depende de las relaciones existentes con FUL-107, FUL-103 y FUL-99; esta propuesta no las elimina.
+La especificación declarativa versionada está en [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml) y comparte nombres, estados y tipos con este documento y sus cuatro ejemplos. No se añadieron modelos Pydantic ejecutables porque la API aún no implementa estos recursos. Lucas revisa procedencia, producto, unidades, calendario, QA y cobertura; César revisa el significado estadístico y límites de los resultados; Alejandra comprueba los envelopes, estados y flujo React de obtención/uso de `analysis_id`; Alaín verifica viabilidad FastAPI y consistencia OpenAPI. La aprobación de AZ-04 aún depende de las relaciones existentes con FUL-107, FUL-103 y FUL-99; esta propuesta no las elimina.
 
 No se añade exportación, integración NASA desde React, cola de trabajos ni formato raster ejecutable en esta tarjeta.

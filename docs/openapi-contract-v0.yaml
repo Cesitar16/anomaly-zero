@@ -1,0 +1,750 @@
+openapi: 3.1.0
+info:
+  title: Anomaly Zero exchange contract
+  version: 0.1.0-draft
+  description: >-
+    Proposed contract for AZ-04. These routes are not implemented. Product,
+    spatial, statistical and persistence decisions remain subject to approval.
+servers:
+  - url: /api/v1
+    description: Proposed versioned API prefix; not yet implemented.
+paths:
+  /regions:
+    get:
+      operationId: listRegions
+      summary: List published regions
+      responses:
+        '200':
+          description: Region catalog; an empty list is valid.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionsResponse'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /products:
+    get:
+      operationId: listProducts
+      summary: List products available for a region
+      parameters:
+        - $ref: '#/components/parameters/RegionId'
+      responses:
+        '200':
+          description: Product and snapshot catalog for the requested region.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /series:
+    get:
+      operationId: getSeries
+      summary: Read a monthly series from one immutable snapshot
+      description: Inclusive YYYY-MM range, start must be at or before end, with a maximum of 240 months per response.
+      parameters:
+        - $ref: '#/components/parameters/RegionId'
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/StartMonth'
+        - $ref: '#/components/parameters/EndMonth'
+        - name: frequency
+          in: query
+          required: true
+          schema:
+            type: string
+            const: monthly
+      responses:
+        '200':
+          description: Data, data with gaps, or a valid request with no records.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SeriesResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /analyses:
+    post:
+      operationId: createAnalysis
+      summary: Request a statistical analysis for a returned dataset snapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnalysisRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/AnalysisComplete'
+        '202':
+          $ref: '#/components/responses/AnalysisPending'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/AnalysisUnavailable'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /analyses/{analysis_id}:
+    get:
+      operationId: getAnalysis
+      summary: Retrieve a created analysis while its record is retained
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Current representation of the same analysis resource.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  parameters:
+    RegionId:
+      name: region_id
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    ProductId:
+      name: product_id
+      in: query
+      required: true
+      schema:
+        type: string
+        minLength: 1
+    StartMonth:
+      name: start
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/YearMonth'
+    EndMonth:
+      name: end
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/YearMonth'
+  responses:
+    NotFound:
+      description: Requested region, product, snapshot, or analysis record does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidRequest:
+      description: Invalid parameters, range, limit, or insufficient observations.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: Internal snapshot or catalog is temporarily unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Unexpected internal failure; the client must not treat it as no data.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    AnalysisUnavailable:
+      description: No approved and enabled method; no analysis resource is created.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    AnalysisComplete:
+      description: Synchronous analysis has completed.
+      headers:
+        Location:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AnalysisResponse'
+    AnalysisPending:
+      description: A processor accepted the analysis and confirmed it is running.
+      headers:
+        Location:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AnalysisResponse'
+  schemas:
+    YearMonth:
+      type: string
+      pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+      description: Inclusive calendar month, YYYY-MM.
+      example: 2005-01
+    Envelope:
+      type: object
+      required: [contract_version, synthetic, generated_at]
+      properties:
+        contract_version:
+          type: string
+          const: 0.1-draft
+        synthetic:
+          type: boolean
+          description: True only for fixtures; production responses use false.
+        generated_at:
+          type: string
+          format: date-time
+          description: UTC time this API response was generated.
+    RegionsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [regions]
+          properties:
+            regions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Region'
+    Region:
+      type: object
+      required: [region_id, name, geometry_version, geometry_source, area_km2]
+      properties:
+        region_id:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        geometry_version:
+          type: [string, 'null']
+        geometry_source:
+          type: [string, 'null']
+        area_km2:
+          type: [number, 'null']
+          exclusiveMinimum: 0
+    Source:
+      type: object
+      required: [agency, distributor, collection_id, doi, source_urls, granule_ids]
+      properties:
+        agency:
+          type: string
+        distributor:
+          type: [string, 'null']
+        collection_id:
+          type: [string, 'null']
+        doi:
+          type: [string, 'null']
+        source_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+        granule_ids:
+          type: array
+          items:
+            type: string
+    MonthRange:
+      type: object
+      required: [start, end]
+      properties:
+        start:
+          $ref: '#/components/schemas/YearMonth'
+        end:
+          $ref: '#/components/schemas/YearMonth'
+    InclusiveMonthRange:
+      allOf:
+        - $ref: '#/components/schemas/MonthRange'
+        - type: object
+          required: [end_inclusive]
+          properties:
+            end_inclusive:
+              type: boolean
+              const: true
+    Product:
+      type: object
+      required:
+        - product_id
+        - short_name
+        - product_version
+        - variable
+        - quantity
+        - unit
+        - availability
+        - source
+        - current_dataset_id
+        - coverage
+        - quality
+      properties:
+        product_id:
+          type: string
+        short_name:
+          type: string
+        product_version:
+          type: string
+        variable:
+          type: string
+        quantity:
+          type: string
+        unit:
+          type: string
+        availability:
+          type: string
+          enum: [available, partial, unavailable]
+        source:
+          $ref: '#/components/schemas/Source'
+        current_dataset_id:
+          type: [string, 'null']
+        coverage:
+          oneOf:
+            - $ref: '#/components/schemas/MonthRange'
+            - type: 'null'
+        quality:
+          oneOf:
+            - $ref: '#/components/schemas/Quality'
+            - type: 'null'
+    ProductsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [region_id, products]
+          properties:
+            region_id:
+              type: string
+            products:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+    Provenance:
+      type: object
+      required:
+        - source_sha256
+        - source_updated_at
+        - retrieved_at
+        - snapshot_created_at
+        - manifest_version
+        - manifest_sha256
+        - original_file_count
+      properties:
+        source_sha256:
+          type: array
+          description: Checksums for original source files; empty only if none are known.
+          items:
+            type: string
+            pattern: '^[A-Fa-f0-9]{64}$'
+        source_updated_at:
+          type: [string, 'null']
+          format: date-time
+          description: Source/provider update time, not API response time.
+        retrieved_at:
+          type: [string, 'null']
+          format: date-time
+          description: Time original files were retrieved.
+        snapshot_created_at:
+          type: [string, 'null']
+          format: date-time
+          description: Time this immutable derived snapshot was created.
+        manifest_version:
+          type: [string, 'null']
+        manifest_sha256:
+          type: [string, 'null']
+          pattern: '^[A-Fa-f0-9]{64}$'
+        original_file_count:
+          type: [integer, 'null']
+          minimum: 0
+    Temporal:
+      type: object
+      required: [frequency, calendar, date_label]
+      properties:
+        frequency:
+          type: string
+          const: monthly
+        calendar:
+          type: [string, 'null']
+        date_label:
+          type: string
+          const: month_start
+    Coverage:
+      type: object
+      required: [expected_periods, present_periods, valid_periods, missing_periods]
+      properties:
+        expected_periods:
+          type: integer
+          minimum: 0
+          maximum: 240
+        present_periods:
+          type: integer
+          minimum: 0
+          maximum: 240
+        valid_periods:
+          type: integer
+          minimum: 0
+          maximum: 240
+        missing_periods:
+          type: array
+          items:
+            $ref: '#/components/schemas/YearMonth'
+    SourceMissingAttributes:
+      type: object
+      required: [fill_value, missing_value, scale_factor, add_offset]
+      properties:
+        fill_value: {}
+        missing_value: {}
+        scale_factor: {}
+        add_offset: {}
+    Quality:
+      type: object
+      required:
+        - source_flag_fields
+        - provider_flags_applied
+        - source_missing_attributes
+        - finite_non_fill_filter_applied
+        - verification_state
+        - mask_applied
+      properties:
+        source_flag_fields:
+          type: array
+          items:
+            type: string
+        provider_flags_applied:
+          type: boolean
+        source_missing_attributes:
+          $ref: '#/components/schemas/SourceMissingAttributes'
+        finite_non_fill_filter_applied:
+          type: boolean
+        verification_state:
+          type: string
+          enum: [unassessed, basic_checks_only, provider_qa_applied]
+        mask_applied:
+          type: [string, 'null']
+    PointQuality:
+      type: object
+      required: [state, provider_flags, missing_reason]
+      properties:
+        state:
+          type: string
+          enum: [unassessed, missing, unknown]
+        provider_flags:
+          type: array
+          items:
+            type: object
+            required: [name, value]
+            properties:
+              name:
+                type: string
+              value: {}
+        missing_reason:
+          type: [string, 'null']
+    SpatialAggregation:
+      type: object
+      required: [method, area_weighted, mask_version]
+      properties:
+        method:
+          type: [string, 'null']
+        area_weighted:
+          type: [boolean, 'null']
+        mask_version:
+          type: [string, 'null']
+    Transformation:
+      type: object
+      required: [operation, parameters, input_unit, output_unit, code_version]
+      properties:
+        operation:
+          type: string
+        parameters:
+          type: object
+        input_unit:
+          type: [string, 'null']
+        output_unit:
+          type: [string, 'null']
+        code_version:
+          type: [string, 'null']
+    SeriesPoint:
+      type: object
+      required: [date, value, quality]
+      properties:
+        date:
+          type: string
+          format: date
+          description: First day of the represented month.
+        value:
+          type: [number, 'null']
+          description: Value in Product.unit; zero is valid, null is missing/unavailable.
+        quality:
+          $ref: '#/components/schemas/PointQuality'
+    DatasetSnapshot:
+      type: object
+      description: >-
+        Immutable source, coverage, quality and transformation identity used by
+        a series. For data_state no_data, dataset_id and provenance are null.
+      required:
+        - dataset_id
+        - provenance
+        - coverage
+        - quality
+        - spatial_aggregation
+        - transformations
+      properties:
+        dataset_id:
+          type: [string, 'null']
+        provenance:
+          oneOf:
+            - $ref: '#/components/schemas/Provenance'
+            - type: 'null'
+        coverage:
+          $ref: '#/components/schemas/Coverage'
+        quality:
+          $ref: '#/components/schemas/Quality'
+        spatial_aggregation:
+          $ref: '#/components/schemas/SpatialAggregation'
+        transformations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transformation'
+    SeriesResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - $ref: '#/components/schemas/DatasetSnapshot'
+        - type: object
+          required:
+            - data_state
+            - region
+            - product
+            - temporal
+            - requested_coverage
+            - available_coverage
+            - series
+          properties:
+            data_state:
+              type: string
+              enum: [available, available_with_gaps, no_data]
+            region:
+              $ref: '#/components/schemas/Region'
+            product:
+              $ref: '#/components/schemas/Product'
+            temporal:
+              $ref: '#/components/schemas/Temporal'
+            requested_coverage:
+              $ref: '#/components/schemas/InclusiveMonthRange'
+            available_coverage:
+              oneOf:
+                - $ref: '#/components/schemas/MonthRange'
+                - type: 'null'
+            series:
+              type: array
+              maxItems: 240
+              items:
+                $ref: '#/components/schemas/SeriesPoint'
+            message:
+              type: string
+    Error:
+      type: object
+      required: [code, message, retryable, request_id, details]
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_PARAMETER
+            - PERIOD_OUT_OF_COVERAGE
+            - LIMIT_EXCEEDED
+            - RESOURCE_NOT_FOUND
+            - INSUFFICIENT_DATA
+            - ANALYSIS_METHOD_UNAVAILABLE
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+        message:
+          type: string
+        retryable:
+          type: boolean
+        request_id:
+          type: string
+        details:
+          oneOf:
+            - $ref: '#/components/schemas/ErrorDetails'
+            - type: 'null'
+    ErrorDetails:
+      type: object
+      properties:
+        dataset_id:
+          type: [string, 'null']
+        provider_status:
+          type: [integer, 'null']
+        analysis:
+          $ref: '#/components/schemas/UnavailableAnalysis'
+      additionalProperties: true
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required: [error]
+          properties:
+            error:
+              $ref: '#/components/schemas/Error'
+    CreateAnalysisRequest:
+      type: object
+      required: [dataset_id, window]
+      properties:
+        dataset_id:
+          type: string
+          minLength: 1
+          description: Exact dataset_id returned by GET /series.
+        window:
+          $ref: '#/components/schemas/InclusiveMonthRange'
+      additionalProperties: false
+    Method:
+      type: object
+      required: [name, version]
+      properties:
+        name:
+          type: string
+        version:
+          type: [string, 'null']
+    Metrics:
+      type: object
+      required: [slope, slope_unit, confidence_interval, p_value, significance]
+      properties:
+        slope:
+          type: [number, 'null']
+        slope_unit:
+          type: [string, 'null']
+        confidence_interval:
+          type: [array, 'null']
+          prefixItems:
+            - type: number
+            - type: number
+          minItems: 2
+          maxItems: 2
+        p_value:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+        significance:
+          type: [boolean, 'null']
+    AnalysisResponse:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          required:
+            - analysis_id
+            - dataset_id
+            - region_id
+            - product_id
+            - product_version
+            - variable
+            - quantity
+            - input_unit
+            - window
+            - source
+            - provenance
+            - transformations
+            - status
+            - method
+            - metrics
+            - limitations
+          properties:
+            analysis_id:
+              type: string
+            dataset_id:
+              type: string
+            region_id:
+              type: string
+            product_id:
+              type: string
+            product_version:
+              type: string
+            variable:
+              type: string
+            quantity:
+              type: string
+            input_unit:
+              type: string
+            window:
+              $ref: '#/components/schemas/InclusiveMonthRange'
+            source:
+              $ref: '#/components/schemas/Source'
+            provenance:
+              $ref: '#/components/schemas/Provenance'
+            transformations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Transformation'
+            status:
+              type: string
+              enum: [pending, complete]
+            method:
+              $ref: '#/components/schemas/Method'
+            metrics:
+              $ref: '#/components/schemas/Metrics'
+            limitations:
+              type: array
+              items:
+                type: string
+    UnavailableAnalysis:
+      type: object
+      required: [state, analysis_id, dataset_id, region_id, product_id, window, method, metrics]
+      properties:
+        state:
+          type: string
+          const: not_available
+        analysis_id:
+          type: 'null'
+        dataset_id:
+          type: string
+        region_id:
+          type: string
+        product_id:
+          type: string
+        window:
+          $ref: '#/components/schemas/InclusiveMonthRange'
+        method:
+          type: 'null'
+        metrics:
+          $ref: '#/components/schemas/Metrics'
