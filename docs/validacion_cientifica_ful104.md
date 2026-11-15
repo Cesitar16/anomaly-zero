@@ -83,8 +83,8 @@ Las diferencias entre medias de centro y fraccional son pequeñas en estas muest
 
 | Variable de interés | Principal provisional | Respaldo | Motivo / condición |
 |---|---|---|---|
-| Temperatura del aire a 2 m | MERRA-2 `T2M` | Ninguno aprobado. MOD11C3 es LST, no un sustituto equivalente. | Coincide con el constructo requerido y tiene resolución mensual; falta abrir gránulo NASA, completar QA/linaje y cobertura en máscara. |
-| Precipitación | IMERG Final V07 `precipitation` | Ninguno aprobado. GLDAS precipitación sería modelada y no intercambiable sin comparar definición y sesgos. | Es el candidato de mayor resolución y tiene muestras mensuales inspeccionadas; falta muestra primaria NASA, QA, validación independiente y reprocesamiento espacial defendible. Para una primera demo raster es el candidato operativo, condicionado a esos controles. |
+| Temperatura del aire a 2 m | MERRA-2 `T2M` | Ninguno aprobado. MOD11C3 es LST, no un sustituto equivalente. | Coincide con el constructo requerido y tiene resolución mensual; las muestras originales NASA de enero 2005/2021 ya se inspeccionaron. Faltan reglas QA/linaje acordadas y validación de cobertura para una serie regional. |
+| Precipitación | IMERG Final V07 `precipitation` | Ninguno aprobado. GLDAS precipitación sería modelada y no intercambiable sin comparar definición y sesgos. | Es el candidato de mayor resolución y las muestras originales NASA de enero 2005/2021 ya se inspeccionaron. Sus campos QA auxiliares están inventariados, pero sus reglas aún no se interpretan ni aplican; también faltan validación independiente y reprocesamiento espacial defendible. Para una primera demo raster es el candidato operativo, condicionado a esos controles. |
 | Agua del suelo 0–10 cm | GLDAS Noah 2.1 `SoilMoi0_10cm_inst` | Ninguno aprobado. SMAP observado/modelado tiene distinta profundidad, época de inicio y semántica. | Es el único candidato actual de la terna para esa capa y tiene una muestra auténtica; resolver linaje 2005, QA y máscara antes de seleccionarlo para serie. |
 
 No proponer un respaldo entre productos distintos solo para completar una casilla: las alternativas listadas no son equivalentes. La recomendación principal es provisional, no una selección aprobada.
@@ -93,13 +93,13 @@ Las rejillas no tienen la misma resolución. Cualquier comparación futura exige
 
 ## Paquete de transferencia
 
-**Para Alaín / FUL-106:** probar enero 2005 para las colecciones y conceptos indicados arriba; conservar shortname, versión, DOI, granule ID, archivo, fecha, checksum, unidad, coordenadas, calendario, fill/scale/offset y campos QA. Obtener las URLs de acceso desde CMR; el bbox solo descubre archivos y no recorta. Para MERRA-2 confirmar `T2M` y unidad en el gránulo original; para IMERG confirmar grupo/campo, unidades y QA; para GLDAS registrar `SoilMoi0_10cm_inst`, dimensión/capa, agregación y linaje del procesamiento.
+**Para Alaín / FUL-106:** las muestras NASA originales de enero 2005/2021 están inspeccionadas por Lucas y los checksums/atributos observados figuran arriba; reproducir sus lecturas desde manifiestos/gránulos y compartir rutas de acceso reproducibles, sin añadir binarios ni secretos al repo. El bbox solo descubre archivos y no recorta. Para MERRA-2 confirmar `T2M` y unidad; para IMERG confirmar grupo/campo, unidades y QA; para GLDAS registrar `SoilMoi0_10cm_inst`, dimensión/capa, agregación y linaje del procesamiento.
 
 **Para César / FUL-105:** preservar unidades originales y transformaciones; distinguir T2M de LST, tasa mm/h de acumulado mensual y kg m⁻² de contenido volumétrico; explicitar límites del piloto GLDAS de un mes y la caja rectangular. No derivar tendencia, significancia o causalidad de una muestra.
 
 ## Decisiones y vacíos que bloquean el cierre
 
-1. Ampliar inspección de MERRA-2 e IMERG a QA, manuales y más fechas; los gránulos originales de enero 2005 ya se abrieron.
+1. Completar la interpretación científica de QA/manuales para MERRA-2 e IMERG y decidir si se necesitan más fechas; las muestras originales NASA de enero 2005 y 2021 ya se abrieron y describieron, pero aún no se acordó/aplicó un filtro QA.
 2. Confirmar tratamiento/linaje de GLDAS 2005 frente al posprocesamiento NASA de aguas interiores; una muestra de enero 2021 no basta para establecerlo.
 3. Validar datum/precisión/transformación de las geometrías y sensibilidad del overlay NSW–cuenca; cerrar el análisis de método espacial en más de una fecha/resolución y resolver licencia/atribución NSW antes de redistribuir.
 4. Obtener revisión explícita de Alaín (IDs/formatos) y César (semántica/unidades), y registrar selección provisional/acuerdo en FUL-107.

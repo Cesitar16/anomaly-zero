@@ -78,3 +78,11 @@
 **Verificación ejecutada:** `uv run --locked --python 3.12 ruff check backend research`, `uv lock --check` y `git diff --check` completaron correctamente. El script espacial se ejecutó con las seis muestras; no se ejecutó pytest. El árbol de trabajo quedó limpio antes de la entrega remota.
 
 **Pendiente externo:** las revisiones explícitas de Alaín y César y el registro de propuesta/decisión en FUL-107 no se consideran cerrados. La conexión Linear disponible identifica el perfil como César; se pidió al usuario escoger la conexión correcta antes de publicar como ese perfil. La rama no se integra directamente en `dev`; el PR, si se publica, debe tener base `dev`.
+
+### Ajustes solicitados antes del merge
+
+- Los fill QA de IMERG ahora se leen por atributo `_FillValue` en cada capa y se comparan tras convertir el atributo a la precisión de almacenamiento del array (`float32` o `int16`).
+- La auditoría requiere las seis muestras 2005/2021 y falla con código no cero cuando falta alguna o no se procesa; conserva el reporte de errores por muestra.
+- Se añadieron cinco pruebas offline para fills flotantes/enteros, selección espacial y fallos de entrada/procesamiento.
+- Recomendaciones y guía de investigación reconocen las muestras NASA MERRA-2/IMERG inspeccionadas en 2005/2021; se documentaron insumos, instalación, geometría y argumentos de rutas configurables para otro checkout.
+- Verificación posterior: `uv run --locked --group research --group dev python -m pytest research/tests -q` (35 pasaron); auditoría real de las seis muestras completada; Ruff, lock y `git diff --check` pasaron. No se amplió a veinte años ni se declaró aprobada una máscara.
