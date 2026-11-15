@@ -60,3 +60,55 @@ No se reescribieron los atributos, no se escaló la variable y no se clasificaro
 | Los metadatos de producción y algunos atributos difieren entre muestras. | `TEC`: comparación directa de atributos y CMR. | `history`, `source`, presencia de escala y metadatos temporales varían como se muestra arriba. | No permite confirmar qué versión de máscara de aguas interiores se aplicó a enero de 2005. La investigación de linaje queda para las siguientes fases. |
 
 **Resultado de Fase 1:** identidad, procedencia declarada, hash, estructura y atributos esenciales quedan inventariados. La evaluación QA continúa `unassessed`; no se recomienda filtro, exclusión ni aprobación de uso de enero de 2005.
+
+## Fase 2 · Cronología y evidencia de máscara
+
+**Consulta de fuentes y ejecución local:** 15 de noviembre de 2026. La comparación es descriptiva; no aplica un filtro de datos ni identifica por sí sola la versión histórica de la máscara.
+
+### Cronología comprobada
+
+| Fecha | Evidencia | Qué demuestra | Límite |
+|---|---|---|---|
+| 2019-10-31 | `history` de `GLDAS_NOAH025_M.A200501.021.nc4`: `created on date: 2019-10-31T04:18:41.350`. | `TEC`: el atributo de la muestra conserva esa cadena. | No identifica revisión ni procesamiento posterior; no fecha necesariamente el contenido que se descargó en 2026. |
+| 2020-10-06 | `history` del archivo oficial candidato `GLDASp5_landmask_025d.nc4`: `created on date: Tue Oct 6 17:26:50 2020`. | `TEC`: la máscara enlazada por LDAS registra esa fecha de creación. | La fecha no identifica una revisión de la máscara de cada granule Noah. |
+| Octubre de 2020 | NASA informa que se posprocesaron todas las salidas GLDAS-2 mensuales y de 3 horas con MOD44W para enmascarar datos de aguas interiores; el aviso pide volver a descargar los archivos obtenidos antes de noviembre de 2020. | `DOC`: el aviso establece el alcance general y la ventana anunciada. | No enumera el ID CMR `G1413723174-GES_DISC`, su revisión ni el SHA del archivo. [README GLDAS-2 de GES DISC](https://docserver.gesdisc.eosdis.nasa.gov/public/project/hydrology/README_GLDAS2.pdf); [anuncio GES DISC](https://forum.earthdata.nasa.gov/viewtopic.php?p=1407&t=659). |
+| 2020-10-19 | CMR actual asocia al granule 2005 `ProviderDates` Insert/Update y `ProductionDateTime` con `2020-10-19T17:41:05Z`; el archivo vigente conserva el SHA de Fase 1. | `TEC`: los metadatos actuales colocan la inserción/actualización y producción del registro en la ventana anunciada. | CMR no registra en esos campos la razón de la actualización ni el algoritmo/máscara incorporados al contenido. |
+| 2021-04-23 / 2021-04-26 | `history` del archivo 2021 declara creación el 23-abr-2021; CMR declara Insert/Update y `ProductionDateTime` el 26-abr-2021. | `TEC`: cronología del archivo 2021 y del registro actual. | No prueba que todos los meses compartan una trayectoria idéntica ni identifica la máscara exacta del archivo 2005. |
+| 2026-06-10 | CMR devuelve la revisión actual 8 del granule 2005 (`revision-date=2026-06-10T14:44:28.249Z`) y la revisión actual 4 del granule 2021 (`2026-06-10T14:43:30.890Z`). | `TEC`: los registros de catálogo tienen revisiones actuales posteriores. | La fecha de revisión de metadatos no es un checksum de datos ni una fecha de reprocesamiento de píxeles. |
+
+El CMR actual del producto refiere la colección `C1342986036-GES_DISC`, `GLDAS_NOAH025_M` versión `2.1`; sus [`UseConstraints`](https://cmr.earthdata.nasa.gov/search/concepts/C1342986036-GES_DISC.umm_json) enlazan la [guía de uso y cita EOSDIS/NASA](https://earthdata.nasa.gov/engage/open-data-services-software-policies/data-use-guidance). La guía enlazada y la ficha LDAS no proporcionan en el archivo máscara inspeccionado una licencia individual explícita. Por eso el binario descargado se conserva solo en `data/raw/nasa/ful113/` (ignorado por Git), se cita su fuente y no se redistribuye en este trabajo.
+
+La consulta pública de `search/granules.umm_json` entrega el `revision-id` y la fecha actuales. En esta consulta `all_revisions=true` no es un parámetro reconocido para granules, y las rutas directas de revisiones históricas ensayadas (2005: 1–7; 2021: 1–3) devolvieron 404; solo respondieron las revisiones vigentes 8 y 4. La API documenta la recuperación de revisiones de otros conceptos, pero la evidencia que obtuvimos no expone aquí un historial antiguo del granule. Esto limita la reconstrucción; no demuestra que esas revisiones nunca existieran. Véase [CMR Search API](https://cmr.earthdata.nasa.gov/search/site/docs/search/api.html).
+
+### Máscara candidata publicada por NASA
+
+La página oficial LDAS enlaza el archivo NetCDF de máscara GLDAS de 0,25° y describe la máscara estándar derivada de MOD44W: estima porcentaje de agua a 0,01° en cada caja GLDAS; las cajas con más del 50 % de agua se codifican como agua (`0`) y las demás como tierra (`1`). Esta regla describe la máscara publicada, no es un umbral QA de `SoilMoi0_10cm_inst` ni demuestra que se aplicara esa misma revisión al granule 2005. [GLDAS Vegetation Class/Mask](https://ldas.gsfc.nasa.gov/gldas/vegetation-class-mask).
+
+El archivo descargado desde el enlace oficial fue identificado como `GLDASp5_landmask_025d.nc4`, 72.395 bytes, SHA-256 `de8244247dd4685c04cb91101968ab2ec6cc635090a982d95f73f68e4d95f791`. El dataset `/GLDAS_mask` es `float32`, forma `(1,600,1440)`, con ejes `time,lat,lon`, fill `-9999` y atributo `units=0 = water; 1 = land`. Sus coordenadas `lat` y `lon` son exactamente iguales, celda a celda, a las de ambas muestras. El atributo `long_name` dice **“GLDAS MOD44W land mask modified for HYMAP”**. Esta mención a HYMAP obliga a tratar el archivo como **máscara candidata de comparación**, no como prueba documental de ser la máscara operativa de GLDAS Noah mensual. La página oficial dice “standard” y provee el enlace; el atributo del propio archivo añade esa limitación de aplicabilidad.
+
+### Prueba reproducible de clases de máscara y valores
+
+[`research/comparar_mascara_gldas_ful113.py`](../research/comparar_mascara_gldas_ful113.py) valida el nombre, tamaño y hash de los archivos contra manifiestos; comprueba el orden de ejes y la igualdad exacta de centros; después contabiliza, sin transformar datos, `_FillValue`, no finitos y finitos no-fill por clase almacenada de máscara. No realiza QA, no aplica la regla de porcentaje de agua y no excluye celdas.
+
+```powershell
+uv run python research/comparar_mascara_gldas_ful113.py `
+  --gldas-2005 "RUTA\GLDAS_NOAH025_M.A200501.021.nc4" `
+  --gldas-2021 "RUTA\GLDAS_NOAH025_M.A202101.021.nc4" `
+  --mask "RUTA\GLDASp5_landmask_025d.nc4"
+```
+
+El JSON de salida se escribe por defecto en `data/cache/ful113/gldas_mask_comparison.json`, excluido de Git. El manifiesto [`research/manifests/gldas_ful113_mask.json`](../research/manifests/gldas_ful113_mask.json) registra URL de origen, hash, tamaño, estructura y atributos de advertencia; no contiene el binario. Las rutas son configurables y los tests usan arreglos pequeños sintéticos para verificar alineación, fill/no finitos/valores finitos y rechazo de grillas incompatibles.
+
+**Resultado global (`TEC`, gránulos auténticos):** la máscara tiene 621.247 celdas `water_0` y 242.753 `land_1`. En **cada una** de las dos muestras, las 621.247 celdas `water_0` coinciden con `_FillValue=-9999`, sin valores finitos ni no finitos; las 242.753 celdas `land_1` son finitas y distintas de fill. No aparecen clases de máscara adicionales ni fill/no finitos en la máscara.
+
+**Ventana interior diagnóstica (`TEC`, selección de centros inclusiva):** en `137°–140°E, 30°–26°S` se seleccionan 192 centros de celda: 3 con máscara `water_0` y 189 con `land_1`. En ambas muestras, los tres centros de agua son fill y los 189 centros de tierra son finitos no-fill. La ventana incluye la ubicación interior publicada de Lake Eyre North y South (cerca de 137°20′E, 29°02′S y 29°20′S); **no** se atribuyen por eso esos tres centros de máscara a Lake Eyre. Es una ventana de diagnóstico, no el polígono de Murray–Darling ni una máscara hidrográfica independiente. [Gobierno de South Australia, listado de ubicaciones](https://data.environment.sa.gov.au/Content/Publications/Cooper-Creek-BioSurvey.pdf).
+
+La coincidencia completa respalda que el **contenido actualmente servido** es espacialmente coherente con esta máscara candidata. También es consistente con el aviso de NASA y con la fecha CMR de 2020. Sin embargo, la fuente candidata declara una modificación para HYMAP, CMR no expone en esta consulta el historial previo del granule, y no se comparó el archivo con un binario anterior al aviso. Por tanto, esta prueba **no demuestra que el granule Noah 2005 recibiera exactamente esa revisión de MOD44W en el reprocesamiento de octubre de 2020**. Un patrón idéntico puede corroborar compatibilidad del estado actual sin identificar por sí mismo la ruta histórica.
+
+| Hipótesis contrastada | Evidencia observada | Resultado acotado |
+|---|---|---|
+| El archivo actual 2005 conserva valores finitos en las celdas de agua de la máscara candidata. | Cero de 621.247 celdas `water_0` finitas; en la ventana interior, cero de 3. | No se observa ese patrón en las muestras actuales; no falsifica por sí solo una versión anterior o una máscara distinta. |
+| El archivo actual 2005 es consistente con celdas de agua rellenadas y tierra válida bajo la máscara candidata. | Coincidencia exacta global y en la ventana interior; enero 2021 también coincide. | Hipótesis compatible con datos; no identifica con certeza el algoritmo/revisión histórica específica. |
+| La máscara descargada es demostrablemente el artefacto exacto usado para reprocesar Noah 2005. | El archivo oficial se fecha en 6-oct-2020 y coincide espacialmente; su `long_name` indica “modified for HYMAP”. | No confirmado: falta una asociación explícita granule→revisión de máscara o un checksum/registro de ejecución de NASA. |
+
+**Estado al cerrar Fase 2:** evidencia primaria general y comparación técnica reproducible disponibles; QA `unassessed`; sin filtro ni decisión de producto. La fase siguiente debe consolidar el dictamen `CONFIRMADO / DESCARTADO / INDETERMINADO`, separar la consecuencia para demo y serie, y preparar —sin enviar— la consulta técnica que pide el criterio de FUL-113 si la incertidumbre persiste.

@@ -16,6 +16,8 @@
         "concept_id": "G1413723174-GES_DISC",
         "granule_ur": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200501.021.nc4",
         "production_datetime": "2020-10-19T17:41:05Z",
+        "current_revision_id": 8,
+        "current_revision_date": "2026-06-10T14:44:28.249Z",
         "umm_json": "https://cmr.earthdata.nasa.gov/search/concepts/G1413723174-GES_DISC.umm_json"
       },
       "size_bytes": 25075859,
@@ -32,6 +34,8 @@
         "concept_id": "G2040571257-GES_DISC",
         "granule_ur": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A202101.021.nc4",
         "production_datetime": "2021-04-26T19:06:40Z",
+        "current_revision_id": 4,
+        "current_revision_date": "2026-06-10T14:43:30.890Z",
         "umm_json": "https://cmr.earthdata.nasa.gov/search/concepts/G2040571257-GES_DISC.umm_json"
       },
       "size_bytes": 24908188,

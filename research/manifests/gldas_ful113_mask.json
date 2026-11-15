@@ -1,0 +1,19 @@
+{
+  "reference_id": "gldas-noah-025-landsea-mask-p5",
+  "source_name": "NASA LDAS GLDAS standard Land/Sea Mask, 0.25 degree",
+  "source_page": "https://ldas.gsfc.nasa.gov/gldas/vegetation-class-mask",
+  "source_file": "https://ldas.gsfc.nasa.gov/sites/default/files/ldas/gldas/VEG/GLDASp5_landmask_025d.nc4",
+  "retrieved_utc": "2026-11-15",
+  "filename": "GLDASp5_landmask_025d.nc4",
+  "size_bytes": 72395,
+  "sha256": "de8244247dd4685c04cb91101968ab2ec6cc635090a982d95f73f68e4d95f791",
+  "dataset_path": "/GLDAS_mask",
+  "shape": [1, 600, 1440],
+  "dtype": "float32",
+  "dimension_scales_by_axis": [["time"], ["lat"], ["lon"]],
+  "class_encoding": "0 = water; 1 = land",
+  "observed_history": "created on date: Tue Oct 6 17:26:50 2020",
+  "observed_long_name": "GLDAS MOD44W land mask modified for HYMAP",
+  "license_note": "NASA LDAS page exposes the file; no file-specific license statement was found in the file or page. CMR GLDAS use constraints link to EOSDIS data-use and citation guidance. Keep local and cite the source; do not redistribute this mask in this task.",
+  "interpretation_limit": "Reference mask is a candidate spatial comparator, not proof that the exact same mask revision was applied to the GLDAS Noah sample granules."
+}
