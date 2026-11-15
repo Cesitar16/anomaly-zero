@@ -8,7 +8,11 @@
 
 En el checkout original está disponible el NetCDF GLDAS auténtico de enero de 2005 y su manifiesto. La inspección independiente ya documentada identifica `GLDAS_NOAH025_M.2.1`, `SoilMoi0_10cm_inst`, `kg m-2`, 25.075.859 bytes y SHA-256 `5fe42fc81dae292f3be27c3b3460249609a3aa1699532edba25a88fa53b08593`; ambos valores de integridad coinciden. La selección previa fue una caja rectangular, no el polígono de la cuenca.
 
-En esta rama aislada basada en `origin/dev`, no están los archivos crudos ni manifiestos MERRA-2 e IMERG; tampoco está la geometría MDBA completa. PR #9 documenta muestras y conteos atribuidos a Alaín, pero siguen siendo resultados reportados mientras no se reproduzcan sobre los originales. Por ello esta entrega **no es un EDA comparativo**, no incorpora datos simulados ni crea un notebook vacío que sugiera resultados inexistentes. El notebook ejecutado GLDAS local se conserva fuera de este worktree y no se modifica.
+En esta rama aislada basada en `origin/dev`, no están los archivos crudos ni manifiestos MERRA-2 e IMERG. Tras integrar el lector de FUL-106, se obtuvo la geometría pública de MDBA descrita en [region_murray_darling.md](region_murray_darling.md) desde el FeatureServer con `outSR=4326`: un `Polygon` EPSG:4326 de 477.805 bytes y SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`, coincidente con el hash reportado en PR #9. Se conservó como caché local ignorada en `data/cache/ful-105/mdba_boundary_4326.geojson`; no se añadió a Git.
+
+Se usó `earthdata_spatial.spatial_qa` sobre el granule GLDAS auténtico y su manifiesto del checkout original. Reprodujo de forma independiente la selección por centros reportada en PR #9: **1.617** centros dentro, **1.615** finitos/no-fill, **2** faltantes, **99,8763 %** válidos. No aplica filtros QA ni pondera área; no es cobertura de superficie ni promedio de cuenca. El resultado reproduce el QA espacial de GLDAS de Alaín, no convierte el EDA rectangular previo en un análisis comparativo.
+
+Los originales y manifiestos MERRA-2 e IMERG continúan ausentes localmente. El intento acotado de MERRA-2 enero de 2005 con `--auth-strategy netrc` llegó a autenticación pero terminó con `LoginStrategyUnavailable`; no se inició un login interactivo. Por ello esta entrega **no es un EDA comparativo**, no incorpora datos simulados ni crea un notebook vacío que sugiera resultados inexistentes. El notebook ejecutado GLDAS local se conserva fuera de este worktree y no se modifica.
 
 ## Preparación de la serie mensual
 
@@ -85,17 +89,17 @@ No implementar el contrato definitivo en FUL-105. No marcar `complete` si las pu
 
 | Componente | Hecho reproducible hoy | Falta antes de serie regional | Revisor/entrega |
 | --- | --- | --- | --- |
-| GLDAS | EDA de una muestra enero 2005 sobre caja, ya integrado en PR #7 y documentado; SHA/manifiesto coinciden en checkout original. | Revisar linaje/QA GLDAS, geometría y método espacial; obtener serie mensual si se aprueba el alcance. | César documenta; Lucas revisa; Alaín facilita insumos. |
+| GLDAS | EDA de una muestra enero 2005 sobre caja integrado en PR #7; lector FUL-106 y `spatial_qa` reproducen metadatos, SHA/manifiesto y conteos MDBA 1.617/1.615/2. | Revisar linaje/QA GLDAS y método espacial; obtener serie mensual si se aprueba el alcance. | César documenta; Lucas revisa; Alaín facilita insumos. |
 | MERRA-2 | PR #9 reporta una muestra enero 2005, no reproducida localmente aquí. | Original + manifiesto, apertura independiente, metadatos/QA y cobertura multi-mes. | Alaín entrega handoff reproducible; César reproduce; Lucas valida semántica. |
 | IMERG | PR #9 reporta una muestra enero 2005, no reproducida localmente aquí. | Original + manifiesto, reglas QA, calendario/conversión y cobertura multi-mes. | Alaín entrega; César reproduce; Lucas valida identidad y QA. |
-| Cuenca | Documentación fuente/atribución está en `region_murray_darling.md`; este worktree no contiene el polígono completo. | Obtener copia verificable y acordar geometría/bordes/pesos/cobertura. | Lucas/FUL-104 valida; Alaín aporta acceso reproducible. |
+| Cuenca | Se obtuvo del FeatureServer el polígono completo EPSG:4326 (hash coincide con PR #9) y se reprodujo para GLDAS el conteo por centros. La copia está en caché ignorada. | Lucas debe revisar procedencia/CRS y aprobar método/bordes/pesos/cobertura; conteos por centro no cubren área. | Lucas/FUL-104 valida; Alaín aporta handoff reproducible. |
 | Inferencia | Este plan define diagnósticos y métodos candidatos, sin calcular tendencia. | Serie regional QA, diagnósticos temporales, preespecificación y revisión. | César prepara; Lucas revisa; equipo decide el caso FUL-107. |
 
 FUL-107 sigue pendiente: esta matriz no selecciona producto ni método y no valida una visualización de tendencia.
 
 ## Acciones siguientes
 
-- **César:** conservar el notebook ejecutado GLDAS fuera de Git; coordinar el cambio de estado de FUL-105 cuando haya acceso a Linear; reproducir las muestras en un worktree separado al recibir archivos y manifests; no iniciar tendencia todavía.
+- **César:** conservar el notebook ejecutado GLDAS fuera de Git; coordinar FUL-105 en Linear cuando haya acceso; reproducir MERRA-2/IMERG cuando se facilite autenticación bajo control del usuario y los manifiestos; no iniciar tendencia todavía.
 - **Alaín:** facilitar ruta de handoff permitida para los NetCDF/HDF5 originales de MERRA-2 e IMERG, manifiestos, SHA-256, metadatos y script/comando exactos de inspección; incluir IMERG febrero solo si ayuda a validar calendario, sin confundir dos meses con una serie.
 - **Lucas:** revisar identidad, unidades, linaje GLDAS, reglas QA, polígono/CRS, cobertura/ponderación y supuestos estadísticos antes de aprobar agregados o inferencia.
 
