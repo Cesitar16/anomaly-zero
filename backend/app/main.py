@@ -2,11 +2,16 @@
 
 from fastapi import FastAPI
 
+from backend.app.api.catalog import router as catalog_router
+from backend.app.api.series import router as series_router
+
 app = FastAPI(
     title="Anomaly Zero API",
     description="API inicial para explorar tendencias de sistemas terrestres.",
     version="0.1.0",
 )
+app.include_router(catalog_router)
+app.include_router(series_router)
 
 
 @app.get("/health", tags=["health"])

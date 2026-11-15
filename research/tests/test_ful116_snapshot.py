@@ -14,7 +14,9 @@ from research import build_ful116_snapshot as snapshot
 from research.audit_imerg_bounds_precision import interval_diagnostics
 
 
-def _write_granules(root: Path, monkeypatch) -> tuple[Path, Path]:
+def _write_granules(
+    root: Path, monkeypatch, *, include_missing: bool = True
+) -> tuple[Path, Path]:
     monkeypatch.setattr(snapshot, "DATASET_SHAPE", (1, 6, 4))
     root.mkdir(parents=True, exist_ok=True)
     input_dir = root / "input"
@@ -45,9 +47,9 @@ def _write_granules(root: Path, monkeypatch) -> tuple[Path, Path]:
         if month == 1:
             data[0, 2, 1] = 0.0
             data[0, 3, 2] = np.float32(-9998.9)
-        elif month == 2:
+        elif include_missing and month == 2:
             data[0, 2, 1] = np.float32(-9999.9)
-        elif month == 3:
+        elif include_missing and month == 3:
             data[0, 2, 1] = np.nan
         with h5py.File(path, "w") as target:
             grid = target.create_group("Grid")
