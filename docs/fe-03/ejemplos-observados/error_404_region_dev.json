@@ -1,0 +1,12 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.477264Z",
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "La región solicitada no existe.",
+    "retryable": false,
+    "request_id": "6eaa1e37-3099-44e9-b06e-9ce911b76e4e",
+    "details": null
+  }
+}

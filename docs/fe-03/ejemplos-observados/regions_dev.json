@@ -1,0 +1,15 @@
+{
+  "contract_version": "0.1-draft",
+  "synthetic": false,
+  "generated_at": "2026-11-15T20:55:53.311317Z",
+  "regions": [
+    {
+      "region_id": "murray-darling-basin",
+      "name": "Murray–Darling Basin",
+      "geometry_version": null,
+      "geometry_source": "https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json",
+      "crs": null,
+      "area_km2": null
+    }
+  ]
+}
