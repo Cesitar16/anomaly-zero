@@ -1,4 +1,4 @@
-"""Versioned, offline catalog metadata. No region geometry is approved yet."""
+"""Versioned, offline catalog metadata for authorized exploratory references."""
 
 from dataclasses import dataclass
 
@@ -85,8 +85,22 @@ PRODUCTS = (
     ),
 )
 
-# No region is exposed until its geometry and provenance are approved.
-CATALOG = Catalog(regions=(), products=PRODUCTS)
+REGIONS = (
+    Region(
+        region_id="murray-darling-basin",
+        name="Murray–Darling Basin",
+        geometry_version=None,
+        geometry_source=(
+            "https://www.arcgis.com/sharing/rest/content/items/"
+            "ba731d77d80947fbbcbf7524364372ff?f=json"
+        ),
+        crs=None,
+        area_km2=None,
+    ),
+)
+
+# César authorized this as an exploratory geographic reference, not a mask or statistic.
+CATALOG = Catalog(regions=REGIONS, products=PRODUCTS)
 
 
 def get_catalog() -> Catalog:

@@ -44,14 +44,25 @@ def validate_contract(schema_name: str, payload: dict[str, object]) -> None:
     ).validate(payload)
 
 
-def test_regions_are_empty_until_a_region_is_approved() -> None:
+def test_regions_publish_authorized_exploratory_reference() -> None:
     response = client.get("/api/v1/regions")
 
     assert response.status_code == 200
     assert response.headers["cache-control"] == "no-store"
-    assert response.json()["regions"] == []
-    assert response.json()["synthetic"] is False
-    validate_contract("RegionsResponse", response.json())
+    body = response.json()
+    assert body["synthetic"] is False
+    assert len(body["generated_at"]) > 0
+    assert body["regions"] == [
+        {
+            "region_id": "murray-darling-basin",
+            "name": "Murray–Darling Basin",
+            "geometry_version": None,
+            "geometry_source": "https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json",
+            "crs": None,
+            "area_km2": None,
+        }
+    ]
+    validate_contract("RegionsResponse", body)
 
 
 def test_regions_can_return_an_explicit_synthetic_fixture() -> None:
@@ -106,6 +117,61 @@ def test_products_return_documented_metadata_for_a_known_fixture_region() -> Non
         "C1276812859-GES_DISC",
         "C2723754851-GES_DISC",
         "C1342986036-GES_DISC",
+    ]
+    assert all(
+        product["availability"] == "unavailable"
+        and product["current_dataset_id"] is None
+        and product["coverage"] is None
+        and product["quality"] is None
+        for product in body["products"]
+    )
+    validate_contract("ProductsResponse", body)
+
+
+def test_authorized_region_returns_unavailable_products() -> None:
+    response = client.get(
+        "/api/v1/products", params={"region_id": "murray-darling-basin"}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["synthetic"] is False
+    assert body["region_id"] == "murray-darling-basin"
+    assert [
+        (
+            product["short_name"],
+            product["variable"],
+            product["quantity"],
+            product["unit"],
+            product["product_version"],
+            product["source"]["collection_id"],
+        )
+        for product in body["products"]
+    ] == [
+        (
+            "M2TMNXSLV",
+            "T2M",
+            "air_temperature_2m",
+            "K",
+            "5.12.4",
+            "C1276812859-GES_DISC",
+        ),
+        (
+            "GPM_3IMERGM",
+            "precipitation",
+            "monthly_mean_rate",
+            "mm/hr",
+            "07",
+            "C2723754851-GES_DISC",
+        ),
+        (
+            "GLDAS_NOAH025_M",
+            "SoilMoi0_10cm_inst",
+            "soil_moisture_layer_0_10_cm",
+            "kg m-2",
+            "2.1",
+            "C1342986036-GES_DISC",
+        ),
     ]
     assert all(
         product["availability"] == "unavailable"
