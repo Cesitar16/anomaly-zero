@@ -162,6 +162,7 @@ def test_ds03_snapshot_is_not_a_full_series_response_and_points_match_openapi(sy
     spec = load_spec()
     loaded = read_snapshot(path)
 
-    assert validate_schema({"$ref": "#/components/schemas/SeriesResponse"}, loaded, spec)
+    response_errors = validate_schema({"$ref": "#/components/schemas/SeriesResponse"}, loaded, spec)
+    assert response_errors, "DS-03 snapshot must not be mistaken for a full SeriesResponse"
     for point in loaded["series"]:
         assert not validate_schema({"$ref": "#/components/schemas/SeriesPoint"}, point, spec)
