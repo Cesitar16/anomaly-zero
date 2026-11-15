@@ -1,7 +1,7 @@
-# FUL-112 · QA empírica IMERG mensual — Fase 1
+# FUL-112 · QA empírica IMERG mensual
 
-**Estado:** inventario estructural y de procedencia completado. La evaluación de píxeles QA permanece **`unassessed`**; no se aplica filtro ni umbral.
-**Alcance de esta fase:** identificar las muestras locales y comprobar su identidad declarada, estructura HDF5, atributos y campos disponibles. No calcular estadísticas de QA ni presentar resultados como calidad validada.
+**Estado:** Fases 1–3 implementadas en la rama de trabajo. La evaluación de píxeles QA permanece **`unassessed`**; no se aplican filtros ni umbrales. La decisión de producto y publicación corresponde a César.
+**Alcance de la Fase 1:** identificar las muestras locales y comprobar su identidad declarada, estructura HDF5, atributos y campos disponibles. Los resultados empíricos y su interpretación provisional se documentan en las secciones de Fases 2 y 3.
 
 ## Procedencia y distinción de fuentes
 
@@ -200,3 +200,74 @@ El JSON de auditoría contiene hashes por muestra, denominadores, conteos y dist
 - [x] Universo global, caja inclusiva y centros MDBA independientes; orientación `time,lon,lat`/`lat,lon` probada.
 - [x] El script no aplica filtros ni umbrales; todos los resultados mantienen estado `unassessed`.
 - [x] Suite `research/tests`: 58 pruebas aprobadas; Ruff y `git diff --check` aprobados. No se añadieron gránulos ni cachés al diff.
+
+
+## Fase 3 · Interpretación científica y opciones para la demo
+
+**Estado de interpretación:** recomendación científica provisional (`DOC/TEC/PARCIAL/INF`). La QA de las muestras permanece `unassessed`: no se aplicaron reglas de aceptación ni filtros y no se fijan umbrales por este informe.
+
+### Fuente primaria y método de contraste
+
+Se contrastaron los atributos de los gránulos y las distribuciones de la Fase 2 contra *IMERG V07 Algorithm Theoretical Basis Document*, versión documental 7.2, fechada el 13 de agosto de 2026. Se consultaron §3.11 (error), §3.12.2 (QIm mensual), §3.13 y tabla 5 (campos de salida), y apéndice §§9.4–9.5 (definición y consejo de uso de QIm). La consulta fue el 15 de noviembre de 2026. El ATBD señala que no existe una definición consensuada de un índice simple y universal de calidad para IMERG; distingue QIh (media hora) de QIm (mensual), y dice que evaluar si esos índices son informativos sigue siendo asunto de investigación.
+
+El método fue: cotejar definición y limitaciones del ATBD con nombre, versión, unidad, atributos y hashes del manifiesto, y después con los conteos y cuantiles de cada muestra/ámbito en las tablas de la Fase 2. Los resúmenes describen celdas del arreglo almacenado. No constituyen una validación externa de precisión, una máscara QA aprobada ni una serie regional independiente.
+
+### Matriz de evidencia e interpretación
+
+| Campo y fuente | Definición documental | Evidencia local y resumen observado | Límite/riesgo de interpretación | Recomendación provisional / estado |
+|---|---|---|---|---|
+| `Grid/precipitation`; ATBD §3.13 y tabla 5; atributo del gránulo | Estimación combinada satélite–gauge; el campo mensual Final se almacena en mm/hr en los gránulos inspeccionados. El ATBD recomienda este campo merged para uso general. | En las 13 muestras elegidas el campo está presente; fechas, fuente, versión, hashes, `_FillValue` y conteos están en el manifiesto y las tablas Fase 1/2. NASA enero 2005 y enero 2021 son gránulos V07B inspeccionados. | `mm/hr` es una tasa media, no un total mensual en mm. Una conversión depende de duración exacta del periodo y política de faltantes; esta fase no la realiza. Una tasa estimada no equivale por sí sola a observación de gauge. | Para una demo raster, conservar valor y unidad del archivo, fecha, producto/versión y faltantes; rotularlo como tasa mensual estimada. `DOC/TEC/PARCIAL/INF`. |
+| `Grid/precipitationQualityIndex` (QIm); ATBD §§3.12.2, 9.4–9.5 | Índice mensual interpretado como número equivalente de gauges requerido para producir el error aleatorio estimado, dadas la precipitación estimada y el área de referencia; el área se expresa como 2,5° × 2,5° lat/lon. No tiene unidad física declarada en los gránulos. | Está presente en las 13 muestras y se guarda sobre el arreglo nativo 0,1°. En enero de 2005, mediana observada: 3,65 global, 69,22 en la caja y 98,805 sobre centros MDBA; distribuciones y denominadores completos por mes están en Fase 2. | La celda de almacenamiento de 0,1° no convierte la cifra en una cuenta de gauges independiente por cada píxel de 0,1°: el soporte de interpretación del índice es 2,5° × 2,5°. El ATBD dice que QIm solo aborda error aleatorio, no sesgo; advierte ambigüedad sobre nieve/superficies congeladas y que el índice mensual es relativamente nuevo a escala 0,1°. No es probabilidad ni exactitud por píxel. Las medianas de ámbitos distintos no son directamente intercambiables. | Si se muestra, hacerlo como diagnóstico contextual con la escala de soporte indicada; evitar colorear o descartar píxeles como si fueran evaluaciones independientes. `DOC/TEC/PARCIAL/INF`. |
+| `Grid/randomError`; ATBD §3.11, §3.12.2 y tabla 5 | Estimación de error aleatorio de la precipitación combinada satélite–gauge; el producto la almacena en mm/hr. La fórmula asociada a QIm usa este componente aleatorio, no un error sistemático. | Presente en las 13 muestras, unidades `mm/hr`. Ejemplo enero 2005: mediana 0,014 global, 0,003 en caja y 0,003 en centros MDBA. Cuantiles por mes/ámbito en Fase 2. | No es sesgo, error total, exactitud validada contra estaciones ni intervalo de confianza automático. Un cuantil bajo no demuestra que la precipitación sea exacta en una región. | Puede exponerse como estimación de componente aleatorio junto a unidad, producto y ámbito, sin semáforo de precisión. `DOC/TEC/PARCIAL/INF`. |
+| `Grid/gaugeRelativeWeighting`; ATBD §3.13, tabla 5 y atributo del gránulo | Peso relativo de la precipitación de gauge frente a la precipitación multisatélite en la combinación; la unidad declarada localmente es `percent`. | Presente en las 13 muestras. En enero 2005, mediana observada: 0% global, 96% en caja y 97% en centros MDBA. El histograma exacto de cada mes/ámbito está en el JSON local regenerable; el resumen descriptivo completo está en Fase 2. | El porcentaje es una ponderación del proceso de combinación, no el porcentaje de celdas “correctas”, cobertura de estaciones, independencia o garantía de precisión. | Si se incluye en el panel informativo, nombrarlo como ponderación relativa de gauge y mantenerlo separado del mapa de precipitación. `DOC/TEC/PARCIAL/INF`. |
+
+La evidencia cuantitativa de la tabla es `TEC/PARCIAL`: cálculo reproducible sobre las muestras y los ámbitos especificados, no sobre toda la serie histórica ni sobre observaciones independientes. Los valores cero, fill, no finitos y finitos no-fill están separados en la Fase 2; “finito no-fill” significa válido numéricamente para ese conteo, no que supere QA ni que sea apto para inferencia.
+
+### Consejo del ATBD para QIm, sin convertirlo en filtro
+
+El ATBD V07 §9.5 ofrece las etiquetas descriptivas “red” para `0 ≤ QIm < 3`, “yellow” para `3 ≤ QIm < 10` y “green” para `QIm ≥ 10`, asociadas respectivamente a contexto de red gauge pobre, suficiente para ajuste de sesgo con interpolación frecuente, y redes buenas a excelentes. NASA indica que eligió esos rangos para obtener una distribución razonable de las tres clases. Son consejo contextual del documento; **no son umbrales obligatorios de enmascarado, QA universal ni regla aprobada para esta demo**. Tampoco corrigen la diferencia entre el soporte del índice y la grilla fina. La Fase 2 no los aplicó a los datos.
+
+### Opciones de presentación para decisión de César
+
+| Elemento que podría mostrarse | Información necesaria para no inducir a error | Estado |
+|---|---|---|
+| Mapa mensual de `precipitation` | Producto/colección y versión de archivo; periodo; tasa `mm/hr`; resolución nativa 0,1°; ámbito/geometría y método espacial; faltantes diferenciados de cero; aviso de QA no aplicada. | Opción exploratoria, pendiente de decisión de César y de los gates de geometría/licencia que correspondan. |
+| QIm mensual | Valor original y etiqueta de índice mensual; explicar equivalente de gauges por área 2,5° × 2,5° aunque el archivo lo almacene en grilla 0,1°; no llamarlo probabilidad ni exactitud por píxel. Si se usan bandas de color descriptivas del ATBD, identificarlas como consejo contextual no validado para la política de producto. | Propuesta informativa, no aprobada; no descarta celdas. |
+| `randomError` | Unidad `mm/hr`, nombre como estimación de error aleatorio y nota de que no es error total ni sesgo. | Propuesta informativa, no aprobada. |
+| `gaugeRelativeWeighting` | Unidad `percent`, descripción de peso relativo de gauge frente a multisatélite; sin usarlo como porcentaje de exactitud. | Propuesta informativa, no aprobada. |
+| Estado QA | Mensaje explícito `unassessed` / “QA no aplicada”; si faltan variables en un futuro archivo, indicarlo como ausentes en vez de cero. | Requisito preventivo recomendado para cualquier demo que exponga estos datos. |
+
+Estas opciones son material para que César decida qué necesita el MVP. No cambian FUL-107, no aprueban el producto inicial y no afirman que los campos auxiliares deban estar visibles en la interfaz.
+
+### Experimentos necesarios antes de una regla QA
+
+1. **Alinear escala espacial de QIm:** verificar, con documentación y arreglos originales, cómo se representa en la grilla de 0,1° un índice cuyo soporte de interpretación es 2,5° × 2,5°; cuantificar valores repetidos/vecindad y evitar contar píxeles vecinos como observaciones independientes. Informar método y límite de cualquier remapeo.
+2. **Precisar el uso previsto:** separar decisión de mapa contextual, serie regional y afirmación de precisión local; cada uso requiere evidencia y política de faltantes distintas.
+3. **Evaluar sensibilidad, no escoger un corte a partir de la distribución:** si César solicita estudiar las bandas del ATBD, comparar explícitamente valores/cobertura espacial y temporal retenidos y descartados, por mes y ámbito, usando solo periodos realmente inspeccionados hasta que se autoricen más muestras. No escoger la banda que “se vea mejor”.
+4. **Buscar validación independiente cuando se pretenda hablar de exactitud:** cotejar precipitación con estaciones o una referencia independiente pertinente, verificar que la referencia no sea la misma información gauge que contribuyó a la combinación IMERG, documentar periodo, resolución, sesgos y representatividad regional.
+5. **Probar continuidad antes de extrapolar:** revisar versiones, meses y estaciones adicionales si se propone una serie temporal; las 13 muestras actuales no constituyen continuidad 2005–2024 ni validan umbrales históricos.
+
+Hasta que esas pruebas y las decisiones correspondientes se completen, conservar QA como `unassessed`, publicar faltantes/cobertura según el ámbito ensayado y no aplicar filtro, corte, ponderación ni clase como criterio de aceptación.
+
+### Preguntas abiertas para FUL-107 / César
+
+- ¿La primera demo debe mostrar solo la tasa de precipitación o también diagnósticos QA? Si muestra estos, ¿QIm se presentará como contexto con su soporte de 2,5°?
+- ¿La pregunta del MVP necesita una visualización raster de muestra o una serie regional? No son intercambiables y las muestras actuales solo respaldan la primera como opción exploratoria.
+- ¿Se requiere decidir una política QA para la demo? Si sí, ¿qué afirmación pretende sostener y qué validación independiente respaldaría esa regla?
+- ¿Qué ámbito se mostrará y cómo se indicarán la geometría, el método de selección y la cobertura? Los conteos por centro de la Fase 2 no son cobertura de superficie.
+- ¿Se usarán bandas de color del ATBD solo como anotación informativa o se necesitan experimentos de sensibilidad antes de mostrarlas? Cualquier uso como filtro queda fuera de esta fase y requiere decisión explícita.
+
+### Checklist de Fase 3
+
+- [x] Contraste con fuente primaria NASA V07 y fecha de consulta registrados.
+- [x] QIm diferenciado de QIh; soporte interpretativo 2,5° × 2,5° explicado frente a almacenamiento 0,1°.
+- [x] Significados y límites de `randomError` y `gaugeRelativeWeighting` separados de exactitud y sesgo.
+- [x] Evidencia empírica asociada a valores por muestra/ámbito sin convertir rangos observados en umbrales.
+- [x] Opciones de demo y experimentos futuros documentados como propuestas para César, no decisiones aprobadas.
+- [x] Se conserva `unassessed`; no se aplican filtros, clases ni conversiones de tasa a acumulado.
+- [x] Revisión de consistencia, pruebas de repo y diff de FUL-112 completados; rama basada en el `origin/dev` vigente y cambio listo para PR hacia `dev`.
+
+### Fuentes primarias
+
+- [NASA GPM, IMERG V07 Algorithm Theoretical Basis Document, v7.2, 13-08-2026 (PDF)](https://gpm.nasa.gov/sites/default/files/2026-08/IMERG_V07_ATBD_final_260813.pdf): §3.11 (error estimates), §3.12.2 (QIm), §3.13/tabla 5 (salidas), apéndice §§9.4–9.5 (QIm y consejo de uso). Consulta: 2026-11-15.
+- [DOI de IMERG Final Monthly, colección 07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07); los archivos inspeccionados reportan además versión de archivo `V07B` en el manifiesto de Fase 1.
