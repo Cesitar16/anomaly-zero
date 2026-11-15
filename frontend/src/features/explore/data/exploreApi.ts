@@ -38,6 +38,7 @@ export interface ExploreApi {
   listRegions(signal?: AbortSignal): Promise<ApiResult<RegionsResponse>>
   listProducts(regionId: string, signal?: AbortSignal): Promise<ApiResult<ProductsResponse>>
   getSeries(query: SeriesQuery, signal?: AbortSignal): Promise<ApiResult<SeriesResponse>>
+  downloadSeriesCsv?(query: SeriesQuery, signal?: AbortSignal): Promise<ApiResult<Blob>>
   createAnalysis(
     request: CreateAnalysisRequest,
     signal?: AbortSignal,
