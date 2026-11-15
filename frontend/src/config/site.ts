@@ -27,11 +27,20 @@ export const SECTION_IDS = {
 } as const
 
 /**
- * Feature flag del explorador.
- * Mientras sea `false`, la ruta /explore muestra un placeholder explícito
- * "En desarrollo" y ningún resultado simulado.
- * Cuando exista el explorador real (FE-02 en adelante), cambia a `true`
- * y reemplaza el contenido de `pages/ExplorerPage.tsx`.
+ * Estado del explorador (/explore). Es el único "interruptor": hero, barra y sección de acceso lo leen.
+ *  - 'in-development': la ruta solo explica el estado del proyecto.
+ *  - 'demo': el explorador existe y funciona con datos SINTÉTICOS (FE-04). No hay datos NASA reales.
+ *  - 'available': el explorador usa datos reales revisados. Cámbialo solo cuando César lo apruebe.
  */
-// Se anota como boolean para que TypeScript no reduzca la condición al literal `false`.
-export const EXPLORER_AVAILABLE: boolean = false
+export type ExplorerStatus = 'in-development' | 'demo' | 'available'
+
+// Se anota con el tipo para que TypeScript no reduzca las comparaciones al literal.
+export const EXPLORER_STATUS: ExplorerStatus = 'demo'
+
+/** Etiqueta corta de un estado; `null` cuando está disponible y no hace falta ninguna. */
+export function explorerStatusLabel(status: ExplorerStatus): string | null {
+  if (status === 'available') return null
+  return status === 'demo' ? 'Demostración' : 'En desarrollo'
+}
+
+export const EXPLORER_STATUS_LABEL: string | null = explorerStatusLabel(EXPLORER_STATUS)

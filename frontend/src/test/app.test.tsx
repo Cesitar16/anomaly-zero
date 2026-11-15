@@ -49,15 +49,19 @@ describe('Landing (/)', () => {
     ).toBeInTheDocument()
   })
 
-  it('el acceso al explorador apunta a /explore y dice "En desarrollo"', () => {
+  it('el acceso al explorador apunta a /explore y dice "Demostración"', () => {
     renderApp('/')
 
-    const ctas = screen.getAllByRole('link', { name: /Ver estado del explorador/i })
+    const ctas = screen.getAllByRole('link', { name: /Abrir el explorador/i })
     expect(ctas.length).toBeGreaterThanOrEqual(2) // hero y sección de acceso
     ctas.forEach((cta) => {
       expect(cta).toHaveAttribute('href', '/explore')
-      expect(cta).toHaveTextContent('En desarrollo')
+      expect(cta).toHaveTextContent('Demostración')
     })
+    expect(screen.getByRole('link', { name: /^Explorador\s*Demostración$/ })).toHaveAttribute(
+      'href',
+      '/explore',
+    )
   })
 
   it('incluye el aviso de proyecto independiente', () => {
@@ -102,23 +106,6 @@ describe('Menú móvil', () => {
     await user.keyboard('{Escape}')
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(toggle).toHaveFocus()
-  })
-})
-
-describe('Explorador (/explore)', () => {
-  it('es un placeholder explícito, sin datos simulados', () => {
-    const { container } = renderApp('/explore')
-
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      /Explorador de tendencias\s*En desarrollo/,
-    )
-    expect(screen.getByText(/no hay ningún dato, gráfico ni mapa/i)).toBeInTheDocument()
-    expect(container.querySelector('canvas, img, [role="img"], table')).toBeNull()
-  })
-
-  it('no tiene violaciones de accesibilidad detectables por axe', async () => {
-    const { container } = renderApp('/explore')
-    await expectNoA11yViolations(container.ownerDocument.body)
   })
 })
 

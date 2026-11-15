@@ -1,4 +1,4 @@
-import { EXPLORER_AVAILABLE, ROUTES } from '../../config/site'
+import { EXPLORER_STATUS, EXPLORER_STATUS_LABEL, ROUTES } from '../../config/site'
 import type { ButtonVariant } from '../../types'
 import ButtonLink from './ButtonLink'
 
@@ -14,8 +14,8 @@ interface ExplorerCtaProps {
 export default function ExplorerCta({ variant = 'accent' }: ExplorerCtaProps) {
   return (
     <ButtonLink to={ROUTES.explore} variant={variant}>
-      {EXPLORER_AVAILABLE ? 'Abrir el explorador' : 'Ver estado del explorador'}
-      {!EXPLORER_AVAILABLE && <span className="btn__tag">En desarrollo</span>}
+      {EXPLORER_STATUS === 'in-development' ? 'Ver estado del explorador' : 'Abrir el explorador'}
+      {EXPLORER_STATUS_LABEL && <span className="btn__tag">{EXPLORER_STATUS_LABEL}</span>}
     </ButtonLink>
   )
 }
