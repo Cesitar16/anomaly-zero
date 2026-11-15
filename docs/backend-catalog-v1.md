@@ -1,6 +1,6 @@
 # Catálogos FastAPI v1 (BE-03)
 
-Implementación offline de `GET /api/v1/regions` y `GET /api/v1/products?region_id=…` conforme a [OpenAPI v0](openapi-contract-v0.yaml) y [contracts-v0](contracts-v0.md). Este documento describe el estado del backend; las decisiones de AZ-04 siguen siendo propuestas del equipo.
+Implementación offline de `GET /api/v1/regions` y `GET /api/v1/products?region_id=…` conforme a [OpenAPI v0](openapi-contract-v0.yaml) y [contracts-v0](contracts-v0.md). El contrato AZ-04 está integrado; publicar esta región como referencia no aprueba las decisiones científicas pendientes de AZ-03.
 
 ## Estado publicado por la API
 
