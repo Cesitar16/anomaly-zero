@@ -11,7 +11,7 @@ Desde la raíz del repositorio, con el entorno virtual del proyecto activo, Eart
 
 GLDAS reutiliza la muestra local verificada en BE-01. Cada archivo se acompaña de manifiesto con identidad del granule, tamaño, SHA-256 y metadatos observados. No se sobrescriben muestras existentes. Archivo y manifiesto se preparan antes de publicarse; su publicación no es una transacción conjunta. Si falla la publicación del manifiesto, el flujo intenta limpiar el archivo nuevo y preserva originales válidos.
 
-El `relative_path` del manifiesto se resuelve desde `relative_path_base`, que registra el directorio de trabajo desde el que se ejecutó el comando. Los tamaños reportados por earthaccess/CMR se expresan en MiB y el tamaño local en bytes.
+El `relative_path` de cada manifiesto se resuelve desde el `relative_path_base` guardado en ese mismo manifiesto. Las columnas `original_file` y `manifest` de los CSV son referencias distintas: en el CSV anual original, las 20 filas de febrero conservan una ruta absoluta de la máquina de Jod y los demás meses usan rutas relativas desde la raíz del checkout `anomaly-zero-be02`. La copia portable normaliza ambas columnas a rutas `data/raw/...` y declara explícitamente esa raíz lógica en el README del handoff. Los tamaños reportados por earthaccess/CMR se expresan en MiB y el tamaño local en bytes.
 
 ## Estructura inspeccionada sin transformaciones
 
@@ -65,7 +65,7 @@ La regla de inclusión es centro de celda dentro del polígono; incluye bordes e
 
 El denominador cuenta centros de celda, no superficie cubierta. Excluye celdas cuyo centro cae fuera aunque su borde cruce la cuenca y no pondera área. “Válido” significa finito y distinto del fill; no implica que candidatos QA de IMERG se aplicaran ni equivale a aprobación científica.
 
-Los CSV locales por mes contienen hasta 20 filas cada uno. La tabla `data/derived/be02_imerg_2005-01_02.csv` conserva el primer ensamblaje de enero y febrero (40 filas). La tabla `data/derived/be02_imerg_2005-01_12.csv` concatena los doce meses (240 filas; 20 centros compartidos por todos los meses). Ambas conservan valores mensuales crudos, sin promedios, conversiones ni climatología. Sus referencias a originales/manifiestos son rutas relativas a la raíz del repositorio. Campos:
+Los CSV locales por mes contienen hasta 20 filas cada uno. La tabla `data/derived/be02_imerg_2005-01_02.csv` conserva el primer ensamblaje de enero y febrero (40 filas). La tabla `data/derived/be02_imerg_2005-01_12.csv` concatena los doce meses (240 filas; 20 centros compartidos por todos los meses). Ambas conservan valores mensuales crudos, sin promedios, conversiones ni climatología. La copia `data/derived/be02_handoff/be02_imerg_2005-01_12.portable.csv` corrige solo las dos columnas de referencias, conserva orden/valores/unidades y resuelve desde la base lógica `anomaly-zero-be02/`; las rutas todavía apuntan a los originales locales, no prueban acceso desde otro equipo. Campos:
 - `period`: mes de referencia;
 - `product`, `version`, `variable`: identidad y variable reportadas;
 - `latitude`, `longitude`: coordenadas del centro de celda;
@@ -95,7 +95,7 @@ Para 240 meses por producto (enero de 2005–diciembre de 2024), con tamaño con
 
 ## Verificación y pendientes
 
-- Pruebas offline cubren lectores/ejes distintos, fill frente a cero, dispatch NetCDF/HDF5 y máscara espacial. Actions pasó en HEAD `baaedad` (run `43660988203`, backend y frontend).
+- Pruebas offline cubren lectores/ejes distintos, fill frente a cero, dispatch NetCDF/HDF5 y máscara espacial. Actions pasó en HEAD actual `20d7a7d` (run `43661111462`, backend y frontend). El run `43660988203` pertenece al HEAD histórico `baaedad`.
 - La prueba de febrero se ejecutó sobre el archivo local preexistente, sin sobrescribirlo ni descargarlo de nuevo. Los diez meses nuevos abrieron correctamente con HDF5; QA espacial reportó 10,092 centros válidos y 0 faltantes en cada mes, con el mismo polígono E01. El CSV anual de 240 filas conserva veinte centros por mes y no agrega valores.
 - FUL-104, Lucas y César deben revisar identidades/versiones, unidades, calidad, geografía y utilidad para EDA. No se aprueban decisiones científicas en BE-02.
 - Sin conversiones, tendencias, significancia, mapas completos ni contratos finales.
