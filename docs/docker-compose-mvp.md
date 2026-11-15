@@ -58,4 +58,4 @@ docker compose down
 - **Compose informa que no encuentra el directorio de datos:** crea el directorio configurado o corrige `ANOMALY_ZERO_PROCESSED_DIR`; la configuración evita crear silenciosamente una ruta vacía.
 - **El puerto ya está ocupado:** cambia `FRONTEND_PORT` o `BACKEND_PORT` en `.env` y vuelve a ejecutar `docker compose up -d`.
 
-La imagen incluye el frontend de la rama que se construya. En `dev`, `/explore` permanece como placeholder hasta que FE-04 se integre; la infraestructura Docker no implica que la exploración funcional ya esté completa.
+La imagen incluye el frontend de la rama que se construya. Desde el merge de FE-04, `dev` sirve el explorador funcional en `/explore`; por defecto usa el modo de demostración. Para consultar explícitamente la API real, abre `/explore?fuente=api`. La infraestructura no implica que haya series reales para todos los productos: comprueba la disponibilidad indicada por la API y conserva las limitaciones científicas de cada producto.

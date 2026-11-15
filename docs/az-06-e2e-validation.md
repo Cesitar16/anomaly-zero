@@ -1,88 +1,96 @@
 # AZ-06 / FUL-132 — Informe de validación E2E
 
-**Resultado: BLOQUEADO para aceptación E2E completa.** Docker, API, snapshot auténtico y CSV se validaron correctamente. El recorrido funcional navegador → explorador React → API no se puede aceptar todavía: FE-04 sigue en la PR #36 abierta y no forma parte de `dev`.
+**Resultado: E2E funcional aprobado para la demo local con IMERG auténtico.** La rama incorpora FE-04 y se verificó el recorrido navegador → Nginx → FastAPI → snapshot NASA. Esto no constituye aprobación científica de QA regional, una tendencia, ni autorización para publicar inferencias o modelos.
 
-## Identidad y entorno
+## Identidad del entorno
 
-- Repositorio: `Cesitar16/anomaly-zero`.
-- Rama de prueba: `test/ful-132-az-06-e2e-validation`.
-- SHA de `origin/dev` probado: `2022cf435ee4f67002360f1d7bf47974cf387cde` (incluye Docker Compose #37 y export CSV #38).
-- Docker Engine 29.9.2; Docker Compose 5.6.1; imágenes Linux.
-- Python de host 3.12.13, uv 0.11.8; Node 24.15.0, npm 11.6.2.
-- Compose de prueba aislado: proyecto `az-ful132`, puertos locales 18080/18000. El directorio procesado se enlazó desde una ruta local configurada solo en el proceso de Compose; no se versionó ninguna ruta personal.
-- FE-04: [PR #36](https://github.com/Cesitar16/anomaly-zero/pull/36) sigue `OPEN`, contra `dev`; sus checks reportaban backend/frontend aprobados. Por ello, las comprobaciones de interfaz que dependen de FE-04 quedan pendientes.
+- Rama de validación: `test/ful-132-az-06-e2e-validation`.
+- `origin/dev` integrado: `5512fdb03961c6daec5e992874c1196edd326589` (merge de FE-04 / PR #36).
+- Commit de integración local de `origin/dev`: `d7bff8fe6b94084d8dd8933d3303d41416523b83`.
+- Snapshot de Compose: proyecto `az-ful132`; frontend `127.0.0.1:18080`, backend `127.0.0.1:18000`.
+- Los puertos 8080 y 8000 estaban ocupados por otro proyecto Compose activo; no se detuvo ni modificó ese proyecto. Se eligieron puertos aislados para no interrumpirlo.
+- Ambos contenedores quedaron `healthy`. La configuración del entorno apunta al directorio local procesado mediante un bind mount de solo lectura.
 
-## Docker y rutas
+## Docker e imágenes
 
-Comandos ejecutados: `docker compose -p az-ful132 config --quiet`, `docker compose -p az-ful132 build`, `docker compose -p az-ful132 up -d` y `docker compose -p az-ful132 ps`.
+Se ejecutaron `docker compose -p az-ful132 config`, `build`, `up -d` y `ps`. Las dos imágenes se reconstruyeron desde esta rama, que ya contiene la página FE-04. Vite empaquetó `ExplorePage` y los componentes del explorador.
 
-- Ambas imágenes construyeron. Backend y frontend aparecen `healthy`.
-- La portada `http://127.0.0.1:18080/` respondió HTTP 200.
-- `/health` respondió correctamente tanto en backend directo (`:18000`) como a través del proxy Nginx (`:18080`).
-- `/api/v1/regions`, `/api/v1/products` y `/api/v1/series` respondieron por el proxy; se recibieron 1 región y 3 productos.
-- `/explore?fuente=api` devuelve HTTP 200 por el fallback SPA, pero eso no prueba que el explorador funcione: el `ExplorerPage` de `dev` continúa siendo el placeholder mientras #36 siga abierta.
-- El volumen del contenedor está montado en `/app/data/processed` con `readOnly=true`.
-- Se comprobó que las imágenes no incluyen el snapshot ni `data/raw`; la imagen frontend tampoco contiene `.env` ni directorios de datos. Los Dockerfiles copian solo fuentes necesarias y `.dockerignore` excluye datos, notebooks, credenciales y cachés.
+Comprobaciones de límites de datos:
 
-## Snapshot y evidencia científica
+- El backend no contiene el snapshot ni `/app/data/raw` dentro de la imagen.
+- El frontend no contiene `.env` ni un directorio de datos.
+- Docker informa el montaje de `/app/data/processed` como `readOnly=true` (`RW=false`).
+- No se añadieron datos NASA, credenciales ni rutas personales al commit.
 
-El snapshot local se leyó con el validador `read_snapshot` del backend. También cotejé en el host cada payload y su manifiesto local contra los hashes y bytes declarados por la procedencia del snapshot.
+## Navegador y recorrido
 
-| Comprobación | Resultado |
+En Microsoft Edge abrí la landing local y la ruta `/explore?fuente=api`; seleccioné la cuenca Murray–Darling, precipitación IMERG P02 y el rango inclusivo `2005-01`–`2005-12`, y envié el formulario.
+
+- Landing y `/explore` respondieron y se renderizaron. La fuente activa fue **Servicio real (API)**.
+- Apareció `Serie completa`, sin el aviso de datos sintéticos asociado a la respuesta (`MockDataNotice`). La cabecera conserva la etiqueta global `Demostración` que representa el estado general configurado del explorador, no el origen de esta respuesta; en la página, el selector confirmó API.
+- Se observó el gráfico y una tabla accesible de 12 filas. Los valores/meses visibles coinciden con la respuesta HTTP; la tabla rotula `mm/hr` y `Calidad no evaluada`.
+- Se mostró la advertencia de muestra de un solo punto y de que no es un promedio validado de la cuenca.
+- La calidad indica `basic_checks_only`, que los flags del proveedor no se aplicaron y que no se interpretan sus campos QA. No presenta la QA como aprobada.
+- El mapa informa que no hay capa geográfica y no dibuja una escala engañosa. El análisis de tendencia aparece no disponible y su botón deshabilitado.
+- En escritorio maximizado (1536 px) comprobé el formulario y el gráfico. En una ventana compacta de 632 px (por debajo del breakpoint de 768 px) comprobé que los filtros se apilan y que el gráfico y la tabla siguen accesibles. Esto prueba el layout responsive en viewport estrecho, no una emulación de dispositivo físico ni una auditoría exhaustiva de accesibilidad móvil.
+- La ruta sin parámetros también conserva el modo de demostración configurado por defecto. No fue necesario establecer `VITE_EXPLORE_API=http`: `?fuente=api` selecciona explícitamente la API y el control de la interfaz permite cambiar a demo. No alteré el modo inicial del sitio.
+- No guardé una captura en el repositorio; las vistas se inspeccionaron en vivo en Edge.
+
+## Snapshot y respuesta JSON auténticos
+
+El archivo local se validó con el lector del backend y su SHA-256 completo coincide con la auditoría anterior:
+
+| Propiedad | Resultado |
 |---|---|
-| Producto | GPM_3IMERGM, IMERG Final V07B; variable `Grid/precipitation`; unidad `mm/hr` |
-| Clasificación y soporte | `synthetic:false`; `point_sample`; sin aprobación de soporte regional |
+| Producto | `GPM_3IMERGM`, IMERG Final V07B |
+| Variable y unidad | `Grid/precipitation`, `mm/hr` |
+| Clasificación | `synthetic:false` |
+| Soporte espacial | `point_sample`; una celda, no promedio regional |
 | QA | `basic_checks_only`; `provider_flags_applied:false` |
-| Cobertura del snapshot | 12 períodos esperados, 12 presentes, 12 válidos, 0 nulos |
-| Proveniencia de gránulos | 12 registros CMR `verified_nasa_granule`; 12/12 archivos coinciden en SHA-256 y tamaño |
-| Manifiestos | 12/12 SHA-256 de sidecars coinciden |
-| Identidad | `dataset_id=imerg-2005-point-66cf65a5bcf2d99309af` |
+| Dataset | `imerg-2005-point-66cf65a5bcf2d99309af` |
+| Cobertura | 12 esperados, 12 presentes, 12 válidos, 0 faltantes |
+| Nulos / ceros observados | 0 / 0 en este snapshot |
+| Registros fuente y hashes | 12 registros NASA verificados y 12 SHA-256 en la respuesta |
 | SHA-256 del archivo snapshot | `4fc3fb07e4e56ae65e27c7c3cce510363437d0f8547f20e1dfde53f01561be94` |
-| `snapshot_sha256` interno | `7c1ac31560771bc8bb76df836a7dbba378ec5d35febf17fd75478b31c28d5904` |
+| SHA-256 interno del snapshot | `7c1ac31560771bc8bb76df836a7dbba378ec5d35febf17fd75478b31c28d5904` |
 
-La API real, consultada por Nginx con `region_id=murray-darling-basin`, `product_id=P02` y enero–diciembre de 2005, devolvió HTTP 200, `data_state=available`, doce puntos, `synthetic:false`, IMERG V07B, `mm/hr`, `point_sample`, QA `basic_checks_only` y `provider_flags_applied:false`. El `dataset_id` y los hashes de fuente coinciden con el snapshot montado. En este snapshot los doce valores son válidos: no hubo nulos ni valores cero. Los tests con fixtures sintéticas cubren cero frente a null; esos fixtures no se presentan como observaciones NASA.
+La respuesta conserva el identificador de dataset y hashes de los doce archivos fuente. El backend no informa en este payload las fechas de creación/descarga del snapshot ni hash/versión de manifiesto (`null`); esos campos aparecen como “No informado” en la interfaz y no se dedujeron a partir del SHA del archivo snapshot.
 
-## Export CSV
+La serie se pidió a través del proxy Nginx. `/health`, `/api/v1/regions`, `/api/v1/products` y `/api/v1/series` respondieron correctamente. El recurso de productos expone tres productos; en la interfaz MERRA-2 y GLDAS se muestran como no disponibles para esta API. No se presentan los datos descargados en investigación offline como series API aprobadas.
 
-`GET /api/v1/series/export.csv` con los mismos parámetros respondió HTTP 200, `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="anomaly-zero-series.csv"` y `Cache-Control: no-store`.
+## Paridad de exportación CSV
 
-El CSV contiene doce filas `observation`. Comparé fila por fila período, valor, estado QA, motivo de faltante, versión, unidad, soporte espacial, `synthetic`, `provider_flags_applied` y dataset ID. Los hashes fuente del CSV coinciden con la procedencia JSON. Resultado: **CSV y JSON coinciden**. Esta comprobación es del endpoint; no prueba una descarga implementada en el frontend (BE-08).
+`GET /api/v1/series/export.csv` respondió HTTP 200 con tipo `text/csv; charset=utf-8`, descarga adjunta y 12 filas `observation`. Comparé las 12 filas con JSON: período, valor, estado QA, motivo de faltante, región, producto y versión, variable, cantidad, unidad, soporte y estado de aprobación espacial, dataset, los 12 hashes fuente, clasificación sintética y flags del proveedor. **Los valores y metadatos comparados coinciden en las 12 filas.** Esta verificación cubre el endpoint CSV; no afirma que haya una función de descarga CSV en la interfaz.
 
-## Estados negativos y fixtures
+## Estados y límites verificados
 
-- HTTP observados contra el contenedor con snapshot: región desconocida 404; producto desconocido 404; parámetro inválido 422; rango fuera de cobertura 422.
-- Contenedor sin snapshot predeterminado: 200 `no_data`, serie vacía y `dataset_id:null`.
-- Snapshot configurado pero ausente: 503 `SERVICE_UNAVAILABLE`, sin ruta de archivo expuesta.
-- Test existente de snapshot inválido: 500 `INTERNAL_ERROR` sanitizado, aprobado.
-- Suites existentes con fixtures cubren cero/null en JSON/CSV, `no_data`, validación de errores, snapshot inválido y rechazo de hashes. Ninguna fixture se usó como evidencia NASA.
-- Error de red visible en la interfaz, aviso de sintéticos de FE-04, tabla/gráfico integrados, navegación y tamaños móvil/escritorio: **no ejecutados** porque FE-04 no está integrada en `dev`.
-- No se capturó screenshot del flujo del explorador: la implementación de ese flujo sigue pendiente de #36.
+- HTTP 404 por región desconocida y HTTP 422 por rango inválido: cliente frontend integrado con FastAPI real, 6 pruebas de integración HTTP aprobadas en total.
+- `no_data`, 404, 422, 500, 503, pérdida de respuesta, datos sintéticos y la distinción cero/null están cubiertos por las pruebas de contrato, cliente, componentes y página de FE-04 con fixtures rotuladas. Esos casos de error no se provocaron manipulando el snapshot real.
+- Cero frente a null se valida con fixtures sintéticas. El snapshot NASA observado contiene doce valores válidos no nulos y ninguno igual a cero.
+- No se calculó agregación regional, correlación, tendencia ni modelo. No se aprobó Gate R, Gate T ni QA de proveedor.
 
-## Validaciones de código
+## Validaciones ejecutadas
 
-Ejecutadas en el SHA indicado arriba:
+- `uv sync --locked --python 3.12 --group dev --group research` — correcto.
+- `uv run pytest backend/tests research/tests -q` — **274 passed**, 1 advertencia existente de deprecación Starlette/httpx.
+- `uv run ruff check backend research` — correcto.
+- `npm ci --prefix frontend` — correcto; npm informó 0 vulnerabilidades.
+- `npm run lint --prefix frontend` — correcto.
+- `npm run test --prefix frontend` — **197 passed, 6 skipped** porque son las pruebas condicionales contra un backend en vivo.
+- `EXPLORE_LIVE_API=http://127.0.0.1:18000/api/v1 npm run test --prefix frontend -- --run liveBackend` — **6 passed**; quedaron ejercitadas las pruebas condicionales anteriores contra FastAPI en Docker.
+- `npm run build --prefix frontend` — correcto. Vite advierte que un chunk del mapa supera 500 kB; el build no falla.
+- `git diff --check` — correcto.
 
-- `uv sync --locked --python 3.12 --group dev --group research` — pasó.
-- `uv run pytest backend/tests research/tests -q` — **274 passed**, 1 warning de deprecación Starlette/httpx.
-- `uv run ruff check backend research` — pasó.
-- `npm ci --prefix frontend` — pasó, 0 vulnerabilidades informadas.
-- `npm run lint --prefix frontend` — pasó.
-- `npm run test --prefix frontend` — **56 passed**. Tests de `ScientificSeriesPanel` — **8 passed**.
-- `npm run build --prefix frontend` — pasó.
-- `git diff --check` — pasó.
-- Enfoque de series y CSV: **14 passed**; lector de snapshot: **15 passed**; caso API de snapshot inválido: **1 passed**.
+Las 6 pruebas condicionales se ejecutaron también contra el backend real, por lo que el resultado combinado del frontend es **203 pruebas aprobadas**, sin atribuir datos de fixture al snapshot NASA.
 
-No se encontraron defectos que justificaran cambios de código o de contratos. No se modificaron filtros, rutas, adaptadores, algoritmos, QA ni datos.
+## Checklist FUL-132
 
-## Checklist de aceptación FUL-132
+- [x] FE-04 actualizada desde el merge presente en `origin/dev`; cambios incorporados sin conflicto.
+- [x] Docker reconstruido; frontend y backend saludables; proxy y snapshot de solo lectura comprobados.
+- [x] Recorrido real en navegador con 12 valores IMERG NASA, gráfico, tabla y advertencias.
+- [x] Metadatos científicos, procedencia y 12 hashes comprobados; CSV comparado con JSON.
+- [x] Layout escritorio y compacto revisados; estadísticas no autorizadas permanecen deshabilitadas.
+- [x] Suite backend/frontend, Ruff, lint, build y pruebas HTTP en vivo aprobadas.
+- [ ] Revisión humana y merge de PR #39.
 
-- [x] Docker construye y ambos servicios están saludables.
-- [x] Nginx → FastAPI → snapshot IMERG auténtico, montado en solo lectura.
-- [x] JSON autentica 12 períodos, producto, unidad, soporte, QA e identidad/procedencia.
-- [x] CSV coincide con JSON para los doce períodos y metadatos comprobados.
-- [x] Errores HTTP y respuestas `no_data` comprobados; los casos de `500` sanitizado y cero/null están cubiertos por tests existentes con fixtures.
-- [ ] Flujo navegador → FE-04 → API: bloqueado hasta que PR #36 se fusione en `dev`.
-- [ ] Gráfico, tabla, copy, error de red, demo sintética y adaptación móvil en la aplicación integrada: pendiente de FE-04.
-- [ ] Aceptación E2E completa y recomendación de release: pendiente del flujo navegador real.
-
-No se afirma aprobación E2E completa. La conclusión científica de esta ejecución se limita al punto IMERG 2005 verificado: doce meses en `mm/hr`, soporte puntual y QA básica; no equivale a promedio regional, QA de proveedor aprobada, tendencia ni inferencia.
+La demo local es funcional con datos NASA auténticos como **muestra puntual exploratoria**. No equivale a una demo de promedio espacial, QA del proveedor aprobada, tendencia científica, ni resultado inferencial. Repetir el smoke test después de cualquier cambio de datos o código antes de usarlo en una presentación.
