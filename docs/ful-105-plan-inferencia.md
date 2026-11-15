@@ -10,7 +10,7 @@ La Release `be02-samples-2005-v1` se descargó en una caché ignorada y aislada.
 
 Se obtuvo la geometría pública de MDBA descrita en [region_murray_darling.md](region_murray_darling.md) desde el FeatureServer con `outSR=4326`: un `Polygon` EPSG:4326 de 477.805 bytes y SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`, coincidente con el hash reportado en PR #9. Se conservó como caché local ignorada en `data/cache/ful-105/mdba_boundary_4326.geojson`; no se añadió a Git.
 
-El notebook [02_eda_nasa_products.ipynb](../research/notebooks/02_eda_nasa_products.ipynb) verifica procedencia, resume distribuciones globales y reutiliza `inspect_product`/`spatial_qa` de FUL-106 para los tres granules. La copia ejecutada permanece en caché local ignorada. Los resultados reproducidos se describen abajo. Solo cubren enero de 2005; no representan una serie temporal ni una comparación directa de magnitudes.
+El notebook [02_eda_nasa_products.ipynb](../research/notebooks/02_eda_nasa_products.ipynb) verifica procedencia y resume distribuciones globales para GLDAS/MERRA-2 enero 2005 e IMERG enero–diciembre 2005. Reutiliza `inspect_product`/`spatial_qa` de FUL-106 y una máscara nativa local para los doce meses. Los resultados no son inferencia ni comparación directa de magnitudes.
 
 La Release aporta MERRA-2 y GLDAS enero, e IMERG enero–diciembre de 2005 con originales y manifiestos. El CSV portable de 240 filas se validó contra los HDF5 fuente: 12 meses, 20 centros idénticos por mes, referencias resueltas, identidad/unidad constantes, valores sin conversión y QA no aplicado. Los notebooks/datos preexistentes no fueron sobrescritos; la ejecución nueva permanece en caché ignorada.
 
@@ -41,7 +41,7 @@ uv sync --group research --group dev
 uv run jupyter nbconvert --to notebook --execute research/notebooks/02_eda_nasa_products.ipynb --output 02_eda_nasa_products.executed.ipynb --output-dir data/cache/ful-105 --ExecutePreprocessor.timeout=300
 ```
 
-Se necesitan los tres granules, sus manifiestos y `data/cache/ful-105/mdba_boundary_4326.geojson`; el notebook no descarga datos ni modifica los originales.
+Se necesitan GLDAS/MERRA-2 enero, los doce granules IMERG y manifiestos correspondientes, más el polígono MDBA. Para la Release, define `FUL105_DATA_ROOT` a `data_root`; el panel portable es opcional. El notebook no descarga datos ni modifica los originales.
 
 ## Actualización de evidencia — handoff y año IMERG 2005
 
@@ -49,7 +49,7 @@ La rama se sincronizó con el merge oficial de PR #9 en `origin/dev` (`7e51dac`)
 
 El CSV portable tiene 240 filas (12 × 20), claves mes/centro únicas y exactamente los mismos 20 centros en cada mes. `original_file` y `manifest` resuelven dentro de `data_root`; cada valor se comparó con su celda del HDF5 referido y coincide a tolerancia de almacenamiento. Unidad constante `mm/hr`; candidatos `Grid/precipitationQualityIndex` y `Grid/randomError`; `quality_filter_applied=False`. Este panel es solo una selección de 20 centros, sin representatividad de superficie.
 
-El notebook [02_eda_nasa_products.ipynb](../research/notebooks/02_eda_nasa_products.ipynb) ahora admite `FUL105_DATA_ROOT` y reproduce para cada mes la inspección del granule, manifiesto, grilla global y `spatial_qa`. Las coordenadas nativas y polígono conservan SHA/identidad; el predicado geométrico oficial se memoiza por centro exacto para acelerar las doce llamadas, sin alterar su lógica. La tabla de estadísticos de cuenca usa los originales y todos los centros seleccionados por el polígono; el CSV de 20 filas por mes se reporta por separado.
+El notebook admite `FUL105_DATA_ROOT`, selecciona archivos por patrón IMERG Final V07B 2005 y comprueba nombre, periodo del manifiesto, identidad, tamaño y SHA antes de analizarlos. Si faltan meses, informa cuáles y remite al README de la Release para recuperarlos manualmente; no descarga nada. `CenterMaskCache` calcula centros sobre geometría y coordenadas nativas con el mismo predicado y reglas de borde/agujeros de FUL-106; su clave combina SHA-256 del polígono y de las coordenadas. Reutiliza la máscara cuando ambos coinciden e invalida/recalcula si cambian. Se compara contra `spatial_qa` en enero y contra los conteos base mensuales; la tabla de centros MDBA usa los granules completos. La verificación del panel de 20 filas es opcional y separada. El helper [ful105_imerg.py](../research/ful105_imerg.py) separa descubrimiento de validación y entrega errores de meses faltantes/identidad/SHA; no activa descargas. Sus tests offline cubren orden y meses, duplicados, año/versión/manifest, reutilización/invalidez de máscara, semántica de borde/agujero y fill frente a cero. No se modifica ningún estado global de FUL-106.
 
 | Mes 2005 | Global válidas / faltantes | Media global (mm/hr) | Mediana global | P95 global | Máximo global | Centros MDBA válidos / faltantes | Media centros MDBA (mm/hr) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -68,7 +68,7 @@ El notebook [02_eda_nasa_products.ipynb](../research/notebooks/02_eda_nasa_produ
 
 Las proporciones globales de faltantes oscilan entre 0,44 % y 0,91 %; en los 10.092 centros MDBA seleccionados no hay fill en estos doce granules. Los candidatos QA permanecen sin aplicar. Las medias mensuales MDBA son descripciones de la selección por centros sin ponderar por área; no son una media regional aprobada. El panel de 20 centros muestra medias entre 0,0285 (mayo) y 0,2155 mm/hr (febrero), pero no sustituye la grilla completa. Los estadísticos globales abarcan el dominio global y se muestran como diagnóstico de distribución, no como estimación MDBA. Un año no permite inferir tendencia climática.
 
-El notebook ejecutado final y sus tres gráficos están en `data/cache/ful-105/` (ignorado por Git); se regeneran, con la ruta de Release, mediante:
+El notebook ejecutado final y sus gráficos están en `data/cache/ful-105/` (ignorado por Git); se regeneran, con la ruta de Release, mediante:
 
 ```powershell
 $env:FUL105_DATA_ROOT = 'C:/ruta/al/data_root'
@@ -158,7 +158,7 @@ No implementar el contrato definitivo en FUL-105. No marcar `complete` si las pu
 | --- | --- | --- | --- |
 | GLDAS | EDA de una muestra enero 2005 sobre caja integrado en PR #7; lector FUL-106 y `spatial_qa` reproducen metadatos, SHA/manifiesto y conteos MDBA 1.617/1.615/2. | Revisar linaje/QA GLDAS y método espacial; obtener serie mensual si se aprueba el alcance. | César documenta; Lucas revisa; Alaín facilita insumos. |
 | MERRA-2 | Enero 2005 abierto; SHA/manifiesto coinciden; estadísticos globales y QA por centros reproducidos. | Confirmar semántica/QA con Lucas y obtener meses adicionales solo si se acuerda el alcance temporal. | Lucas valida semántica; Alaín confirma reproducibilidad. |
-| IMERG | Enero 2005 abierto; SHA/manifiesto coinciden; ceros/fill, estadísticos globales y QA por centros reproducidos. | Obtener manifiestos/granules de febrero–diciembre de handoff accesible o autenticación del usuario; definir reglas QA y calendario/conversión. | Alaín facilita archivos; Lucas valida versión/QA; César reproduce y compara temporalmente. |
+| IMERG | Doce meses de 2005 abiertos; SHA/manifiestos y calendario continuos; QA por centros 10.092/10.092/0 por mes; estadísticos globales y MDBA descriptivos reproducidos. | Definir reglas QA, revisar calendarios/conversiones y ampliar periodo si se aprueba. | Lucas valida versión/QA; César conserva trazabilidad; Alaín confirma handoff. |
 | Cuenca | Se obtuvo del FeatureServer el polígono completo EPSG:4326 (hash coincide con PR #9) y se reprodujo para GLDAS el conteo por centros. La copia está en caché ignorada. | Lucas debe revisar procedencia/CRS y aprobar método/bordes/pesos/cobertura; conteos por centro no cubren área. | Lucas/FUL-104 valida; Alaín aporta handoff reproducible. |
 | Inferencia | Este plan define diagnósticos y métodos candidatos, sin calcular tendencia. | Serie regional QA, diagnósticos temporales, preespecificación y revisión. | César prepara; Lucas revisa; equipo decide el caso FUL-107. |
 
