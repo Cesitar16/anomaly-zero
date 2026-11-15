@@ -1,18 +1,36 @@
-# Contrato de intercambio Frontend–FastAPI–Data Science v0 (propuesta)
+# Contrato de intercambio Frontend–FastAPI–Data Science v0
 
-> **Estado: propuesta para revisión; no aprobada.** Este documento continúa el borrador de la PR #3 y concreta una forma inicial del intercambio. Las rutas, campos, límites e identificadores marcados aquí son propuestas de contrato; no son decisiones aceptadas por el equipo. No implementa endpoints, modelos Pydantic, análisis, procesamiento de datos ni componentes React.
+> **Estado:** AZ-04/FUL-108 figura Done en Linear y su PR #13 está fusionada; OpenAPI v0.1-draft está integrado en `dev`. Esta página conserva propuestas y fixtures para límites aún sujetos a revisión. La integración del contrato no equivale a aprobación científica de QA, máscaras, agregaciones, inferencia o productos. GitHub no mostró reviews formales en la PR #13 consultada; no se atribuyen aprobaciones individuales.
 
 Relacionada con [AZ-04 / FUL-108](https://linear.app/fullstack-track/issue/FUL-108/az-04-disenar-y-aprobar-contratos-frontend-fastapi-data-science).
 
 ## Estado del repositorio y alcance
 
-El código actual contiene FastAPI con `GET /health`; los módulos `backend/app/api/`, `schemas/`, `services/` y `analysis/` no tienen implementaciones. React sigue siendo la plantilla Vite y no hay clientes de datos ni vistas consumidoras. Estas rutas definen una interfaz futura de Anomaly Zero; no son endpoints NASA.
+Estado contrastado con `origin/dev` `8e461a41e55c5ded784838ba93c89367fe4778e0` (15-11-2026): FastAPI implementa health, catálogos, series desde snapshot y estados honestos de análisis; consulta la matriz de rutas más abajo. FE-01 y la ruta `/explore` de frontend están en `dev`; FE-07 también está integrado. FE-04 está en In Review en Linear y su rama local incluye modo HTTP/proxy, pero Alejandra todavía no la publicó; no está integrada en este HEAD. Por eso no se afirma que React consumió FastAPI ni que haya QA de navegador ↔ API sobre FE-04.
 
-El catálogo candidato incluye MERRA-2 T2M, GPM IMERG Final precipitation y GLDAS Noah SoilMoi0_10cm_inst. La región Murray–Darling y 2005-01 a 2024-12 son contexto de trabajo, no cobertura científica aprobada. El inventario, los archivos reales y las revisiones de FUL-104/106/107 determinan qué datos llegan a publicarse.
+El catálogo publica `murray-darling-basin` como referencia exploratoria autorizada; eso no aprueba geometría de máscara, área, agregación regional ni inferencia. MERRA-2 T2M y GLDAS Noah SoilMoi0_10cm_inst continúan `unavailable` en esta API. IMERG Final solo queda disponible desde un snapshot local validado; el resultado es puntual (`point_sample`), `mm/hr`, con flags QA del proveedor no aplicados.
 
-Los cinco ejemplos al final son fixtures sintéticos. Cada raíz lleva `"synthetic": true`; el servicio real devolvería `false`. Ningún número de los ejemplos representa una observación o resultado estadístico.
+Los seis ejemplos al final son fixtures sintéticos. Cada raíz lleva `"synthetic": true`; no representan observaciones NASA ni resultados estadísticos. En producción, una solicitud de análisis válida devuelve 409 hasta que exista un método habilitado; el fixture 202 describe solo una forma propuesta.
 
-## Convenciones propuestas
+## Rutas implementadas en `dev`
+
+| Ruta | Comportamiento implementado | Disponibilidad/errores | Prueba o guía |
+| --- | --- | --- | --- |
+| `GET /health` | Estado del proceso FastAPI. | Siempre que el servicio esté iniciado: 200. | [`test_health.py`](../backend/tests/test_health.py) |
+| `GET /api/v1/regions` | Publica Murray–Darling como referencia exploratoria. | 200; geometría, CRS y área siguen `null`. | [`backend-catalog-v1.md`](backend-catalog-v1.md), `test_catalog_v1.py`. |
+| `GET /api/v1/products?region_id=…` | Devuelve metadatos versionados de P01–P03. | 200 para región conocida; 404 para desconocida. Sin snapshot, productos `unavailable`; con snapshot IMERG válido, P02 `available` o `partial`. | [`backend-catalog-v1.md`](backend-catalog-v1.md), `test_catalog_v1.py`, `test_series_v1.py`. |
+| `GET /api/v1/series` | Devuelve la serie IMERG puntual del snapshot DS-03 verificado, sin transformación de valores. | Snapshot accesible: 200; ausencia del default: 200 `no_data`; ruta explícita inaccesible: 503; snapshot inválido: 500 sanitizado; región/producto desconocidos: 404; parámetros inválidos: 422. | [`be-04-snapshot-reader.md`](be-04-snapshot-reader.md), [`be-06-demo-runbook.md`](be-06-demo-runbook.md), `test_series_v1.py`, `test_snapshot_reader.py`. |
+| `POST /api/v1/analyses` | Valida dataset/ventana; no calcula, persiste ni crea análisis. | Con dataset y ventana válidos: 409 `ANALYSIS_METHOD_UNAVAILABLE`; dataset desconocido: 404; petición inválida: 422. No hay respuestas 201/202 productivas. | [`be-05-analyses-v1.md`](be-05-analyses-v1.md), `test_analyses_v1.py`. |
+| `GET /api/v1/analyses/{analysis_id}` | No existe almacenamiento de análisis; IDs no localizados no se recuperan. | 404 `RESOURCE_NOT_FOUND` con envelope AZ-04. | [`be-05-analyses-v1.md`](be-05-analyses-v1.md), `test_analyses_v1.py`. |
+
+### Compatibilidad observada y límites del cliente
+
+- El catálogo sin snapshot reporta IMERG `product_version: "07"` (versión de colección); con snapshot verificado, P02/`/series` usa `"V07B"` (versión del archivo). El cliente debe leer el valor recibido, no fijar una sola forma.
+- `GET /series` serializa con `response_model_exclude_defaults=True`; los campos que coinciden con sus valores por defecto pueden omitirse (por ejemplo, `message` vacío y `coverage.spatial_coverage: null`). `raster_layers` es opcional en OpenAPI y no está en el modelo FastAPI ni en la respuesta actual: no hay raster publicado.
+- `ErrorResponse.error.details` es nullable. Las respuestas HTTP del servicio mantienen el sobre: un análisis inexistente devuelve `details: null`, mientras que el 409 de análisis incluye `details.analysis` con métricas `null`. Una ruta no registrada responde el 404 estándar `{"detail":"Not Found"}`, no el sobre AZ-04; no la confundas con un recurso inexistente.
+- La rama local de FE-04 declara adapter HTTP separado de mocks y proxy Vite, pero no está publicada ni integrada en el remoto. En el HEAD de `dev` inspeccionado no hay modo HTTP/proxy Vite de FE-04. La URL acordada es relativa `/api/v1`; el [runbook BE-06](be-06-demo-runbook.md) indica configurar `ANOMALY_ZERO_IMERG_SNAPSHOT` en la misma PowerShell del proceso backend y documenta FastAPI `127.0.0.1:8000` / Vite `localhost:5173`. El smoke HTTP de esta actualización ejecutó FastAPI en `127.0.0.1:8766` con snapshot real explícitamente configurado; no se abrió CORS wildcard y no es una prueba de navegador. El proxy o mismo origen corresponde al frontend; la prueba navegador ↔ API queda pendiente.
+
+## Convenciones del contrato
 
 - Prefijo `/api/v1`; versión informativa `contract_version: "0.1-draft"`. Romper compatibilidad requeriría una versión mayor de ruta; añadir campos opcionales podría permanecer en la versión menor, sujeto a acuerdo.
 - JSON UTF-8. IDs son cadenas opacas, estables y no reutilizadas: `region_id`, `product_id`, `dataset_id`, `analysis_id`. Los ejemplos usan IDs sintéticos.
@@ -87,7 +105,9 @@ El objeto propuesto incluye `analysis_id`, `dataset_id`, `region_id`, `product_i
 
 Estados y creación se distinguen así: `not_available` es un rechazo previo a crear el recurso (`409 ANALYSIS_METHOD_UNAVAILABLE`, sin `analysis_id`); `insufficient_data` es rechazo previo (`422 INSUFFICIENT_DATA`); `pending` solo significa que el cálculo fue aceptado y un procesador confirmó que ya está trabajando (respuesta `202` con `analysis_id`); `complete` significa cálculo terminado. El contrato v0 no habilita un método ni exige un procesador: por ello no produce `pending` hasta que exista esa capacidad. No hay colas ni consulta automática periódica; el cliente puede hacer un GET explícito al navegar a un análisis aceptado. Un error técnico usa el envelope de error y nunca se disfraza de `pending`, `no_data` o `complete`.
 
-## Recursos propuestos
+## Forma contractual de recursos
+
+Las formas siguientes describen el contrato integrado. Para el comportamiento efectivamente implementado y sus excepciones, prevalece la matriz inicial; el backend actual no acepta análisis productivos 201/202.
 
 ### `GET /api/v1/regions`
 
@@ -95,7 +115,7 @@ Estados y creación se distinguen así: `not_available` es un rechazo previo a c
 - **Validaciones:** ninguna; devuelve regiones publicadas. Una lista vacía es válida.
 - **200:** `{contract_version, synthetic, generated_at, regions: Region[]}`. Cada `Region` usa el descriptor de región definido arriba.
 - **Errores:** `503 SERVICE_UNAVAILABLE` si no se puede leer el catálogo interno; respuesta de error común con `retryable: true`.
-- **Caché:** se propone `Cache-Control: no-store` mientras no se apruebe otra política.
+- **Caché:** la implementación devuelve `Cache-Control: no-store`.
 
 ### `GET /api/v1/products?region_id=REG01`
 
@@ -103,7 +123,7 @@ Estados y creación se distinguen así: `not_available` es un rechazo previo a c
 - **Validaciones:** ID no vacío; la región debe existir. Un ID desconocido produce 404.
 - **200:** `{contract_version, synthetic, generated_at, region_id, products: Product[]}`. Cada producto informa disponibilidad `available`, `partial` o `unavailable`, variable/unidad, fuente, cobertura temporal, calidad y el `current_dataset_id` del snapshot actual o `null`.
 - **Errores:** 422 `INVALID_PARAMETER` si falta/formato inválido; 404 `RESOURCE_NOT_FOUND` si la región no existe; 503 `SERVICE_UNAVAILABLE` si falla el catálogo interno.
-- **Caché:** se propone `Cache-Control: no-store` mientras no se apruebe otra política.
+- **Caché:** la implementación devuelve `Cache-Control: no-store`.
 
 ### `GET /api/v1/series?region_id=REG01&product_id=P02&start=2005-01&end=2005-12&frequency=monthly`
 
@@ -113,9 +133,11 @@ Estados y creación se distinguen así: `not_available` es un rechazo previo a c
 - **200 sin registros:** mismo envelope con `data_state: "no_data"`, `dataset_id: null`, `provenance: null`, cobertura disponible nula, `valid_periods: 0`, lista `series: []` y mensaje. Es distinto de un valor cero y de un error temporal del snapshot.
 - **Huecos dentro de datos:** un período esperado sin valor se devuelve como punto con `value: null` y razón; no se rellena con cero.
 - **Errores:** 422 `INVALID_PARAMETER`, `PERIOD_OUT_OF_COVERAGE` o `LIMIT_EXCEEDED`; 404 `RESOURCE_NOT_FOUND` para región/producto desconocidos; 503 `SERVICE_UNAVAILABLE` si el snapshot no se puede leer.
-- **Caché:** se propone `Cache-Control: no-store`; el identificador de snapshot permite detectar contenido idéntico, pero no sustituye una política de frescura aprobada.
+- **Caché:** la implementación devuelve `Cache-Control: no-store`; el identificador de snapshot permite detectar contenido idéntico, pero no sustituye una política de frescura aprobada.
 
 ### `POST /api/v1/analyses`
+
+**Estado ejecutable en `dev`:** el backend solo valida dataset y ventana; para una petición válida devuelve `409 ANALYSIS_METHOD_UNAVAILABLE` y no crea ni persiste un análisis. Los `201` y `202` siguientes describen formas contractuales futuras, no respuestas productivas.
 
 - **Parámetros:** JSON `{dataset_id, window: {start, end, end_inclusive: true}}`. La ventana usa los meses `YYYY-MM` inclusivos definidos arriba. `dataset_id` debe ser el que entregó una respuesta de serie; no se aceptan archivos NASA ni IDs del cliente.
 - **Validaciones:** snapshot existente; ventana mensual ISO inclusiva dentro de cobertura del dataset; máximo 240 meses. Si no hay observaciones suficientes para una operación habilitada, responder 422 `INSUFFICIENT_DATA` con forma de error común.
@@ -126,10 +148,12 @@ Estados y creación se distinguen así: `not_available` es un rechazo previo a c
 
 ### `GET /api/v1/analyses/{analysis_id}`
 
+**Estado ejecutable en `dev`:** no existe almacenamiento de análisis; todo ID consultado devuelve `404 RESOURCE_NOT_FOUND`. El `200` siguiente es la forma contractual prevista si se implementa persistencia en otro alcance.
+
 - **Parámetros:** ID opaco en la ruta.
 - **Validaciones:** no vacío y formato de ID admitido por el servicio.
 - **200:** el mismo `AnalysisResponse` creado por POST, incluidos `dataset_id`, ventana y procedencia.
-- **Caché:** se propone `Cache-Control: no-store`; el cliente consulta al navegar o recargar, no en un bucle.
+- **Caché:** la implementación devuelve `Cache-Control: no-store`; el cliente consulta al navegar o recargar, no en un bucle.
 - **Errores:** 404 `RESOURCE_NOT_FOUND` si el ID no existe o el registro expiró; 503 `SERVICE_UNAVAILABLE` si el snapshot/registro no se puede leer temporalmente.
 
 ### Límites, latencia y raster opcional
@@ -149,7 +173,7 @@ No se transmiten rasters NetCDF/HDF5 completos a React. Se propone un descriptor
 | Rasters, tile descriptor/formato, tamaño máximo y latencia aceptable | Descriptor de raster opcional; respuestas y límites | Lucas (validez/cobertura), Alejandra (uso UI) y backend (servicio/límites) | Publicación raster, capa de mapa y política de rendimiento |
 | Propuesta de versión `/api/v1`, campos obligatorios y límites | Todos los recursos | Alejandra, César, Lucas y responsable backend | Esquemas OpenAPI/Pydantic y compatibilidad del cliente |
 
-La colección y el alcance científico siguen condicionados por [FUL-107](https://linear.app/fullstack-track/issue/FUL-107/az-03-aprobar-alcance-cientifico-inicial-con-matriz-de-productos-region-y-calidad); arquitectura y API base dependen además de FUL-99 y FUL-103. Esta propuesta no cierra esos bloqueos.
+La definición inicial de AZ-03/FUL-107, AZ-02/FUL-99 y BE-01/FUL-103 figura en Linear como Done. Eso no aprueba por sí solo máscaras, QA del proveedor, agregaciones regionales ni inferencia; las decisiones pendientes que afectan la implementación se describen en la tabla anterior.
 
 ## Glosario
 
@@ -169,7 +193,7 @@ La colección y el alcance científico siguen condicionados por [FUL-107](https:
 
 ## ADR AZ-04-001 — Contrato de intercambio v0
 
-**Estado:** Proposed; pendiente de revisión multidisciplinaria. No es un acuerdo del equipo.
+**Estado del registro:** Proposed. La entrega documental de FUL-108 está integrada; este ADR no concede aprobación científica y mantiene explícitas las decisiones pendientes.
 
 - **Objetivo:** permitir que React, FastAPI y Data Science implementen contra un intercambio común sin hacer depender las vistas de la disponibilidad del pipeline NASA o de métricas científicas aún no aprobadas.
 - **Recursos:** se proponen catálogo de regiones/productos, lectura de series por rango y creación/consulta de análisis. No se proponen exportación ni nuevos endpoints raster; el descriptor raster permanece opcional.
@@ -179,7 +203,7 @@ La colección y el alcance científico siguen condicionados por [FUL-107](https:
 - **Datos y frescura:** `dataset_id` y `manifest_sha256` identifican snapshot inmutable; cambios de originales o transformaciones generan otro dataset. La respuesta separa marcas de fuente, recuperación, snapshot y generación API. No se promete persistencia durable ni política HTTP de caché más allá de `no-store` propuesto.
 - **Faltantes y calidad:** `null` no es cero; no-data es una respuesta exitosa vacía solo para una consulta válida; errores upstream siguen siendo errores. Finito/no-fill no implica QA aplicada y el conteo de centros no expresa superficie.
 - **Alternativas descartadas por ahora:** frontend descargando NASA/HDF/NetCDF, crear un análisis pendiente sin procesador, inferir un snapshot desde `product_id`, añadir jobs/colas/polling, y publicar métricas o agregaciones sin decisión científica.
-- **Consecuencias:** mocks tipados pueden avanzar; implementación real queda sujeta a aprobación de unidades, calendario, geometría, agregación, estadística, retención y raster. Los endpoints descritos aún no existen.
+- **Consecuencias:** los mocks tipados y una implementación parcial de rutas están en `dev` (ver matriz). El análisis no calcula ni persiste; 202/complete no forman parte del servicio actual. Geometría de máscara, agregación, estadística, retención y raster siguen fuera de la autorización vigente.
 
 ## Registro de revisión y aprobación
 
@@ -570,6 +594,6 @@ Respuesta sintética `422 INVALID_PARAMETER` para un mes fuera del formato/calen
 
 ## Archivos del contrato y siguiente implementación
 
-La especificación declarativa versionada está en [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml) y comparte nombres, estados, tipos y ejemplos con este documento. No se añadieron modelos Pydantic ejecutables porque la API aún no implementa estos recursos. Lucas revisa procedencia, producto, unidades, calendario, QA y cobertura; César revisa el significado estadístico y límites de los resultados; Alejandra comprueba los envelopes, estados y flujo React de obtención/uso de `analysis_id`; Alaín verifica viabilidad FastAPI y consistencia OpenAPI. La aprobación de AZ-04 aún depende de las relaciones existentes con FUL-107, FUL-103 y FUL-99; esta propuesta no las elimina.
+La especificación declarativa versionada está en [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml). Los esquemas Pydantic y rutas montadas implementan parte del intercambio; su alcance ejecutable está en la matriz y las pruebas validan las respuestas correspondientes. Lucas revisa procedencia, producto, unidades, calendario, QA y cobertura; César revisa el significado estadístico y límites de los resultados; Alejandra comprueba los envelopes, estados y flujo React de obtención/uso de `analysis_id`; Alaín verifica viabilidad FastAPI y consistencia OpenAPI. La integración documental de AZ-04 no resuelve las decisiones científicas pendientes ni convierte el fixture `202` en respuesta productiva.
 
 No se añade exportación, integración NASA desde React, cola de trabajos ni formato raster ejecutable en esta tarjeta.
