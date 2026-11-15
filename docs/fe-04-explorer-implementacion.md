@@ -25,7 +25,7 @@ Desde `frontend/`:
 npm ci
 npm run dev        # http://localhost:5173/explore (fuente: servicio simulado)
 npm run lint       # oxlint
-npm test           # vitest (189 pruebas; las 6 de integración real se omiten si no hay backend)
+npm test           # vitest (197 pruebas; las 6 de integración real se omiten si no hay backend)
 npm run build      # tsc -b + vite build
 ```
 
@@ -64,6 +64,17 @@ Comprobación rápida por el proxy:
 curl http://localhost:5173/health
 curl "http://localhost:5173/api/v1/regions"
 ```
+
+### Con Docker Compose (frontend en Nginx + FastAPI)
+
+`docker-compose-mvp.md` (BE-07/infra, ya en `dev`) levanta FastAPI y una compilación estática de este frontend servida por Nginx, que reenvía `/api/v1/*` y `/health` al backend en el mismo origen. El cliente real de FE-04 pide rutas relativas `/api/v1`, así que funciona sin cambios ni CORS.
+
+```powershell
+Copy-Item .env.example .env       # ANOMALY_ZERO_PROCESSED_DIR debe contener ful116/imerg_2005_point_snapshot.json
+docker compose up -d --build
+```
+
+Abre `http://127.0.0.1:8080/explore?fuente=api` (o elige "Servicio real (API)" en el selector). La compilación de Docker no define `VITE_EXPLORE_API`, así que **sin `?fuente=api` la pantalla arranca en el servicio simulado**; es intencional. Con el snapshot auténtico montado, la serie llega con `synthetic: false`; sin snapshot, `no_data`. Esta ruta (Docker + snapshot real) no se probó en esta rama.
 
 ### Prueba de integración real (frontend ↔ backend)
 
@@ -140,7 +151,7 @@ Lo que **no** se puede mostrar como captura: una serie real con `synthetic: fals
 
 ## 6. Pruebas
 
-Total: **11 archivos, 189 pruebas** que corren siempre, más **6 de integración real** que se activan con `EXPLORE_LIVE_API` (`src/test/`).
+Total: **197 pruebas** que corren siempre (189 de esta rama y 8 del `ScientificSeriesPanel` de FUL-130), más **6 de integración real** que se activan con `EXPLORE_LIVE_API` (`src/test/`).
 
 | Archivo | Qué comprueba |
 |---|---|
@@ -226,6 +237,12 @@ Pendiente, a propósito, hasta que lo apruebe quien corresponda:
 
 ## 12. Coordinación y revisiones solicitadas
 
-- **FUL-130 (César, PR #33, ya en `dev`)**: agregó Recharts `^3.10.1` y el módulo `scientific-series` (`ScientificSeriesPanel`). Al actualizar esta rama con `dev` los únicos conflictos fueron `frontend/package.json` y `frontend/package-lock.json`: quedó una sola entrada de Recharts (`^3.10.1`) y se conservaron `maplibre-gl`, `ajv`, `ajv-formats` y `yaml`; el lockfile se regeneró. `ScientificSeriesPanel` es un componente independiente que `/explore` todavía no usa; esta rama sigue con su propio `TimeSeriesChart`. Queda por decidir con César si `TimeSeriesChart` se reemplaza por `ScientificSeriesPanel` o conviven; no se hizo en esta PR para no cambiar su contrato.
+- **FUL-130 (César, PR #33, ya en `dev`)**: agregó Recharts `^3.10.1` y el módulo `scientific-series` (`ScientificSeriesPanel`). Al actualizar esta rama con `dev` el único conflicto fue `package.json` y `package-lock.json` (una sola entrada de Recharts; lockfile regenerado). Evaluación de reutilizarlo (no se hizo en esta PR, ver abajo):
+  - **Compatible por tipos**: un `SeriesResponse` completo se puede pasar al panel sin adaptadores (verificado con `tsc`).
+  - **No cubre la selección de mes**: no tiene `selectedMonth` ni `onSelectMonth`, el gráfico no responde al clic, no marca el mes elegido y la tabla no marca la fila activa. Aquí el clic sincroniza gráfico, línea de tiempo, mapa y tabla.
+  - **Duplica avisos que `/explore` ya muestra** (soporte puntual, QA, procedencia, estado y datos sintéticos): habría que quitar los de esta rama o agregar al panel opciones para ocultarlos, y reescribir las pruebas que verifican ese texto.
+  - **Texto fijo "Murray–Darling"** en el aviso de `point_sample`: aparecería también con otras regiones (por ejemplo `REG01` en la demostración). Conviene corregirlo en el panel antes de usarlo en `/explore`.
+  - **Diseño**: trae su propio `h2`, colores fijos (`#2563eb`, etc.) en vez de los tokens del sitio y todo en un solo bloque, mientras que aquí el gráfico va junto al mapa y la tabla debajo.
+  - **Conclusión**: la unificación exige tocar el componente de FE-07 (props de selección y de avisos), `ExplorePage` y varias pruebas. No es un cambio chico, así que **queda fuera de esta entrega** y se propone como PR de seguimiento, acordada con César. `/explore` mantiene `TimeSeriesChart` y `SeriesTable`; `ScientificSeriesPanel` sigue sin usarse en la ruta.
 - **César**: UX y ciencia (D2, D9, D10), y la decisión de FUL-130 anterior.
 - **Alaín**: contrato (sección 7) y el proxy de Vite sin CORS abierto en FastAPI.
