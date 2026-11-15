@@ -71,7 +71,8 @@ describe('guardas de honestidad científica', () => {
     }
     const offenders = sourceFiles(SRC)
       .filter((file) => forbidden.test(readFileSync(file, 'utf8')))
-      .map((file) => file.slice(SRC.length + 1))
+      // En Windows las rutas usan \ ; se normalizan a / para compararlas con las claves de `negations`.
+      .map((file) => file.slice(SRC.length + 1).replaceAll('\\', '/'))
     expect(offenders.sort()).toEqual(Object.keys(negations).sort())
     for (const [file, negation] of Object.entries(negations)) {
       expect(readFileSync(join(SRC, file), 'utf8'), file).toMatch(negation)
