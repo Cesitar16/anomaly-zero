@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import io
 from copy import deepcopy
 
 import pytest
@@ -52,6 +54,11 @@ def test_all_openapi_response_examples_validate_and_are_explicitly_synthetic():
     for path, method, status, media, name, schema, value in examples:
         errors = validate_schema(schema, value, spec)
         assert not errors, f"{method} {path} {status} {name}: {errors}"
+        if media == "text/csv":
+            rows = list(csv.DictReader(io.StringIO(value)))
+            assert rows, f"{method} {path} {status} {name} CSV example has no rows"
+            assert all(row["synthetic"] == "true" for row in rows)
+            continue
         assert value["synthetic"] is True, f"{method} {path} {status} {name} fixture is not marked synthetic"
         assert_scientific_semantics(value)
 
