@@ -1,7 +1,7 @@
 # FE-05: evaluación de mapa temporal y gráficos con datos sintéticos
 
 **Estado:** evaluación técnica con un spike descartable. **La recomendación de stack es una propuesta; la decisión final es de César** y no está aprobada.
-**Tarjeta:** FUL-121 / FE-05. **Prototipo:** [`frontend/experiments/fe-05-spike/`](../frontend/experiments/fe-05-spike/README.md). **Contrato de referencia:** [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml), versión `0.1-draft`, documental y no implementado (su estado sigue siendo "propuesta; no aprobada").
+**Tarjeta:** FUL-121 / FE-05. **Prototipo:** [`frontend/experiments/fe-05-spike/`](../frontend/experiments/fe-05-spike/README.md). **Contrato de referencia:** [`openapi-contract-v0.yaml`](openapi-contract-v0.yaml), `contract_version: 0.1-draft`. Con `dev` en `884c34f` están implementados `GET /api/v1/regions` y `GET /api/v1/products` (BE-03) y `GET /api/v1/series` (BE-04, solo IMERG puntual 2005 desde un snapshot verificado). `/analyses` no existe y el backend **no publica `raster_layers`**: el esquema de respuesta de la serie no tiene ese campo. El contrato sigue siendo borrador y no está aprobado.
 **Quién lo aprueba:** César. Alejandra no fusiona por su cuenta.
 
 > **Todo dato de este documento y del spike es sintético.** Los frames, la serie de 12 puntos, la escala de colores, el polígono y la `RasterLayer` son fixtures. No son observaciones NASA, no son un promedio de la cuenca Murray-Darling, no son anomalías ni tendencias ni resultados estadísticos. No se descargó ni se consultó ningún dato NASA, y el spike no hace ninguna petición a servidores externos (comprobado, ver H8).
@@ -152,7 +152,9 @@ Estas son observaciones para César. **No se modificó el contrato.**
 4. Si se quieren tooltips por celda, un endpoint de valores (H6); no existe.
 5. Atribución, licencia y procedencia de cada capa visibles en la interfaz; el spike solo las simula.
 6. Cabeceras CORS y de caché de las imágenes o tiles: no se probaron.
-7. La serie del OpenAPI trae hasta 240 meses y `raster_layers` opcional; la línea de tiempo del spike asume una capa por mes y no se probó con 240.
+7. La serie real (BE-04) acepta hasta 240 meses (`422 LIMIT_EXCEEDED` si se pasa) y **nunca incluye `raster_layers`**. Para el cliente equivale a "mes sin descriptor", caso que el spike ya cubre y prueba (`frameTarget.check.ts`, "un mes sin descriptor se declara ausente"). Sin capas publicadas no hay mapa de valores: FE-04 depende de que el backend las publique. La línea de tiempo del spike asume una capa por mes y no se probó con 240.
+8. Lo único espacial que entrega hoy la API es el punto de la muestra (`spatial_aggregation.point`, con `latitude` y `longitude`) y una región sin geometría: `geometry_version`, `crs` y `area_km2` vienen en `null` y solo hay un enlace en `geometry_source`. Con esos datos FE-04 no puede dibujar el contorno de la cuenca. El polígono del spike es ficticio y no debe pasar a FE-04.
+9. En las respuestas reales el backend omite campos que valen su valor por defecto (por ejemplo `message` vacío y `coverage.spatial_coverage` nulo en `/series`), y el campo `details` de los errores viene siempre `null`. El OpenAPI los declara opcionales, así que es válido, pero el cliente debe tolerar su ausencia y no depender de `details` para mensajes por campo.
 
 ## 8. Riesgos y costos
 
@@ -171,13 +173,15 @@ Estas son observaciones para César. **No se modificó el contrato.**
 4. Qué hace Reproducir con meses sin capa: recorrerlos como ausentes (spike) o saltarlos.
 5. Si FE-04 incluye tooltips por celda (exigiría un endpoint nuevo).
 6. Qué va en el contrato y qué en la interfaz respecto de la leyenda.
+7. Mientras la API no publique capas: ¿el mapa de FE-04 muestra solo el mapa base con un marcador en el punto de la muestra (`latitude` y `longitude` de `spatial_aggregation.point`)? Es una decisión de diseño que corresponde a FE-03 (decisión D9) y no se probó en el spike.
 
 ## 10. Limitaciones de esta evaluación
 
 - Mediciones con WebGL por software y sin GPU; no representan un dispositivo real.
 - No se probó con lector de pantalla ni en dispositivos físicos; los frames reales serán más grandes que los de 0,9 kB.
 - No se probaron tiles raster, Leaflet ni deck.gl; esas filas son solo documentación.
-- El spike no consume el backend: los fixtures tienen la forma del OpenAPI, que sigue siendo `0.1-draft` y sin implementar.
+- El spike no consume el backend, aunque `/regions`, `/products` y `/series` ya existen en `dev` (`884c34f`): sus fixtures son sintéticos y tienen la forma del OpenAPI (`0.1-draft`). No se probó contra la API en ejecución.
+- `dev` no cambió `frontend/` desde `3b02003`, así que las mediciones de peso de 3.3 siguen vigentes. Tras actualizar la rama con `dev` se repitieron lint, pruebas y build del spike y de la landing (el JS de la landing sigue en 281,55 kB, 89,32 kB gzip).
 - La memoria medida no descarta fugas en sesiones largas.
 
 ## 11. Cómo reproducir
@@ -201,6 +205,7 @@ npm run dev   # y, aparte: python scripts/verify_spike.py http://127.0.0.1:5173 
 - Apache ECharts, accesibilidad (`aria`): <https://echarts.apache.org/handbook/en/best-practices/aria>
 - Recharts, `accessibilityLayer` y discusión sobre teclado y lectores de pantalla: <https://github.com/recharts/recharts/discussions/4484> y <https://github.com/recharts/recharts/discussions/4662>
 - Contrato interno: `docs/openapi-contract-v0.yaml`, `docs/contracts-v0.md`, `docs/ds-03-snapshot-imerg-demo.md`.
+- Backend integrado en `dev`: `docs/backend-catalog-v1.md` (BE-03) y `docs/be-04-snapshot-reader.md` (BE-04).
 
 ## Anexo: capturas (datos sintéticos)
 
