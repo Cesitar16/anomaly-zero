@@ -26,6 +26,7 @@ function qualityLabel(state: string): string {
     unknown: 'Desconocida',
     passed: 'Indicador del proveedor: aprobado',
     failed: 'Indicador del proveedor: rechazado',
+    provider_qa_applied: 'QA del proveedor aplicada (sin aprobación científica)',
   }
   return known[state] ?? `Estado QA: ${state}`
 }
@@ -119,7 +120,7 @@ export function ScientificSeriesPanel({ response, className }: ScientificSeriesP
 
     {spatialKind === 'point_sample' && <p className="ssp-warning">Muestra puntual (point_sample): no representa un promedio regional Murray–Darling.</p>}
     {spatialKind !== 'regional_aggregate' && <p className="ssp-warning">No se proporcionó una agregación regional aprobada.</p>}
-    {response.quality?.verification_state !== 'provider_qa_applied' && <p className="ssp-warning">La QA del proveedor no está aplicada o aprobada para esta respuesta.</p>}
+    <p className="ssp-warning">La QA del proveedor no equivale a aprobación científica. Estado informado: {response.quality?.verification_state ? qualityLabel(response.quality.verification_state) : 'no informado'}.</p>
 
     {response.data_state !== 'no_data' && points.length > 0 && <div className="ssp-chart" aria-label="Gráfico de serie temporal mensual">
       <ResponsiveContainer width="100%" height="100%">

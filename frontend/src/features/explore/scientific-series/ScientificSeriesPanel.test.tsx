@@ -34,7 +34,7 @@ describe('ScientificSeriesPanel', () => {
     render(<ScientificSeriesPanel response={syntheticResponse} />)
     expect(screen.getByText(/Datos sintéticos · no son observaciones NASA/)).toBeTruthy()
     expect(screen.getByText(/no representa un promedio regional/i)).toBeTruthy()
-    expect(screen.getByText(/QA del proveedor no está aplicada o aprobada/i)).toBeTruthy()
+    expect(screen.getByText(/QA del proveedor no equivale a aprobación científica/i)).toBeTruthy()
     expect(screen.getByText(/versión fixture-1/i)).toBeTruthy()
     expect(screen.getByRole('table')).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: /Valor \(K\)/ })).toBeTruthy()
@@ -69,5 +69,13 @@ describe('ScientificSeriesPanel', () => {
     render(<ScientificSeriesPanel response={response} />)
     expect(screen.getAllByText(/No informada/).length).toBeGreaterThan(0)
     expect(screen.getByText(/^2$/)).toBeTruthy()
+  })
+
+  it('does not treat provider QA application as scientific approval', () => {
+    render(<ScientificSeriesPanel response={{
+      ...syntheticResponse,
+      quality: { verification_state: 'provider_qa_applied' },
+    }} />)
+    expect(screen.getAllByText(/sin aprobación científica/i).length).toBeGreaterThan(0)
   })
 })
