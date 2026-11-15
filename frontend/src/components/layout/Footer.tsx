@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ROUTES, SITE } from '../../config/site'
+import { EXPLORER_STATUS_LABEL, ROUTES, SITE } from '../../config/site'
 import { NAV_LINKS } from '../../content/navigation'
 import { SOURCES } from '../../content/sources'
 import Container from '../ui/Container'
@@ -26,7 +26,9 @@ export default function Footer() {
                 </li>
               ))}
               <li>
-                <Link to={ROUTES.explore}>Explorador (en desarrollo)</Link>
+                <Link to={ROUTES.explore}>
+                  Explorador{EXPLORER_STATUS_LABEL ? ` (${EXPLORER_STATUS_LABEL.toLowerCase()})` : ''}
+                </Link>
               </li>
             </ul>
           </nav>
