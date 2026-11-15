@@ -14,6 +14,20 @@ La región `murray-darling-basin` es una referencia exploratoria autorizada. Cad
 
 El servidor busca por defecto `data/processed/ful116/imerg_2005_point_snapshot.json`. `ANOMALY_ZERO_IMERG_SNAPSHOT` permite seleccionar otra ruta controlada por el despliegue. Solo un snapshot que el lector valide cambia el producto IMERG de `/products` a `available` y entrega su `current_dataset_id`, cobertura, calidad y granule IDs. Los otros productos siguen `unavailable`.
 
+### Configuración de despliegue
+
+- Con `ANOMALY_ZERO_IMERG_SNAPSHOT` apuntando a un snapshot válido y completo, `/products?region_id=murray-darling-basin` informa IMERG `available`; si el snapshot válido tiene faltantes, informa `partial`. `/series` usa ese mismo `dataset_id`.
+- Si la variable no está configurada y el snapshot por defecto no existe, una consulta válida responde `200` con `data_state: no_data`; `/products` mantiene IMERG `unavailable`.
+- Si la variable está configurada y el archivo no puede leerse o no existe, `/series` responde `503 SERVICE_UNAVAILABLE` (reintentable). Un JSON legible pero inválido responde `500 INTERNAL_ERROR` sanitizado.
+
+Ejemplo en PowerShell antes de iniciar el servicio:
+
+```powershell
+$env:ANOMALY_ZERO_IMERG_SNAPSHOT = 'C:\data\imerg_2005_point_snapshot.json'
+```
+
+La ruta es local al proceso del servidor y debe montar un artefacto verificado de forma legible. Esta PR no copia datos NASA al repositorio ni a la imagen del servicio.
+
 La salida real local fue regenerada desde 12 HDF5 y 12 manifiestos laterales con el productor DS-03, sin editar las entradas:
 
 - `synthetic: false`, dataset `imerg-2005-point-66cf65a5bcf2d99309af`.
@@ -47,6 +61,6 @@ python -m uv run --locked --python 3.12 python -m research.build_ful116_snapshot
 
 ## Comprobaciones y límites
 
-Las pruebas de `backend/tests/test_snapshot_reader.py` mantienen la lectura offline, inmóvil y separada del productor. `backend/tests/test_series_v1.py` valida respuestas y errores contra los esquemas OpenAPI, cobertura, cero/null, producto y soporte. Los tests usan fixtures sintéticas; no representan una validación científica. El snapshot real local sí fue leído por el mismo lector, pero no es portable ni evidencia de despliegue/recepción por César.
+Las pruebas de `backend/tests/test_snapshot_reader.py` mantienen la lectura offline, inmóvil y separada del productor. `backend/tests/test_series_v1.py` valida respuestas y errores contra los esquemas OpenAPI, cobertura, cero/null, producto y soporte. También hace una petición HTTP con el catálogo real Murray–Darling/P02 y cubre la ruta de entorno válida, snapshot por defecto ausente y ruta explícita ausente. Las pruebas usan fixtures sintéticas; no representan una validación científica. El snapshot real local sí fue leído por el mismo lector, pero no es portable ni evidencia de despliegue/recepción por César.
 
 El endpoint sirve solo IMERG puntual 2005. No calcula máscaras, promedios, cobertura de superficie, tendencias, p-values, reproyecciones, tiles ni análisis. GLDAS y MERRA-2 siguen sin datasets accesibles desde este endpoint. La autorización de una región exploratoria no aprueba geometría de máscara, QA del proveedor ni inferencia.
