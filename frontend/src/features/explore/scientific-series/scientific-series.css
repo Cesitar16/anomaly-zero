@@ -1,0 +1,24 @@
+.scientific-series-panel { color: #152235; background: #fff; border: 1px solid #d8e0e9; border-radius: .75rem; padding: clamp(1rem, 2vw, 1.5rem); display: grid; gap: 1rem; }
+.ssp-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.ssp-header h2 { margin: 0; font-size: 1.2rem; }
+.ssp-header p { margin: .35rem 0 0; color: #536274; }
+.ssp-badges { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ssp-state, .ssp-synthetic { display: inline-flex; border-radius: 999px; padding: .35rem .65rem; font-size: .85rem; font-weight: 650; }
+.ssp-state { background: #e9f3ec; color: #195b32; }
+.ssp-state--available_with_gaps { background: #fff3d7; color: #704d00; }
+.ssp-state--no_data { background: #edf0f4; color: #414d5b; }
+.ssp-synthetic { background: #fce8e8; color: #8b2020; }
+.ssp-warning { margin: 0; padding: .65rem .8rem; background: #fff8e7; border-left: 3px solid #d89400; }
+.ssp-chart { width: 100%; min-width: 0; height: clamp(250px, 36vw, 360px); }
+.ssp-tooltip { background: #fff; border: 1px solid #cbd5e1; border-radius: .4rem; box-shadow: 0 3px 12px #15223522; padding: .6rem .75rem; display: grid; gap: .2rem; }
+.ssp-empty { margin: 0; padding: 1rem; background: #f4f6f8; }
+.ssp-table-wrap { max-width: 100%; overflow-x: auto; }
+.ssp-table-wrap table { border-collapse: collapse; width: 100%; text-align: left; }
+.ssp-table-wrap caption { text-align: left; font-weight: 650; padding: .5rem 0; }
+.ssp-table-wrap th, .ssp-table-wrap td { border-bottom: 1px solid #d8e0e9; padding: .55rem .65rem; vertical-align: top; }
+.ssp-table-wrap thead { background: #f4f6f8; }
+.ssp-provenance summary { cursor: pointer; font-weight: 650; }
+.ssp-provenance dl { display: grid; grid-template-columns: minmax(8rem, auto) 1fr; gap: .4rem 1rem; }
+.ssp-provenance dt { font-weight: 650; }
+.ssp-provenance dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .ssp-table-wrap table { min-width: 38rem; } .ssp-provenance dl { grid-template-columns: 1fr; gap: .15rem; } .ssp-provenance dd { margin-bottom: .4rem; } }

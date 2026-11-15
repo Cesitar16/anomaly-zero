@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from backend.app.api.analyses import router as analyses_router
 from backend.app.api.catalog import router as catalog_router
 from backend.app.api.series import router as series_router
 
@@ -12,6 +13,7 @@ app = FastAPI(
 )
 app.include_router(catalog_router)
 app.include_router(series_router)
+app.include_router(analyses_router)
 
 
 @app.get("/health", tags=["health"])
