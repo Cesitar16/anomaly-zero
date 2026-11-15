@@ -17,7 +17,7 @@ Las 240 entradas CMR son inventario de catálogo, no 240 grillas descargadas ni 
 | Decisión pendiente | Evidencia disponible | Evidencia faltante | Quién valida | Tarjeta | Estado |
 | --- | --- | --- | --- | --- | --- |
 | Distinguir demostración técnica de selección científica | PR #9 documenta una muestra auténtica por producto y QA espacial de una fecha; GLDAS cuenta además con EDA FUL-105. La nota de coordinación enlazada a FUL-99 nombra MERRA-2/T2M Plan A provisional, sin excluir los demás. | Criterios de aceptación de una demostración y ratificación o ajuste de la prioridad provisional para el primer vertical slice regional. | Lucas + equipo; César aporta QA | FUL-104, FUL-107 | Pendiente; no hay producto científico aprobado |
-| Confirmar identidades, versiones, unidades y granules | PR #9 informa archivos, hashes, atributos y nombres para MERRA-2, IMERG y GLDAS. | Revisar los originales/manifests fuera de Git; aclarar `07` frente a `V07B` para IMERG y firmar la verificación de Lucas. | Lucas + Alaín | FUL-104, FUL-106 | Reportado por FUL-106; revisión pendiente |
+| Confirmar identidades, versiones, unidades y granules | FUL-104 inspeccionó localmente muestras NASA originales MERRA-2 e IMERG de enero 2005/2021; GLDAS, enero 2005/2021. Archivos y hashes se documentan en el informe, y los binarios siguen fuera de Git. | Reproducir la lectura desde manifiestos/gránulos accesibles al equipo; aclarar `07` frente a `V07B` para IMERG y completar revisión independiente de Lucas. | Lucas + Alaín | FUL-104, FUL-106 | Evidencia local reportada por FUL-104; reproducción/revisión pendiente |
 | Aprobar región y método de selección espacial | PR #9 informa uso de geometría MDBA completa, EPSG:4326 y hash; cuenta centros y faltantes por producto. | Lucas debe confirmar procedencia/CRS/geometría; comparar centros con intersección/área fraccional, sensibilidad y faltantes. El conteo central no pondera superficie. | Lucas; César revisa QA | FUL-104, FUL-107 | Exploratorio; sin método regional aprobado |
 | Aprobar reglas de QA por producto | Fill y candidatos QA están reportados; PR #9 no aplica los filtros auxiliares de IMERG. | Umbrales/reglas por producto, efecto de cada filtro y validación independiente. | Lucas + César | FUL-104, FUL-105, FUL-106 | Pendiente |
 | Establecer condiciones para serie mensual regional | Catálogo CMR inventaría 240 meses por colección; muestras documentadas cubren enero de 2005. | Archivos y manifests por mes, calendario, duplicados/faltantes, cobertura común, criterios QA y método espacial reproducible. | César + Lucas; Alaín entrega archivos | FUL-105, FUL-106, FUL-107 | No hay serie temporal regional |
@@ -35,9 +35,9 @@ Las 240 entradas CMR son inventario de catálogo, no 240 grillas descargadas ni 
 
 ### 1. Primera variable implementable
 
-Ninguna fuente cumple hoy los requisitos para una serie mensual regional Murray–Darling validada. Si el equipo necesita un **vertical slice técnico**, puede usar GLDAS por su EDA ya integrado o comparar la lectura de los tres granules descritos en PR #9, una vez que Alaín facilite originales y manifests reproducibles. El EDA GLDAS FUL-105 en caja sigue siendo distinto del conteo por centros MDBA reportado por FUL-106. Esto no selecciona GLDAS como producto científico oficial del MVP ni reduce el alcance de temperatura, lluvia y suelo.
+Ninguna fuente cumple hoy los requisitos para una serie mensual regional Murray–Darling validada. Si el equipo necesita un **vertical slice técnico**, puede usar GLDAS por su EDA ya integrado o comparar las lecturas de los tres productos inspeccionadas en FUL-104; los archivos originales permanecen fuera de Git y el acceso reproducible para otros checkouts/manifiestos queda por coordinar con Alaín. El EDA GLDAS FUL-105 en caja sigue siendo distinto del conteo por centros MDBA reportado por FUL-106. Esto no selecciona GLDAS como producto científico oficial del MVP ni reduce el alcance de temperatura, lluvia y suelo.
 
-IMERG y MERRA-2 también tienen muestras NASA auténticas reportadas en PR #9, pero solo de enero de 2005 y pendientes de revisión independiente. IMERG puede ayudar a continuar pruebas geográficas; los métodos comparados aún no están aprobados. El acceso inicial a MERRA-2 está documentado, pero su pertinencia, QA y uso en una serie deben revisarse.
+IMERG y MERRA-2 tienen muestras NASA auténticas de enero de 2005 y 2021 inspeccionadas por FUL-104; permanecen pendientes de revisión independiente. IMERG puede ayudar a continuar pruebas geográficas; los métodos comparados aún no están aprobados. La identidad, unidad y estructura de las muestras MERRA-2 están documentadas, pero su QA, pertinencia y uso en una serie deben revisarse.
 
 ### 2. Qué requiere una representación de la cuenca
 
@@ -47,7 +47,7 @@ IMERG y MERRA-2 también tienen muestras NASA auténticas reportadas en PR #9, p
 
 ### 3. Fuentes que necesitan más validación
 
-Las tres. PR #9 informa un gránulo NASA nativo por producto, pero requiere revisión y reproducción por el equipo. MERRA-2 necesita confirmar metadata/QA; IMERG, la versión de producto, semántica temporal y filtro QA; GLDAS, QA de serie y linaje histórico. En todas faltan reglas acordadas y una serie regional mensual validada.
+Las tres. FUL-104 inspeccionó gránulos NASA nativos por producto y reporta la comparación espacial de dos meses; todavía requiere reproducción y revisión independiente del equipo. Para MERRA-2 falta acordar QA; para IMERG, confirmar la nomenclatura de versión y semántica temporal y acordar filtro QA; para GLDAS, QA de serie y linaje histórico. En todas faltan reglas acordadas y una serie regional mensual validada.
 
 ### 4–6. Gráficos, meses y mapas
 
