@@ -52,7 +52,7 @@ FastAPI (desde la raíz):
 uv run uvicorn backend.app.main:app --reload
 ```
 
-La API queda en `http://127.0.0.1:8000`; salud en `/health` y documentación en `/docs`.
+La API queda en `http://127.0.0.1:8000`; salud en `/health`, catálogos en `/api/v1/regions` y `/api/v1/products?region_id=…`, y documentación interactiva en `/docs`. El catálogo es offline y publica Murray–Darling como región de referencia exploratoria; no dispone todavía de geometría regional validada ni datasets publicados.
 
 Pruebas y lint:
 
