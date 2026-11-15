@@ -2,7 +2,7 @@
 
 **Estado:** plan previo al análisis inferencial. No se estiman tendencias ni se aprueba aquí una región, regla de QA o método de agregación.  
 **Corte de evidencia:** 2026-11-15 UTC.
-**Relación con el trabajo anterior:** el EDA GLDAS de enero de 2005 y su documentación permanecen en [eda-gldas-preliminar.md](eda-gldas-preliminar.md). Esta nota conserva las puertas de inferencia y ahora registra la reproducción del handoff BE-02 y el diagnóstico descriptivo IMERG de enero–diciembre de 2005. No aprueba una regla QA, método regional ni inferencia histórica.
+**Relación con el trabajo anterior:** el EDA GLDAS de enero de 2005 y su documentación permanecen en [eda-gldas-preliminar.md](eda-gldas-preliminar.md). Esta nota conserva las puertas de inferencia y registra el handoff BE-02, el diagnóstico IMERG 2005 y las cautelas de la auditoría espacial de FUL-104 integrada a `dev`. No aprueba una regla QA, método regional ni inferencia histórica.
 
 ## Estado de evidencia y límite de este entregable
 
@@ -51,6 +51,22 @@ El CSV portable tiene 240 filas (12 × 20), claves mes/centro únicas y exactame
 
 El notebook admite `FUL105_DATA_ROOT`, selecciona archivos por patrón IMERG Final V07B 2005 y comprueba nombre, periodo del manifiesto, identidad, tamaño y SHA antes de analizarlos. Si faltan meses, informa cuáles y remite al README de la Release para recuperarlos manualmente; no descarga nada. `CenterMaskCache` calcula centros sobre geometría y coordenadas nativas con el mismo predicado y reglas de borde/agujeros de FUL-106; su clave combina SHA-256 del polígono y de las coordenadas. Reutiliza la máscara cuando ambos coinciden e invalida/recalcula si cambian. Se compara contra `spatial_qa` en enero y contra los conteos base mensuales; la tabla de centros MDBA usa los granules completos. La verificación del panel de 20 filas es opcional y separada. El helper [ful105_imerg.py](../research/ful105_imerg.py) separa descubrimiento de validación y entrega errores de meses faltantes/identidad/SHA; no activa descargas. Sus tests offline cubren orden y meses, duplicados, año/versión/manifest, reutilización/invalidez de máscara, semántica de borde/agujero y fill frente a cero. No se modifica ningún estado global de FUL-106.
 
+## Contexto incorporado de FUL-104
+
+La auditoría técnica de Lucas, integrada por PR #14 y #15, comparó centros de celda con celdas intersectadas y promedios ponderados por fracción de área, con muestras de enero de 2005 y enero de 2021 para las tres resoluciones. En enero de 2005 reporta:
+
+| Producto | Celdas que intersectan | Centros dentro (válidos) | Intersectadas válidas | Media por centros | Media ponderada por fracción |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| IMERG | 10.467 | 10.092 (10.092) | 10.467 (10.467) | 0,037816 mm/h | 0,037790 mm/h |
+| MERRA-2 | 384 | 323 (323) | 384 (384) | 299,606 K | 299,730 K |
+| GLDAS | 1.756 | 1.617 (1.615) | 1.756 (1.749) | 15,904 kg/m² | 15,945 kg/m² |
+
+Son comparaciones de muestra, no método aprobado. FUL-105 conserva intencionalmente la selección por centro y las estadísticas descriptivas sin ponderar; las medias anteriores de FUL-104 se citan solo para mostrar sensibilidad al método. Lucas recomienda provisionalmente evaluar cuenca completa y fracción de área en una proyección de igual área, con faltantes explícitos, pero la geometría/datum, QA, sensibilidad temporal y decisión de FUL-107 siguen pendientes. No se reemplaza la máscara de centros del EDA ni se declara una media regional oficial.
+
+La muestra GLDAS 2005 declara `history` de 2019-10-31, mientras GLDAS enero de 2021 declara 2021-04-23. La revisión de FUL-104 no pudo determinar si enero de 2005 incorpora el posprocesamiento posterior de máscara de aguas interiores; por tanto, conservarlo como muestra de inspección y no asumirlo válido para agregados finales hasta resolver su linaje. Para MERRA-2 e IMERG, las muestras de enero contrastadas tampoco equivalen a QA completo del producto o de una serie.
+
+Los 240 meses 2005–2024 continúan siendo un inventario de catálogo por colección, no 240 grillas descargadas/validadas ni una serie regional. Los flags `precipitationQualityIndex` y `randomError` siguen sin filtro/umbral aprobado. Estas decisiones y la selección de producto pertenecen a la revisión de FUL-107; esta actualización no modifica el catálogo científico candidato.
+
 | Mes 2005 | Global válidas / faltantes | Media global (mm/hr) | Mediana global | P95 global | Máximo global | Centros MDBA válidos / faltantes | Media centros MDBA (mm/hr) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Ene | 6.425.329 / 54.671 | 0,083306 | 0,037 | 0,339 | 2,331 | 10.092 / 0 | 0,038 |
@@ -79,7 +95,7 @@ uv run jupyter nbconvert --to notebook --execute research/notebooks/02_eda_nasa_
 
 **Completado:** sincronización local con `origin/dev` tras PR #9; verificación integral del handoff; validación del panel portable contra granules originales; EDA comparativo enero de 2005; diagnóstico mensual IMERG 2005 y QA por centros con código FUL-106; rutas del notebook configurables.
 
-**Pendiente:** revisión científica final de Lucas; aprobación del método espacial, flags/umbrales QA y cobertura; decisión sobre agregación regional; datos de mayor extensión temporal; diagnóstico de autocorrelación, estacionalidad/rupturas y método inferencial; validación de FUL-104 y planificación FUL-107. FUL-105 permanece In Progress y la PR #11 debe permanecer Draft hasta completar estas puertas.
+**Pendiente:** revisión del equipo sobre la evidencia integrada de FUL-104; decisión en FUL-107 sobre método espacial/producto y reglas QA; datos de mayor extensión temporal; QA/cobertura de serie y método inferencial para un trabajo posterior. La recomendación de ponderación fraccional de FUL-104 sigue provisional; el linaje GLDAS 2005 es indeterminado. FUL-105 permanece In Progress hasta validar sus criterios; no incluye aprobar el método final de FUL-107 ni inferir tendencias 2005–2024.
 
 ## Preparación de la serie mensual
 
@@ -156,10 +172,10 @@ No implementar el contrato definitivo en FUL-105. No marcar `complete` si las pu
 
 | Componente | Hecho reproducible hoy | Falta antes de serie regional | Revisor/entrega |
 | --- | --- | --- | --- |
-| GLDAS | EDA de una muestra enero 2005 sobre caja integrado en PR #7; lector FUL-106 y `spatial_qa` reproducen metadatos, SHA/manifiesto y conteos MDBA 1.617/1.615/2. | Revisar linaje/QA GLDAS y método espacial; obtener serie mensual si se aprueba el alcance. | César documenta; Lucas revisa; Alaín facilita insumos. |
+| GLDAS | EDA de una muestra enero 2005 sobre caja integrado en PR #7; lector FUL-106 y `spatial_qa` reproducen metadatos, SHA/manifiesto y conteos MDBA 1.617/1.615/2. | Resolver la incertidumbre de máscara/linaje enero 2005; definir QA y evaluar método con varias fechas antes de cualquier agregado. | César documenta; Lucas revisa; Alaín facilita insumos. |
 | MERRA-2 | Enero 2005 abierto; SHA/manifiesto coinciden; estadísticos globales y QA por centros reproducidos. | Confirmar semántica/QA con Lucas y obtener meses adicionales solo si se acuerda el alcance temporal. | Lucas valida semántica; Alaín confirma reproducibilidad. |
 | IMERG | Doce meses de 2005 abiertos; SHA/manifiestos y calendario continuos; QA por centros 10.092/10.092/0 por mes; estadísticos globales y MDBA descriptivos reproducidos. | Definir reglas QA, revisar calendarios/conversiones y ampliar periodo si se aprueba. | Lucas valida versión/QA; César conserva trazabilidad; Alaín confirma handoff. |
-| Cuenca | Se obtuvo del FeatureServer el polígono completo EPSG:4326 (hash coincide con PR #9) y se reprodujo para GLDAS el conteo por centros. La copia está en caché ignorada. | Lucas debe revisar procedencia/CRS y aprobar método/bordes/pesos/cobertura; conteos por centro no cubren área. | Lucas/FUL-104 valida; Alaín aporta handoff reproducible. |
+| Cuenca | Se obtuvo del FeatureServer el polígono completo EPSG:4326 (hash coincide con PR #9) y se reprodujo para GLDAS el conteo por centros. La copia está en caché ignorada. | FUL-104 comparó centros, intersección y fracción de área en dos fechas; el resultado recomienda fracción de área como candidata, no regla aprobada. Revisar CRS/datum, sensibilidad, QA y faltantes antes de decidir en FUL-107; centros no miden superficie. | Lucas/FUL-104 valida; Alaín aporta handoff reproducible. |
 | Inferencia | Este plan define diagnósticos y métodos candidatos, sin calcular tendencia. | Serie regional QA, diagnósticos temporales, preespecificación y revisión. | César prepara; Lucas revisa; equipo decide el caso FUL-107. |
 
 FUL-107 sigue pendiente: esta matriz no selecciona producto ni método y no valida una visualización de tendencia.
