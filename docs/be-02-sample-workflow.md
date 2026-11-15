@@ -95,7 +95,7 @@ Para 240 meses por producto (enero de 2005–diciembre de 2024), con tamaño con
 
 ## Verificación y pendientes
 
-- Pruebas offline cubren lectores/ejes distintos, fill frente a cero, dispatch NetCDF/HDF5 y máscara espacial. Actions pasó en HEAD `f6c2d63` (run `43662284990`, backend y frontend). El run `43661111462` pasó en el HEAD previo `20d7a7d`; `43660988203` pertenece al HEAD histórico `baaedad`.
+- Pruebas offline cubren lectores/ejes distintos, fill frente a cero, dispatch NetCDF/HDF5 y máscara espacial. Actions pasó en HEAD `4883a94` (run `43662354399`, backend y frontend). Runs históricos de esta rama: `43662284990` en `f6c2d63`, `43661111462` en `20d7a7d` y `43660988203` en `baaedad`.
 - La prueba de febrero se ejecutó sobre el archivo local preexistente, sin sobrescribirlo ni descargarlo de nuevo. Los diez meses nuevos abrieron correctamente con HDF5; QA espacial reportó 10,092 centros válidos y 0 faltantes en cada mes, con el mismo polígono E01. El CSV anual de 240 filas conserva veinte centros por mes y no agrega valores.
 - FUL-104, Lucas y César deben revisar identidades/versiones, unidades, calidad, geografía y utilidad para EDA. No se aprueban decisiones científicas en BE-02.
 - Sin conversiones, tendencias, significancia, mapas completos ni contratos finales.
