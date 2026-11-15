@@ -95,7 +95,7 @@ Para 240 meses por producto (enero de 2005–diciembre de 2024), con tamaño con
 
 ## Verificación y pendientes
 
-- Pruebas offline cubren lectores/ejes distintos, fill frente a cero, dispatch NetCDF/HDF5 y máscara espacial. Actions pasó en HEAD `50f2ae1` (run `43657242189`, backend y frontend); el cambio documental de extensión temporal aún no tenía checks al registrarlo.
+- Pruebas offline cubren lectores/ejes distintos, fill frente a cero, dispatch NetCDF/HDF5 y máscara espacial. Actions pasó en HEAD `baaedad` (run `43660988203`, backend y frontend).
 - La prueba de febrero se ejecutó sobre el archivo local preexistente, sin sobrescribirlo ni descargarlo de nuevo. Los diez meses nuevos abrieron correctamente con HDF5; QA espacial reportó 10,092 centros válidos y 0 faltantes en cada mes, con el mismo polígono E01. El CSV anual de 240 filas conserva veinte centros por mes y no agrega valores.
 - FUL-104, Lucas y César deben revisar identidades/versiones, unidades, calidad, geografía y utilidad para EDA. No se aprueban decisiones científicas en BE-02.
 - Sin conversiones, tendencias, significancia, mapas completos ni contratos finales.
