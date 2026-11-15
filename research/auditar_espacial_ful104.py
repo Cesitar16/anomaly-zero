@@ -21,7 +21,7 @@ import shapefile
 import shapely
 from pyproj import Transformer
 from shapely.geometry import shape
-from shapely.ops import transform, unary_union
+from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data/raw/nasa/ful104"
@@ -38,6 +38,10 @@ REQUIRED_SAMPLE_NAMES = (
 )
 
 
+def project_coords(coords):
+    return np.column_stack(WGS84_TO_AEA(coords[:, 0], coords[:, 1]))
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as stream:
@@ -46,9 +50,18 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def load_geometries(mdba_path: Path = MDBA_PATH, nsw_zip: Path = NSW_ZIP):
+def load_basin(mdba_path: Path = MDBA_PATH):
     gj = json.loads(mdba_path.read_text(encoding="utf-8"))
     basin = shape(gj["features"][0]["geometry"])
+    if basin.geom_type not in {"Polygon", "MultiPolygon"}:
+        raise ValueError(f"La geometría MDBA debe ser poligonal, no {basin.geom_type}")
+    if not basin.is_valid:
+        raise ValueError("La geometría MDBA no es topológicamente válida")
+    return basin
+
+
+def load_geometries(mdba_path: Path = MDBA_PATH, nsw_zip: Path = NSW_ZIP):
+    basin = load_basin(mdba_path)
     with zipfile.ZipFile(nsw_zip) as archive:
         shp_name = next(n for n in archive.namelist() if n.endswith(".shp"))
         dbf_name = next(n for n in archive.namelist() if n.endswith(".dbf"))
@@ -161,7 +174,7 @@ def audit_one(path: Path, basin):
         step_lon = 360 / len(lon) if sample["dataset"] == "GLDAS" else (0.625 if sample["dataset"] == "MERRA-2" else 0.25)
         step_lat = 180 / (len(lat) - 1) if sample["dataset"] == "MERRA-2" else (0.25)
         lons, lats = bounds_1d(lon, None, step_lon), bounds_1d(lat, None, step_lat)
-    basin_p = transform(WGS84_TO_AEA, basin)
+    basin_p = shapely.transform(basin, project_coords)
     minx, miny, maxx, maxy = basin.bounds
     ix = np.flatnonzero((lon >= minx - 1) & (lon <= maxx + 1))
     iy = np.flatnonzero((lat >= miny - 1) & (lat <= maxy + 1))
@@ -172,7 +185,7 @@ def audit_one(path: Path, basin):
     cells = shapely.box(lon0, lat0, lon1, lat1)
     keep = shapely.intersects(cells, basin)
     cells, i_flat, j_flat = cells[keep], i_flat[keep], j_flat[keep]
-    projected = shapely.transform(cells, lambda c: np.column_stack(WGS84_TO_AEA(c[:, 0], c[:, 1])))
+    projected = shapely.transform(cells, project_coords)
     overlays = shapely.intersection(projected, basin_p)
     areas_all = shapely.area(overlays)
     positive = areas_all > 0
@@ -185,8 +198,8 @@ def audit_one(path: Path, basin):
     def summary(selection, weights):
         take = selection & valid
         if not take.any():
-            return {"cells": int(selection.sum()), "valid": 0, "mean": None}
-        return {"cells": int(selection.sum()), "valid": int(take.sum()), "coverage_pct": float(100 * take.sum() / max(1, selection.sum())), "weighted_mean": float(np.average(vals[take], weights=weights[take]))}
+            return {"cells": int(selection.sum()), "valid_cells": 0, "cell_coverage_pct": 0.0, "weighted_mean": None}
+        return {"cells": int(selection.sum()), "valid_cells": int(take.sum()), "cell_coverage_pct": float(100 * take.sum() / max(1, selection.sum())), "weighted_mean": float(np.average(vals[take], weights=weights[take]))}
     qa_report = {}
     for key, qa in sample["qa"].items():
         qfield = qa["values"]
@@ -194,12 +207,29 @@ def audit_one(path: Path, basin):
         qvalid = valid_data_mask(qvals, qa["fill"])
         qvals = qvals.astype(float)
         qa_report[key] = {"valid_basin_cells": int(qvalid.sum()), "min": float(qvals[qvalid].min()) if qvalid.any() else None, "max": float(qvals[qvalid].max()) if qvalid.any() else None}
+    valid_intersection_area = float(areas[valid].sum())
+    total_intersection_area = float(areas.sum())
+    basin_area = float(basin_p.area)
+    center_mask = center.astype(bool)
+    partial = areas < full * (1 - 1e-12)
     return {
         "file": path.name, "sha256": sha256(path), "bytes": path.stat().st_size,
         "dataset": sample["dataset"], "field": sample["field"], "units": sample["units"],
         "grid_shape_lat_lon": list(values.shape), "basin_intersecting_cells": n_cells,
-        "basin_area_km2_from_overlay": basin_p.area / 1e6,
-        "center_equal_weight": summary(center, np.ones(n_cells)),
+        "partially_intersecting_cells": int(partial.sum()),
+        "partial_cells_center_inside": int((partial & center_mask).sum()),
+        "partial_cells_center_outside": int((partial & ~center_mask).sum()),
+        "fully_inside_cells": int((~partial).sum()),
+        "center_cells": int(center_mask.sum()),
+        "center_valid_cells": int((center_mask & valid).sum()),
+        "intersection_valid_cells": int(valid.sum()),
+        "area_intersection_km2": total_intersection_area / 1e6,
+        "area_valid_km2": valid_intersection_area / 1e6,
+        "area_basin_km2": basin_area / 1e6,
+        "coverage_valid_of_intersection_pct": float(100 * valid_intersection_area / total_intersection_area) if total_intersection_area else None,
+        "coverage_valid_of_basin_pct": float(100 * valid_intersection_area / basin_area) if basin_area else None,
+        "basin_area_km2_from_overlay": basin_area / 1e6,
+        "center_equal_weight": summary(center_mask, np.ones(n_cells)),
         "intersect_fraction_area_weighted": summary(np.ones(n_cells, dtype=bool), areas),
         "whole_cell_area_weighted_for_intersecting_cells": summary(np.ones(n_cells, dtype=bool), full),
         "area_coverage_by_valid_data_pct": float(100 * areas[valid].sum() / areas.sum()) if areas.sum() else None,
@@ -217,7 +247,8 @@ def main():
     args = parser.parse_args()
     files = require_samples(args.data_dir)
     basin, nsw = load_geometries(args.mdba_geojson, args.nsw_zip)
-    basin_p, nsw_p = transform(WGS84_TO_AEA, basin), transform(WGS84_TO_AEA, nsw)
+    basin_p = shapely.transform(basin, project_coords)
+    nsw_p = shapely.transform(nsw, project_coords)
     overlap = basin_p.intersection(nsw_p)
     results = []
     for path in files:

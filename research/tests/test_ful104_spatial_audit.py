@@ -1,9 +1,12 @@
+import json
+
 import numpy as np
 import pytest
 import shapely
 
 from research.auditar_espacial_ful104 import (
     REQUIRED_SAMPLE_NAMES,
+    load_basin,
     require_samples,
     spatial_selection_masks,
     valid_data_mask,
@@ -56,3 +59,30 @@ def test_validate_results_fails_when_a_sample_was_not_processed():
 
     with pytest.raises(RuntimeError, match="Auditoría incompleta"):
         validate_results(results)
+
+
+def test_load_basin_rejects_line_string_fixture(tmp_path):
+    geometry = {
+        "type": "FeatureCollection",
+        "features": [{"type": "Feature", "properties": {}, "geometry": {
+            "type": "LineString", "coordinates": [[0, 0], [1, 1]]
+        }}],
+    }
+    path = tmp_path / "line.geojson"
+    path.write_text(json.dumps(geometry), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="debe ser poligonal"):
+        load_basin(path)
+
+
+def test_load_basin_accepts_valid_polygon_fixture(tmp_path):
+    geometry = {
+        "type": "FeatureCollection",
+        "features": [{"type": "Feature", "properties": {}, "geometry": {
+            "type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+        }}],
+    }
+    path = tmp_path / "basin.geojson"
+    path.write_text(json.dumps(geometry), encoding="utf-8")
+
+    assert load_basin(path).geom_type == "Polygon"
