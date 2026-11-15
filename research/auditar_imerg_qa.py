@@ -11,6 +11,8 @@ from pathlib import Path
 import h5py
 import numpy as np
 
+from research.ful105_imerg import CenterMaskCache
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_NASA_DIR = ROOT / "data/raw/nasa/ful104"
 DEFAULT_NCAR_DIR = ROOT / "data/cache/ful-102"
@@ -247,20 +249,221 @@ def build_inventory(nasa_dir: Path, ncar_dir: Path) -> dict:
     }
 
 
+def select_phase2_samples(entries: list[dict]) -> list[dict]:
+    """Select one source per month: NASA Jan 2005/2021, NCAR Feb-Dec 2005."""
+    by_source_period = {(entry["source_label"], entry["period"]): entry for entry in entries}
+    nasa_jan = by_source_period.get(("NASA", "2005-01"))
+    ncar_jan = by_source_period.get(("NCAR", "2005-01"))
+    if nasa_jan is None or ncar_jan is None:
+        raise FileNotFoundError("Se necesitan NASA y NCAR enero 2005 para seleccionar el origen")
+    if nasa_jan["sha256"] != ncar_jan["sha256"]:
+        raise ValueError("NASA/NCAR enero 2005 ya no son byte-idénticos; revisar selección de fuente")
+    selected = [nasa_jan]
+    for month in range(2, 13):
+        period = f"2005-{month:02d}"
+        entry = by_source_period.get(("NCAR", period))
+        if entry is None:
+            raise FileNotFoundError(f"Falta la copia NCAR disponible de {period}")
+        selected.append(entry)
+    nasa_2021 = by_source_period.get(("NASA", "2021-01"))
+    if nasa_2021 is None:
+        raise FileNotFoundError("Falta el gránulo NASA IMERG de enero 2021")
+    selected.append(nasa_2021)
+    return selected
+
+
+def build_domain_masks(
+    longitudes: np.ndarray,
+    latitudes: np.ndarray,
+    basin_mask_lat_lon: np.ndarray,
+    *,
+    bbox: tuple[float, float, float, float] = (138.0, -38.0, 153.0, -24.0),
+) -> dict[str, np.ndarray | None]:
+    """Return masks aligned to HDF order lon,lat; global is represented by None."""
+    longitudes = np.asarray(longitudes).reshape(-1)
+    latitudes = np.asarray(latitudes).reshape(-1)
+    basin_mask_lat_lon = np.asarray(basin_mask_lat_lon, dtype=bool)
+    expected_basin_shape = (latitudes.size, longitudes.size)
+    if basin_mask_lat_lon.shape != expected_basin_shape:
+        raise ValueError(
+            f"La máscara lat,lon tiene shape {basin_mask_lat_lon.shape}; "
+            f"se esperaba {expected_basin_shape}"
+        )
+    west, south, east, north = bbox
+    bbox_mask = (
+        (longitudes[:, None] >= west)
+        & (longitudes[:, None] <= east)
+        & (latitudes[None, :] >= south)
+        & (latitudes[None, :] <= north)
+    )
+    return {"global": None, "bbox_centers": bbox_mask, "basin_centers": basin_mask_lat_lon.T}
+
+
+def classify_values(values: np.ndarray, fill) -> dict[str, int]:
+    """Partition storage states; zero is counted within finite non-fill values."""
+    array = np.asarray(values)
+    finite = np.isfinite(array)
+    fill_mask = np.zeros(array.shape, dtype=bool)
+    if fill is not None:
+        fill_in_storage_dtype = np.asarray(fill, dtype=array.dtype).item()
+        fill_mask = array == fill_in_storage_dtype
+    non_finite = ~finite & ~fill_mask
+    finite_non_fill = finite & ~fill_mask
+    return {
+        "total": int(array.size),
+        "fill": int(fill_mask.sum()),
+        "non_finite": int(non_finite.sum()),
+        "finite_non_fill": int(finite_non_fill.sum()),
+        "zero_valid": int((finite_non_fill & (array == 0)).sum()),
+    }
+
+
+def describe_distribution(values: np.ndarray, fill, *, exact_counts: bool = False) -> dict:
+    array = np.asarray(values)
+    valid = np.isfinite(array)
+    if fill is not None:
+        fill_in_storage_dtype = np.asarray(fill, dtype=array.dtype).item()
+        valid &= array != fill_in_storage_dtype
+    observed = array[valid].astype(np.float64, copy=False)
+    if not observed.size:
+        return {"n": 0, "min": None, "max": None, "quantiles": {}, "value_counts": {}}
+    quantile_values = np.quantile(observed, [0, 0.05, 0.25, 0.5, 0.75, 0.95, 1])
+    result = {
+        "n": int(observed.size),
+        "min": float(quantile_values[0]),
+        "max": float(quantile_values[-1]),
+        "quantiles": {
+            key: float(value)
+            for key, value in zip(("p05", "p25", "p50", "p75", "p95"), quantile_values[1:-1])
+        },
+        "value_counts": {},
+    }
+    if exact_counts:
+        unique_values, value_counts = np.unique(observed, return_counts=True)
+        result["value_counts"] = {
+            str(value): int(count) for value, count in zip(unique_values, value_counts)
+        }
+    return result
+
+
+def _selected_values(values: np.ndarray, mask: np.ndarray | None) -> np.ndarray:
+    return np.asarray(values).reshape(-1) if mask is None else np.asarray(values)[mask]
+
+
+def summarize_sample(
+    path: Path,
+    entry: dict,
+    basin_mask_cache: CenterMaskCache,
+    basin_path: Path,
+    *,
+    bbox: tuple[float, float, float, float] = (138.0, -38.0, 153.0, -24.0),
+) -> dict:
+    with h5py.File(path, "r") as handle:
+        grid = handle["Grid"]
+        longitudes = grid["lon"][:]
+        latitudes = grid["lat"][:]
+        center_mask = basin_mask_cache.get(latitudes, longitudes, basin_path)
+        masks = build_domain_masks(longitudes, latitudes, center_mask.values, bbox=bbox)
+        global_cell_count = int(np.prod(grid["precipitation"].shape[1:]))
+        if grid["precipitation"].shape[1:] != masks["bbox_centers"].shape:
+            raise ValueError(f"La máscara espacial no coincide con la grilla: {path.name}")
+
+        fields = {}
+        for name in FIELDS:
+            dataset = grid.get(name)
+            if dataset is None:
+                fields[name] = {"present": False, "counts": None, "distribution": None}
+                continue
+            values = dataset[0]
+            fill = dataset.attrs.get("_FillValue")
+            fields[name] = {
+                "present": True,
+                "units": _json_value(dataset.attrs.get("units", dataset.attrs.get("Units"))),
+                "fill_value": _json_value(fill),
+                "code_missing_value": _json_value(dataset.attrs.get("CodeMissingValue")),
+                "qa_status": "unassessed",
+                "counts": {},
+                "distribution": {},
+            }
+            for scope, mask in masks.items():
+                selected = _selected_values(values, mask)
+                fields[name]["counts"][scope] = classify_values(selected, fill)
+                if name in QA_FIELDS:
+                    fields[name]["distribution"][scope] = describe_distribution(
+                        selected,
+                        fill,
+                        exact_counts=name == "gaugeRelativeWeighting",
+                    )
+            del values
+    return {
+        "period": entry["period"],
+        "source_label": entry["source_label"],
+        "file": entry["file"],
+        "file_version": entry["file_version"],
+        "sha256": entry["sha256"],
+        "basin_geometry_sha256": center_mask.geometry_sha256,
+        "domains": {
+            "global": {"definition": "all native-grid cells", "n": global_cell_count},
+            "bbox_centers": {"definition": "cell centers, inclusive 138–153°E and -38–-24°", "n": int(masks["bbox_centers"].sum())},
+            "basin_centers": {"definition": "MDBA polygon center mask; covers semantics; holes excluded", "n": int(masks["basin_centers"].sum())},
+        },
+        "fields": fields,
+        "qa_status": "unassessed",
+    }
+
+
+def build_empirical_summary(
+    inventory: dict,
+    nasa_dir: Path,
+    ncar_dir: Path,
+    basin_geojson: Path,
+) -> dict:
+    selected_entries = select_phase2_samples(inventory["entries"])
+    mask_cache = CenterMaskCache()
+    samples = []
+    for entry in selected_entries:
+        source_dir = nasa_dir if entry["source_label"] == "NASA" else ncar_dir
+        sample = summarize_sample(source_dir / entry["file"], entry, mask_cache, basin_geojson)
+        samples.append(sample)
+    return {
+        "schema_version": 1,
+        "qa_status": "unassessed",
+        "method": {
+            "value_state_partition": "fill; non-finite excluding fill; finite non-fill; zero is a subset of finite non-fill",
+            "bbox_centers": [138.0, -38.0, 153.0, -24.0],
+            "basin_selection": "native-grid centers selected by CenterMaskCache; no area weights",
+            "filters_applied": [],
+            "thresholds_applied": [],
+        },
+        "samples": samples,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--nasa-dir", type=Path, default=DEFAULT_NASA_DIR)
     parser.add_argument("--ncar-dir", type=Path, default=DEFAULT_NCAR_DIR)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--basin-geojson", type=Path)
+    parser.add_argument("--summary-output", type=Path)
     args = parser.parse_args()
     inventory = build_inventory(args.nasa_dir, args.ncar_dir)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(inventory, indent=2, ensure_ascii=False), encoding="utf-8")
+    summary_info = None
+    if args.basin_geojson is not None or args.summary_output is not None:
+        if args.basin_geojson is None or args.summary_output is None:
+            parser.error("--basin-geojson y --summary-output deben usarse juntos")
+        summary = build_empirical_summary(inventory, args.nasa_dir, args.ncar_dir, args.basin_geojson)
+        args.summary_output.parent.mkdir(parents=True, exist_ok=True)
+        args.summary_output.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
+        summary_info = {"summary_output": str(args.summary_output), "samples_summarized": len(summary["samples"])}
     print(json.dumps({
         "output": str(args.output),
         "entries": len(inventory["entries"]),
         "qa_status": inventory["qa_status"],
         "nasa_ncar_comparison": inventory["nasa_ncar_comparison"],
+        **(summary_info or {}),
         "missing_qa_fields": {
             entry["file"]: [name for name in QA_FIELDS if not entry["fields"][name]["present"]]
             for entry in inventory["entries"]

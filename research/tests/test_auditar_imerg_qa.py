@@ -1,10 +1,20 @@
 import hashlib
+import json
 
 import h5py
 import numpy as np
 import pytest
 
-from research.auditar_imerg_qa import build_inventory, inspect_file
+from research.auditar_imerg_qa import (
+    CenterMaskCache,
+    build_domain_masks,
+    build_inventory,
+    classify_values,
+    describe_distribution,
+    inspect_file,
+    select_phase2_samples,
+    summarize_sample,
+)
 
 
 def _create_granule(path, *, qa_fields=(), bad_precip_shape=False, declared_period=None):
@@ -92,3 +102,104 @@ def test_inventory_confirms_january_byte_identity_and_labels_unassessed(tmp_path
     assert len(inventory["entries"]) == 2
     assert inventory["nasa_ncar_comparison"]["status"] == "byte_identical"
     assert inventory["qa_status"] == "unassessed"
+
+
+def test_select_phase2_samples_uses_unique_2005_months_and_january_2021():
+    entries = [
+        {"source_label": "NASA", "period": "2005-01", "file": "nasa-jan", "sha256": "same"},
+        {"source_label": "NCAR", "period": "2005-01", "file": "ncar-jan", "sha256": "same"},
+        *[
+            {"source_label": "NCAR", "period": f"2005-{month:02d}", "file": f"ncar-{month}", "sha256": str(month)}
+            for month in range(2, 13)
+        ],
+        {"source_label": "NASA", "period": "2021-01", "file": "nasa-2021", "sha256": "2021"},
+    ]
+
+    selected = select_phase2_samples(entries)
+
+    assert len(selected) == 13
+    assert selected[0]["file"] == "nasa-jan"
+    assert selected[-1]["file"] == "nasa-2021"
+    assert len({entry["period"] for entry in selected}) == 13
+
+
+def test_select_phase2_samples_rejects_changed_january_identity():
+    entries = [
+        {"source_label": "NASA", "period": "2005-01", "sha256": "a"},
+        {"source_label": "NCAR", "period": "2005-01", "sha256": "b"},
+    ]
+
+    with pytest.raises(ValueError, match="ya no son byte-idénticos"):
+        select_phase2_samples(entries)
+
+
+def test_build_domain_masks_uses_inclusive_bbox_and_lon_lat_order():
+    lon = np.array([137.9, 138.0, 153.0, 153.1])
+    lat = np.array([-38.1, -38.0, -24.0, -23.9])
+    basin_lat_lon = np.zeros((4, 4), dtype=bool)
+    basin_lat_lon[2, 1] = True  # lat index 2, lon index 1
+
+    masks = build_domain_masks(lon, lat, basin_lat_lon)
+
+    assert masks["global"] is None
+    assert masks["bbox_centers"].shape == (4, 4)
+    assert int(masks["bbox_centers"].sum()) == 4
+    assert masks["basin_centers"][1, 2]
+    assert int(masks["basin_centers"].sum()) == 1
+
+
+def test_classify_values_partitions_fill_nonfinite_and_valid_zero():
+    fill = np.float32(-9999.9)
+    values = np.array([0.0, fill, np.nan, 2.0], dtype=np.float32)
+
+    assert classify_values(values, float(fill)) == {
+        "total": 4,
+        "fill": 1,
+        "non_finite": 1,
+        "finite_non_fill": 2,
+        "zero_valid": 1,
+    }
+
+
+def test_describe_distribution_has_exact_quantiles_and_original_counts():
+    values = np.array([0, 1, 2, 3, -9999], dtype=np.int16)
+
+    result = describe_distribution(values, -9999, exact_counts=True)
+
+    assert result["n"] == 4
+    assert result["min"] == 0
+    assert result["max"] == 3
+    assert result["quantiles"]["p50"] == pytest.approx(1.5)
+    assert result["value_counts"] == {"0.0": 1, "1.0": 1, "2.0": 1, "3.0": 1}
+
+
+def test_summarize_sample_applies_center_mask_in_hdf_lon_lat_order(tmp_path):
+    sample_path = tmp_path / "3B-MO.MS.MRG.3IMERG.20050101-S000000-E235959.01.V07B.HDF5"
+    _create_granule(sample_path, qa_fields=("randomError",))
+    with h5py.File(sample_path, "a") as handle:
+        values = np.arange(8, dtype="f4").reshape((1, 4, 2))
+        values[0, 2, 0] = 0
+        values[0, 1, 1] = np.float32(-9999.9)
+        handle["Grid/precipitation"][:] = values
+    polygon_path = tmp_path / "basin.geojson"
+    polygon_path.write_text(json.dumps({
+        "type": "FeatureCollection",
+        "features": [{"type": "Feature", "properties": {}, "geometry": {
+            "type": "Polygon", "coordinates": [[[1.8, -0.2], [2.2, -0.2], [2.2, 0.2], [1.8, 0.2], [1.8, -0.2]]]
+        }}],
+    }), encoding="utf-8")
+    entry = {"period": "2005-01", "source_label": "NASA", "file": sample_path.name,
+             "file_version": "V07B", "sha256": hashlib.sha256(sample_path.read_bytes()).hexdigest()}
+
+    result = summarize_sample(
+        sample_path, entry, CenterMaskCache(), polygon_path, bbox=(0, 0, 3, 1)
+    )
+
+    assert result["domains"]["basin_centers"]["n"] == 1
+    precip = result["fields"]["precipitation"]
+    assert precip["counts"]["basin_centers"] == {
+        "total": 1, "fill": 0, "non_finite": 0, "finite_non_fill": 1, "zero_valid": 1
+    }
+    assert result["fields"]["gaugeRelativeWeighting"]["present"] is False
+    assert result["fields"]["gaugeRelativeWeighting"]["counts"] is None
+    assert result["qa_status"] == "unassessed"
