@@ -52,7 +52,7 @@ FastAPI (desde la raíz):
 uv run uvicorn backend.app.main:app --reload
 ```
 
-La API queda en `http://127.0.0.1:8000`; salud en `/health` y documentación en `/docs`.
+La API queda en `http://127.0.0.1:8000`; salud en `/health`, catálogos en `/api/v1/regions` y `/api/v1/products?region_id=…`, y documentación interactiva en `/docs`. El catálogo es offline y todavía no publica una región aprobada; consulta [la guía de catálogos BE-03](docs/backend-catalog-v1.md).
 
 Pruebas y lint:
 
