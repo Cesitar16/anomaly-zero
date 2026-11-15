@@ -93,7 +93,7 @@ La prueba con grilla redondeada en FUL-104 queda como sensibilidad previa, no co
 | Missing/fill/cero y QA | Missing/fill no válidos; ceros permanecen válidos; sin filtro QA. | TEC |
 | Pruebas offline | Casos sintéticos de selección, faltantes y geometría poligonal/LineString. | TEC |
 | Límites/licencia/preguntas | Riesgos y cinco preguntas concretas para decisión humana. | DOC/INF/PEND |
-| CI y PR para revisión | Pendiente de ejecutar validación final y abrir PR. | PEND |
+| CI y PR para revisión | Verificaciones locales ejecutadas; PR [#19 hacia `dev`](https://github.com/Cesitar16/anomaly-zero/pull/19) abierta para revisión. CI remoto pendiente. | TEC/PEND |
 
 ## Fuentes
 
