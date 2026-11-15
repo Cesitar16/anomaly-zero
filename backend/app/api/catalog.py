@@ -34,6 +34,7 @@ def _error_response(
     code: str,
     message: str,
     retryable: bool = False,
+    details: dict | None = None,
 ) -> JSONResponse:
     body = ErrorResponse(
         contract_version="0.1-draft",
@@ -44,7 +45,7 @@ def _error_response(
             "message": message,
             "retryable": retryable,
             "request_id": str(uuid4()),
-            "details": None,
+            "details": details,
         },
     )
     return JSONResponse(
@@ -96,7 +97,9 @@ class CatalogRoute(APIRoute):
                     retryable=True,
                 )
             except SeriesRequestError as exc:
-                return _error_response(exc.status_code, exc.code, exc.public_message)
+                return _error_response(
+                    exc.status_code, exc.code, exc.public_message, details=exc.details
+                )
             except Exception as exc:  # noqa: BLE001 - sanitize unexpected catalog faults.
                 return await internal_error(request, exc)
 
