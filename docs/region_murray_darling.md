@@ -1,6 +1,14 @@
-# Región candidata: Murray–Darling
+# Región de referencia exploratoria: Murray–Darling
 
-**Estado:** candidata; se ha ensayado una máscara temporal de centros para una muestra IMERG, y se compararon promedios exploratorios para una fecha, pero no se ha calculado una serie regional ni seleccionado una ponderación definitiva. Nueva Gales del Sur es una alternativa administrativa que se solapa parcialmente con la cuenca y no representa una región de control independiente.
+## Publicación en el catálogo BE-03
+
+César autorizó publicar **Murray–Darling Basin** con el ID estable `murray-darling-basin` como referencia geográfica y administrativa para exploración puntual. El catálogo cita el [ítem ArcGIS publicado por MDBA](https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json), que documenta la fuente del límite. El ítem declara CC BY 4.0, identifica a DCCEEW como fuente de los límites y a MDBA como publicador; la atribución y las condiciones de redistribución constan en la sección siguiente. Esto no publica una geometría ni aprueba una máscara, agregación regional, QA o inferencia. Por ello `geometry_source` identifica el ítem documental, mientras `geometry_version`, `crs` y `area_km2` siguen `null`: la exportación consultada en EPSG:4326 no determina por sí sola el CRS nativo ni establece una versión oficial validada para el contrato.
+
+El catálogo permite consultar metadatos de MERRA-2, IMERG Final y GLDAS Noah asociados a esa referencia. Los tres permanecen `unavailable`, con `current_dataset_id`, `coverage` y `quality` en `null`, hasta publicar y verificar snapshots mediante el mecanismo de la API. Archivos locales o cobertura histórica de NASA no bastan para declararlos disponibles.
+
+La autorización no modifica AZ-03 ni los gates R/T, no valida área o cobertura espacial, y no autoriza medias regionales, tendencias, anomalías ni inferencia. Los valores observados de IMERG siguen siendo muestras puntuales en `mm/hr`; contar centros no mide superficie.
+
+**Estado científico:** región de referencia autorizada para exploración puntual; geometría y uso como unidad estadística siguen sin aprobación. Se ha ensayado una máscara temporal de centros para una muestra IMERG y se compararon promedios exploratorios para una fecha, pero no se ha calculado una serie regional ni seleccionado una ponderación definitiva. Nueva Gales del Sur es una alternativa administrativa que se solapa parcialmente con la cuenca y no representa una región de control independiente.
 
 ## Límite y condiciones
 
