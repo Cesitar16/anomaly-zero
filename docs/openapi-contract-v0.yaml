@@ -271,6 +271,63 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
         '500':
           $ref: '#/components/responses/InternalError'
+  /series/export.csv:
+    get:
+      operationId: exportSeriesCsv
+      summary: Download a monthly series as CSV
+      description: >-
+        Uses the same inclusive monthly range, validation, 240-month limit, catalog,
+        and verified snapshot as GET /series. Spreadsheet formula prefixes are
+        neutralized in text fields; numeric observations are emitted unchanged.
+        A no_data result contains one status row and no observation period, value,
+        or dataset identifier.
+      parameters:
+        - $ref: '#/components/parameters/RegionId'
+        - $ref: '#/components/parameters/ProductId'
+        - $ref: '#/components/parameters/StartMonth'
+        - $ref: '#/components/parameters/EndMonth'
+        - name: frequency
+          in: query
+          required: true
+          schema:
+            type: string
+            const: monthly
+      responses:
+        '200':
+          description: UTF-8 CSV containing observation rows or one no-data status row.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="anomaly-zero-series.csv"
+          content:
+            text/csv:
+              schema:
+                type: string
+              examples:
+                syntheticObservations:
+                  summary: Synthetic fixture only; values are not NASA observations.
+                  value: |
+                    record_type,period,value,missing_reason,quality_state,provider_flags_json,data_state,region_id,product_id,product_version,variable,quantity,unit,spatial_support_type,spatial_approval_state,dataset_id,source_sha256_json,manifest_sha256,transformations_json,synthetic,provider_flags_applied
+                    observation,2005-01-01,0,null,unassessed,[],available_with_gaps,REG01,P02,V07B,precipitation,monthly_mean_rate,mm/hr,point_sample,not_assessed,ds-synthetic-001,[],null,[],true,false
+                    observation,2005-02-01,,synthetic_fixture_missing,missing,[],available_with_gaps,REG01,P02,V07B,precipitation,monthly_mean_rate,mm/hr,point_sample,not_assessed,ds-synthetic-001,[],null,[],true,false
+                syntheticNoData:
+                  summary: Synthetic no-data shape; the single status row is not an observation.
+                  value: |
+                    record_type,period,value,missing_reason,quality_state,provider_flags_json,data_state,region_id,product_id,product_version,variable,quantity,unit,spatial_support_type,spatial_approval_state,dataset_id,source_sha256_json,manifest_sha256,transformations_json,synthetic,provider_flags_applied
+                    status,,,,null,null,no_data,REG01,P02,07,precipitation,monthly_mean_rate,mm/hr,null,null,,null,null,[],true,false
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /analyses:
     post:
       operationId: createAnalysis
