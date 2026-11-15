@@ -7,32 +7,73 @@ Este documento explica **qué se construyó**, **cómo se ejecuta**, **qué endp
 ## 1. Resumen
 
 - `/explore` es ahora una pantalla real dentro de la app React existente (no hay una app nueva). El marcador de posición anterior se eliminó.
-- Toda la pantalla lee datos por **una sola puerta**: la interfaz `ExploreApi`. Hay dos implementaciones:
-  - `MockExploreApi` (predeterminada en desarrollo y QA): respuestas **explícitamente sintéticas** que cumplen el OpenAPI.
-  - `HttpExploreApi` (separada): cliente `fetch` para una integración futura con FastAPI. No es obligatorio conectarlo a producción en esta tarjeta.
+- Toda la pantalla lee datos por **una sola puerta**: la interfaz `ExploreApi`. Hay dos fuentes, y la persona puede cambiar entre ellas con un selector visible ("Fuente de los datos"):
+  - **Servicio simulado** (`MockExploreApi`): respuestas **explícitamente sintéticas** que cumplen el OpenAPI. Es la fuente por defecto de desarrollo y QA, rotulada de forma permanente ("Demostración").
+  - **Servicio real** (`HttpExploreApi`): cliente `fetch` tipado hacia `/api/v1`. En desarrollo Vite reenvía `/api/v1` y `/health` al FastAPI local (proxy, mismo origen, sin CORS abierto).
+- **Nunca hay respaldo automático**: si la API real falla o no responde, la pantalla muestra el error. No pasa sola a datos simulados. Cambiar de fuente descarta todo lo cargado y los filtros (los identificadores de un servicio no existen en el otro).
 - El mapa (MapLibre GL JS) y el gráfico (Recharts) se cargan de forma diferida junto con la ruta `/explore`. El mapa solo se descarga si existe una capa dibujable.
-- Los análisis estadísticos siguen **deshabilitados**: `POST /analyses` se muestra como no disponible.
+- Los análisis estadísticos siguen **deshabilitados**: `POST /analyses` se muestra como no disponible y el modo real no lo llama.
 - Mientras el backend no publique `raster_layers`, el mapa dice con honestidad que no hay capa. No dibuja frames falsos, contorno de cuenca, leyenda científica ni herramientas por píxel.
 
 ## 2. Cómo ejecutarlo
+
+### Solo el frontend (servicio simulado)
 
 Desde `frontend/`:
 
 ```bash
 npm ci
-npm run dev        # http://localhost:5173/explore, con el servicio simulado
+npm run dev        # http://localhost:5173/explore (fuente: servicio simulado)
 npm run lint       # oxlint
-npm test           # vitest (183 pruebas)
+npm test           # vitest (189 pruebas; las 6 de integración real se omiten si no hay backend)
 npm run build      # tsc -b + vite build
 ```
 
-Para apuntar al backend integrado en `dev` (opcional, solo para comprobar el adaptador HTTP):
+### Frontend + FastAPI (dos procesos, API real)
+
+Terminal 1, desde la raíz del repositorio (backend):
 
 ```bash
-VITE_EXPLORE_API=http VITE_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
+uv sync --group dev
+uv run uvicorn backend.app.main:app --port 8000
 ```
 
-Sin `VITE_EXPLORE_API=http` se usa siempre el servicio simulado. `VITE_API_BASE_URL` por defecto es `/api/v1`.
+Sin snapshot, el backend responde con honestidad: `/products` marca todo como `unavailable` y `/series` responde `200 no_data`.
+
+Con un snapshot configurado en **el proceso del backend** se sirve la serie puntual de IMERG 2005. Para probar sin datos NASA, genera un snapshot **sintético** (valores ficticios, el backend responde `synthetic: true`):
+
+```bash
+uv run --group dev python scripts/make_synthetic_imerg_snapshot.py data/processed/ful116-sintetico
+ANOMALY_ZERO_IMERG_SNAPSHOT=data/processed/ful116-sintetico/processed/imerg_2005_point_snapshot.json \
+  uv run uvicorn backend.app.main:app --port 8000
+```
+
+El snapshot real de DS-03 (`data/processed/ful116/imerg_2005_point_snapshot.json`) no se versiona; si existe, el backend lo usa por defecto. Los resultados con datos reales se informan por separado.
+
+Terminal 2 (`frontend/`):
+
+```bash
+npm run dev
+```
+
+Abre `http://localhost:5173/explore?fuente=api`. Vite reenvía `/api/v1` y `/health` a `http://127.0.0.1:8000`; para otro destino, `API_PROXY_TARGET=http://127.0.0.1:9000 npm run dev` (variable del proceso de Vite, no `VITE_*`, no llega al navegador). Para que la fuente real sea la predeterminada de esa compilación: `VITE_EXPLORE_API=http`.
+
+Comprobación rápida por el proxy:
+
+```bash
+curl http://localhost:5173/health
+curl "http://localhost:5173/api/v1/regions"
+```
+
+### Prueba de integración real (frontend ↔ backend)
+
+Con el backend en marcha (y, si quieres, el proxy de Vite):
+
+```bash
+EXPLORE_LIVE_API=http://127.0.0.1:5173/api/v1 npm test --prefix frontend -- liveBackend
+```
+
+Usa el mismo cliente HTTP tipado que la pantalla y valida cada respuesta contra el OpenAPI real: catálogo, productos, serie (cero, nulo, unidad `mm/hr`, `point_sample`), `404` y `422`. Funciona con y sin snapshot. Sin `EXPLORE_LIVE_API` se omite (así el CI no necesita Python en el job del frontend).
 
 ### Parámetros de la URL
 
@@ -40,13 +81,15 @@ Los filtros viven en la URL para poder compartir una vista. Se validan como entr
 
 | Parámetro | Ejemplo | Qué hace |
 |---|---|---|
+| `fuente` | `api` o `demo` | Fuente de datos. Sin el parámetro, manda `VITE_EXPLORE_API` (por defecto, simulada) |
 | `region` | `REG01` | Región elegida. Si no existe en el catálogo, error en el campo y **no** se consulta la serie |
 | `product` | `P02` | Variable NASA elegida (mismo tratamiento) |
 | `start`, `end` | `2005-01`, `2005-03` | Rango mensual `AAAA-MM`, hasta 240 meses |
 | `month` | `2005-02` | Mes mostrado en el mapa (si hay capas) |
-| `demo` | `error-503` | Escenario del servicio simulado (solo existe en modo simulado) |
+| `demo` | `error-503` | Escenario del servicio simulado (solo existe con `fuente=demo`) |
 
-Vista de referencia: `/explore?region=REG01&product=P02&start=2005-01&end=2005-03`
+Vista de referencia (simulada): `/explore?region=REG01&product=P02&start=2005-01&end=2005-03`.
+Vista de referencia (API real con snapshot): `/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-12`.
 
 ## 3. Estados de FE-03 y dónde verlos
 
@@ -63,9 +106,17 @@ Vista de referencia: `/explore?region=REG01&product=P02&start=2005-01&end=2005-0
 | **E9** Capas mixtas, mes con capa | `raster_layers` mixtas, mes `available` | `...&demo=capas-mixtas` | `05-capa-demo-enero-*` |
 | **E10** Capas mixtas, mes sin capa | mes seleccionado `unavailable` | `...&demo=capas-mixtas&month=2005-02` | `06-mes-sin-capa-*` |
 
-Todas las capturas están en `docs/fe-04/capturas/` en versión escritorio (1280 px) y móvil (390 px), y las generó la aplicación compilada, no un maquetado.
+Fuente real (API), capturadas con FastAPI local detrás del proxy de Vite:
 
-Lo que **no** se puede mostrar como captura: una serie real con `synthetic: false` y valores, porque los valores reales de DS-03 viven en un snapshot local que Git ignora. Lo que sí se comprueba por prueba automática es la parte que importa: con datos reales no aparece el aviso de "sintético" ni los escenarios de demostración.
+| Situación | Cómo verla | Captura |
+|---|---|---|
+| API real con snapshot **sintético** (`synthetic: true`): serie puntual con cero y huecos, aviso de datos sintéticos | backend con snapshot sintético y `/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-12` | `08-api-con-snapshot-sintetico-*` |
+| API real **sin snapshot**: `200 no_data` honesto, productos no disponibles, sin aviso sintético | backend sin snapshot, misma dirección | `09-api-sin-snapshot-*` |
+| API real **sin conexión**: error de conexión con "Reintentar", sin pasar a datos simulados | `/explore?fuente=api` con el backend apagado | `10-api-sin-conexion-*` |
+
+Todas las capturas están en `docs/fe-04/capturas/` en versión escritorio (1280 px) y móvil (390 px), y las generó la aplicación compilada, no un maquetado. Ninguna usa datos NASA reales.
+
+Lo que **no** se puede mostrar como captura: una serie real con `synthetic: false` y valores, porque los valores reales de DS-03 viven en un snapshot local que Git ignora. Lo que sí se comprueba por prueba automática es la parte que importa: con la fuente real no aparece el aviso de "sintético" salvo que la respuesta lo traiga, ni los escenarios de demostración.
 
 ## 4. Qué endpoint alimenta qué componente
 
@@ -89,7 +140,7 @@ Lo que **no** se puede mostrar como captura: una serie real con `synthetic: fals
 
 ## 6. Pruebas
 
-Total: **10 archivos, 183 pruebas** (`src/test/`).
+Total: **11 archivos, 189 pruebas** que corren siempre, más **6 de integración real** que se activan con `EXPLORE_LIVE_API` (`src/test/`).
 
 | Archivo | Qué comprueba |
 |---|---|
@@ -99,10 +150,13 @@ Total: **10 archivos, 183 pruebas** (`src/test/`).
 | `explore/httpApi.test.ts` | Cliente HTTP contra las respuestas reales de `dev`, incluida la ruta inexistente (`{"detail":"Not Found"}` se trata como falla de red) |
 | `explore/useResource.test.tsx` | Carga, cancelación de peticiones obsoletas |
 | `explore/components.test.tsx` | Cada componente, incluida la ausencia honesta del mapa |
-| `explore/page.test.tsx` | Pantalla completa: flujos, validación, errores, modo HTTP con respuestas reales, capas de demostración y `axe` |
+| `explore/page.test.tsx` | Pantalla completa: flujos, validación, errores, selector de fuente (sin respaldo automático, cambio de fuente descarta lo anterior), modo HTTP con respuestas reales, capas de demostración y `axe` |
+| `explore/liveBackend.test.ts` | **Integración real** contra FastAPI en ejecución (se omite sin `EXPLORE_LIVE_API`) |
 | `app.test.tsx` | Navegación desde la landing (CTA, barra y pie) |
 
-CI: `Checks` ahora ejecuta `npm test` del frontend antes de compilar (paso "Frontend tests", en un commit aparte).
+Verificado en este entorno (reporte separado de los datos reales): FastAPI local **sin snapshot** y **con snapshot sintético** pasan las 6 pruebas de integración a través del proxy de Vite. **No** se ejecutó contra el snapshot real de DS-03, que no está en el repositorio.
+
+CI: `Checks` ejecuta `npm test` del frontend antes de compilar (paso "Frontend tests", en un commit aparte). La integración real no corre en CI.
 
 ## 7. Diferencias y observaciones del contrato
 
@@ -114,24 +168,29 @@ CI: `Checks` ahora ejecuta `npm test` del frontend antes de compilar (paso "Fron
 6. **`/analyses`**: no está en `dev` (BE-05, PR #31, no integrada). Si existiera, la pantalla debería seguir mostrando `ANALYSIS_METHOD_UNAVAILABLE` con honestidad.
 7. **Tarjeta vs FE-03**: la tabla antigua de la tarjeta decía "deshabilitar consulta" para productos no disponibles, y FE-03 los deja consultables (para ver el `200 no_data` real). Se siguió FE-03 (D10).
 
-## 8. Decisiones abiertas
+## 8. Decisiones
 
-| Id | Tema | Qué se hizo | Quién decide |
-|---|---|---|---|
-| D2 | Textos científicos (calidad, soporte espacial, análisis, "muestra NASA exploratoria") | Quedan como **propuesta** en `content/exploreCopy.ts`, en un solo archivo | César |
-| D3 | Librería de mapa y de gráficos | MapLibre GL JS 6.18.0 y Recharts 3.10.1, como **recomendación** de la tarjeta | César (aprobación final) |
-| D9 | Marcador del punto de muestra en el mapa sin capa | **No** se dibuja: ausencia honesta, como en los wireframes | César |
-| D10 | Productos `unavailable` | Se pueden consultar | César / Alaín |
-| Mes | Entrada del mes como texto `AAAA-MM` | Campo de texto con validación, en vez de `<input type="month">` (soporte irregular) | César (UX) |
-| CI | Paso de pruebas del frontend en `Checks` | Agregado en un commit aparte, fácil de revertir | Equipo |
-| Demo | Botón auxiliar que muestra el `409` | Solo en modo simulado; en modo HTTP no existe y no se llama a `/analyses` | César |
+La tarjeta (decisión de César del 15-11) aprueba FE-03 como base de UX, MapLibre GL JS + Recharts, la ruta diferida y D1 a D9 de FE-03 con condiciones. Estado frente a esta implementación:
+
+| Id | Tema | Estado |
+|---|---|---|
+| D1, D5, D6, D7, D8 | Flujo y 10 estados, análisis no disponible, filtros en URL, gráfico antes que mapa en móvil, mocks de E9/E10 | Aprobadas e implementadas |
+| D2 | Copy científico, condicionado a usarlo según el estado real de la respuesta | Implementado en `content/exploreCopy.ts` (un solo archivo). Pendiente su revisión de textos |
+| D3 | MapLibre GL JS 6.18.0 (directo) y Recharts 3.10.1 | Aprobado. Recharts coincide con la PR #33 de FUL-130 (ver sección 12) |
+| D4 | Encuadre del mapa sin geometría | Extensión ilustrativa solo para la demostración sintética, rotulada. Sin límite de cuenca |
+| D9 | Marcador «Punto de muestra» | **No implementado.** La tarjeta lo permite solo con coordenadas de una respuesta auténtica. Hoy el punto se muestra como texto (celda y coordenadas) en el aviso de soporte. Pendiente opcional |
+| D10 | Productos `unavailable` | Se pueden consultar (FE-03), para mostrar el `200 no_data` real que exige la tarjeta sin snapshot. Pendiente de confirmar |
+| Mes | Entrada del mes como texto `AAAA-MM` | Campo de texto con validación, en vez de `<input type="month">` (soporte irregular) |
+| Fuente | Selector visible, sin respaldo automático | La fuente predeterminada es la simulada (el sitio público no tiene backend desplegado). Pendiente de confirmar si la real debe ser la predeterminada al integrar |
+| CI | Paso de pruebas del frontend en `Checks` | Agregado en un commit aparte, fácil de revertir |
+| Demo | Botón auxiliar que muestra el `409` | Solo con la fuente simulada; con la real no existe y no se llama a `/analyses` |
 
 ## 9. Tamaño del paquete
 
 | Pieza | Tamaño | Cuándo se descarga |
 |---|---|---|
 | Entrada de la app | ~283 kB (90 kB gzip) | Siempre |
-| Ruta `/explore` (con Recharts) | ~424 kB (124 kB gzip) | Al abrir `/explore` |
+| Ruta `/explore` (con Recharts) | ~427 kB (125 kB gzip) | Al abrir `/explore` |
 | Mapa (MapLibre) | ~1,07 MB (291 kB gzip) + worker ~519 kB | Solo si hay una capa dibujable (hoy, solo la demostración sintética) |
 
 Vite avisa de chunks de más de 500 kB; es un aviso, no un error. El mapa no se descarga en modo real mientras el backend no publique capas.
@@ -147,18 +206,26 @@ frontend/src/features/explore/
   data/                      ExploreApi, simulado, cliente HTTP, fixtures sintéticas
   hooks/                     useResource, useExplorer
   lib/                       meses, formato, modelo del gráfico, resolución del mapa, URL
-  components/                filtros, gráfico, tabla, mapa, avisos, procedencia, calidad, errores
+  components/                filtros, selector de fuente, gráfico, tabla, mapa, avisos, procedencia, calidad, errores
 frontend/src/test/explore/   pruebas
 docs/fe-04/capturas/         capturas escritorio y móvil
+frontend/vite.config.ts      proxy de desarrollo /api/v1 y /health
+scripts/make_synthetic_imerg_snapshot.py   snapshot IMERG sintético para probar contra FastAPI
 ```
 
-## 11. Cómo pasar a la integración real
+## 11. Qué falta para la integración real
 
-1. Levantar el backend de `dev` y arrancar el frontend con `VITE_EXPLORE_API=http`.
-2. Mientras el backend no publique `raster_layers`, el mapa seguirá en ausencia honesta. No hay que tocar la pantalla: cuando lleguen descriptores `available` con su bbox y URL de capa, hay que entregar un `RasterResolver` real al cliente HTTP (hoy devuelve `null` a propósito).
-3. Cuando exista `POST /analyses` aprobado, se cambia `capabilities.analyses` del cliente HTTP y se agrega la vista del resultado. Antes de eso, no.
+Hecho: cliente HTTP tipado, proxy de Vite, selector de fuente, prueba de integración real con y sin snapshot, procedimiento de dos procesos (sección 2).
 
-## 12. Revisiones solicitadas
+Pendiente, a propósito, hasta que lo apruebe quien corresponda:
 
-- **César**: UX y ciencia (textos D2, soporte puntual, calidad), aprobación del stack (D3) y de D9/D10.
-- **Alaín**: revisión del contrato (sección 7).
+1. **Despliegue**: no se afirma que el proyecto esté desplegado. En un sitio sin backend, `fuente=api` muestra el error de conexión; es lo esperado.
+2. **Capas raster**: cuando el backend publique `raster_layers` `available`, hay que entregar un `RasterResolver` real al cliente HTTP (hoy devuelve `null` a propósito: el modo real nunca dibuja).
+3. **Análisis**: cuando exista `POST /analyses` aprobado (BE-05, PR #31), se cambia `capabilities.analyses` del cliente HTTP y se agrega la vista del resultado. Antes de eso, no.
+4. **Datos reales de DS-03**: probar con el snapshot real verificado y reportarlo aparte (no hay snapshot en el repositorio).
+
+## 12. Coordinación y revisiones solicitadas
+
+- **FUL-130 (César, PR #33)**: agrega Recharts 3.10.1 como dependencia y el módulo `scientific-series` (`ScientificSeriesPanel`). Esta rama también agrega Recharts 3.10.1 (misma versión exacta) y su propio gráfico (`TimeSeriesChart`). Al integrar, `package.json` y `package-lock.json` darán conflicto: se conserva una sola entrada de Recharts y el resto de las dependencias de esta rama (`maplibre-gl`, `ajv`, `ajv-formats`, `yaml`). Falta decidir si `TimeSeriesChart` se reemplaza por `ScientificSeriesPanel` o conviven.
+- **César**: UX y ciencia (D2, D9, D10), y la decisión de FUL-130 anterior.
+- **Alaín**: contrato (sección 7) y el proxy de Vite sin CORS abierto en FastAPI.
