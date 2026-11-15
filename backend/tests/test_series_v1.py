@@ -256,6 +256,39 @@ def test_explicitly_configured_missing_snapshot_is_retryable_503(monkeypatch, tm
     validate_contract("ErrorResponse", response.json())
 
 
+def test_explicitly_configured_unreadable_snapshot_is_retryable_503(
+    monkeypatch, tmp_path
+):
+    snapshot_path = tmp_path / "private" / "snapshot.json"
+    snapshot_path.parent.mkdir()
+    snapshot_path.write_text("{}", encoding="utf-8")
+    monkeypatch.setenv("ANOMALY_ZERO_IMERG_SNAPSHOT", str(snapshot_path))
+    original_open = Path.open
+
+    def deny_snapshot(self, *args, **kwargs):
+        if self == snapshot_path:
+            raise PermissionError("private file detail")
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", deny_snapshot)
+    response = client.get(
+        "/api/v1/series",
+        params={
+            "region_id": "murray-darling-basin",
+            "product_id": "P02",
+            "start": "2005-01",
+            "end": "2005-12",
+            "frequency": "monthly",
+        },
+    )
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+    assert response.json()["error"]["retryable"] is True
+    assert str(snapshot_path) not in response.text
+    assert "private file detail" not in response.text
+    validate_contract("ErrorResponse", response.json())
+
+
 def test_invalid_snapshot_returns_sanitized_internal_error(tmp_path, monkeypatch):
     snapshot_path = tmp_path / "private" / "snapshot.json"
     snapshot_path.parent.mkdir()
