@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import calendar
 from dataclasses import dataclass
+from numbers import Real
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,31 @@ PRODUCT_UNITS = {
     ("merra2", "T2M"): "K",
     ("gldas", "SoilMoi0_10cm_inst"): "kg m-2",
 }
+
+
+def _parse_numeric(values: pd.Series, *, field: str) -> pd.Series:
+    """Parse scalar numeric observations without conflating errors and NA."""
+    parsed: list[float] = []
+    for index, value in values.items():
+        if not pd.api.types.is_scalar(value) or isinstance(value, (bool, np.bool_)):
+            raise ValueError(f"invalid_numeric_value:{field}:{index}")
+        if pd.isna(value):
+            parsed.append(np.nan)
+            continue
+        if not isinstance(value, (Real, str)):
+            raise TypeError(f"invalid_numeric_value:{field}:{index}")
+        try:
+            number = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"invalid_numeric_value:{field}:{index}") from exc
+        if not np.isfinite(number):
+            raise ValueError(f"non_finite_numeric_value:{field}:{index}")
+        parsed.append(number)
+    return pd.Series(parsed, index=values.index, dtype=float, name=values.name)
+
+
+def _is_true(value: object) -> bool:
+    return value is True or isinstance(value, np.bool_) and bool(value)
 
 
 @dataclass(frozen=True)
@@ -51,8 +77,21 @@ def monthly_rate_to_depth(
     periods = pd.PeriodIndex(periods, freq="M")
     if periods.has_duplicates:
         raise ValueError("duplicate_months")
+    if periods.isna().any():
+        raise ValueError("invalid_period")
+    parsed_rate = _parse_numeric(rate, field="precipitation_rate")
+    if (parsed_rate.dropna() < 0).any():
+        raise ValueError("negative_precipitation_rate")
     hours = np.array([calendar.monthrange(p.year, p.month)[1] * 24 for p in periods])
-    result = pd.Series(pd.to_numeric(rate, errors="coerce").to_numpy() * hours, index=rate.index, name="precipitation_depth_mm")
+    result = pd.Series(parsed_rate.to_numpy() * hours, index=rate.index, name="precipitation_depth_mm")
+    result.attrs = {
+        "input_unit": "mm/hr",
+        "output_unit": "mm",
+        "conversion": "interval_mean_rate_mm_hr × actual_calendar_hours",
+        "interpretation_confirmed": True,
+        "input_missing_count": int(parsed_rate.isna().sum()),
+        "missing_periods": [str(period) for period, missing in zip(periods, parsed_rate.isna(), strict=True) if missing],
+    }
     return result
 
 
@@ -68,12 +107,22 @@ def build_monthly_features(observations: pd.DataFrame) -> FeatureResult:
     if missing:
         raise ValueError(f"missing_required_columns:{','.join(sorted(missing))}")
     frame = observations.copy()
-    frame["period"] = pd.PeriodIndex(frame["period"].astype(str), freq="M")
+    try:
+        frame["period"] = pd.PeriodIndex(frame["period"].astype(str), freq="M")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("invalid_period") from exc
+    if frame["period"].isna().any():
+        raise ValueError("invalid_period")
     if frame["period"].duplicated().any():
         raise ValueError("duplicate_months")
     if len(frame) == 0:
         raise ValueError("empty_series")
     identity_columns = ["product", "variable", "unit", "support_id", "source_kind"]
+    for column in identity_columns:
+        if frame[column].isna().any() or frame[column].astype(str).str.strip().eq("").any():
+            raise ValueError(f"missing_series_identity:{column}")
+    if frame["qa_status"].isna().any() or frame["qa_status"].astype(str).str.strip().eq("").any():
+        raise ValueError("missing_qa_status")
     if any(frame[column].nunique(dropna=False) != 1 for column in identity_columns):
         raise ValueError("mixed_series_identity_or_spatial_support")
     product = str(frame["product"].iloc[0])
@@ -83,13 +132,15 @@ def build_monthly_features(observations: pd.DataFrame) -> FeatureResult:
     if expected is None or unit != expected:
         raise ValueError("product_variable_unit_mismatch")
     source_kind = str(frame["source_kind"].iloc[0])
-    is_true = frame["eligible"].map(lambda value: value is True or isinstance(value, np.bool_) and bool(value))
-    if not is_true.all():
+    if not frame["eligible"].map(_is_true).all():
         raise ValueError("ineligible_observation_present")
     if source_kind not in {"verified_nasa_granule", "synthetic_fixture"}:
         raise ValueError("unknown_source_kind")
-    if source_kind == "synthetic_fixture" and not frame.get("synthetic_fixture", pd.Series(False, index=frame.index)).astype(bool).all():
+    synthetic_marker = frame.get("synthetic_fixture", pd.Series(False, index=frame.index)).map(_is_true)
+    if source_kind == "synthetic_fixture" and not synthetic_marker.all():
         raise ValueError("synthetic_fixture_marker_missing")
+    if source_kind == "verified_nasa_granule" and synthetic_marker.any():
+        raise ValueError("source_marked_synthetic")
     if source_kind == "verified_nasa_granule" and (
         frame["source_sha256"].isna().any()
         or not frame["source_sha256"].astype(str).str.fullmatch(r"[0-9a-fA-F]{64}").all()
@@ -97,13 +148,13 @@ def build_monthly_features(observations: pd.DataFrame) -> FeatureResult:
         raise ValueError("verified_source_hash_invalid")
     if source_kind == "verified_nasa_granule":
         for flag in ("hash_verified", "size_verified", "native_payload_verified"):
-            if flag not in frame or not frame[flag].eq(True).all():
+            if flag not in frame or not frame[flag].map(_is_true).all():
                 raise ValueError(f"source_{flag}_missing")
     ordered = frame.sort_values("period").set_index("period")
     full_index = pd.period_range(ordered.index.min(), ordered.index.max(), freq="M")
-    series = pd.to_numeric(ordered["value"], errors="coerce").astype(float).reindex(full_index)
-    if np.isinf(series.to_numpy()).any():
-        raise ValueError("infinite_observation")
+    parsed_values = _parse_numeric(ordered["value"], field="value")
+    original_missing_periods = [str(period) for period in ordered.index[parsed_values.isna()]]
+    series = parsed_values.reindex(full_index)
 
     result = pd.DataFrame(index=full_index)
     result.index.name = "period"
@@ -136,7 +187,7 @@ def build_monthly_features(observations: pd.DataFrame) -> FeatureResult:
         "observed_months": len(frame),
         "calendar_months": len(full_index),
         "missing_periods": [str(period) for period in full_index.difference(ordered.index)],
-        "missing_value_periods": [str(period) for period in full_index[series.isna()]],
+        "missing_value_periods": original_missing_periods,
         "feature_valid_rows": {
             column: int(result[column].notna().sum())
             for column in ("month_sin", "month_cos", "lag_1", "lag_3", "lag_6", "lag_12", "rolling_mean_3", "rolling_std_3", "difference_1")
