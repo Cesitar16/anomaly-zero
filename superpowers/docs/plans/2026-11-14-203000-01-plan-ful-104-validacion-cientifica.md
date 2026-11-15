@@ -68,3 +68,13 @@
 **Secuencia:** (1)+(3) auditoría y linaje; (2) análisis espacial; (4) decisión de licencia antes de distribuir cualquier geometría; congelar matriz; después (5)+(6) pedir revisiones y registrar la decisión. Toda conclusión científica se etiqueta por alcance y cada estado de checklist se sustenta en artefacto verificable.
 
 **Dependencias externas y autorización:** los pasos 5 y la decisión sustantiva del 6 no están bajo control de Lucas/Codex; se prepararán y enviarán solicitudes solo tras autorización expresa para contactar revisores/editar Linear en la fase de implementación. La aprobación de este plan autoriza la implementación técnica/documental en la rama local, no una aprobación ficticia ni un merge a `dev`. Antes de cualquier publicación se revisará el destino correcto según `CONTRIBUTING.md` y el estado actualizado de ramas.
+
+## Ejecución (2026-11-15)
+
+**Resultado local:** completadas las auditorías de muestras primarias MERRA-2 e IMERG y la comparación mensual frente a NCAR; inspeccionadas muestras GLDAS Jan-2005/Jan-2021; implementada y ejecutada la auditoría espacial reproducible; documentadas la incertidumbre del linaje GLDAS 2005, la recomendación conservadora de licencia ABS y los límites de inferencia. Los datos brutos permanecen locales/ignorados por Git.
+
+**Artefactos:** `docs/validacion_cientifica_ful104.md`, `research/auditar_espacial_ful104.py`, `research/README.md`, `docs/datasets.md`, `pyproject.toml` y `uv.lock`. Commit de trabajo `72c29fb`; integración sin conflictos del tip actualizado de `origin/dev` en `a71252d`.
+
+**Verificación ejecutada:** `uv run --locked --python 3.12 ruff check backend research`, `uv lock --check` y `git diff --check` completaron correctamente. El script espacial se ejecutó con las seis muestras; no se ejecutó pytest. El árbol de trabajo quedó limpio antes de la entrega remota.
+
+**Pendiente externo:** las revisiones explícitas de Alaín y César y el registro de propuesta/decisión en FUL-107 no se consideran cerrados. La conexión Linear disponible identifica el perfil como César; se pidió al usuario escoger la conexión correcta antes de publicar como ese perfil. La rama no se integra directamente en `dev`; el PR, si se publica, debe tener base `dev`.
