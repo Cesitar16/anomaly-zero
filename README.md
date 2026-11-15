@@ -69,10 +69,10 @@ uv run jupyter lab research/notebooks
 
 ## Seguimiento
 
-Tarjeta de Linear: [FUL-98](https://linear.app/fullstack-track/issue/FUL-98).
+Tarjeta de Linear: [FUL-99](https://linear.app/fullstack-track/issue/FUL-99/az-02-acordar-arquitectura-minima-flujo-cientifico-y-responsabilidades).
 
 Contribuciones y flujo Git: [CONTRIBUTING.md](CONTRIBUTING.md). Las pull requests usan la [plantilla del proyecto](.github/PULL_REQUEST_TEMPLATE.md). Este repositorio se distribuye bajo la [licencia MIT](LICENSE).
 
 ## Estado
 
-Base inicial configurada: plantilla React + TypeScript de Vite y API mínima con `GET /health`. FUL-101 incorpora un piloto puntual de NASA POWER T2M. FUL-103 incorpora descubrimiento CMR de MERRA-2, IMERG y GLDAS, además de una descarga autenticada y acotada de GLDAS; FUL-105 añade EDA de un único mes GLDAS sobre un rectángulo. Los tres productos siguen siendo candidatos, sin serie regional de cuenca ni tendencias validadas. El frontend todavía es el starter Vite; siguen pendientes la validación científica, el procesamiento regional, los contratos y el explorador.
+Base inicial configurada: plantilla React + TypeScript de Vite y API mínima con `GET /health`. FUL-101 incorpora un piloto puntual de NASA POWER T2M. FUL-103 incorpora descubrimiento CMR de MERRA-2, IMERG y GLDAS, además de una descarga autenticada y acotada de GLDAS; FUL-105 añade EDA de un único mes GLDAS sobre un rectángulo. La PR #9 de FUL-106 sigue en Draft y documenta muestras auténticas MERRA-2 e IMERG y QA espacial exploratoria, pero todavía no está integrada en `dev`. Los tres productos siguen siendo candidatos, sin serie regional de cuenca ni tendencias validadas. El frontend todavía es el starter Vite; siguen pendientes la validación científica, el procesamiento regional, los contratos y el explorador.

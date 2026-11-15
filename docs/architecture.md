@@ -68,7 +68,7 @@ Las flechas sólidas describen conexiones disponibles en esta versión; las punt
 El flujo objetivo, sujeto a aprobación en FUL-99/107/108, es **fuente y catálogo → adquisición controlada → originales y manifiestos → QA/procesamiento reproducible → snapshots → API de lectura → interfaz**. La descarga debe ocurrir fuera de peticiones del frontend.
 
 - **Fuentes NASA y catálogo (Lucas):** mantener los tres candidatos, versiones, variables, unidades, documentación, cobertura, calidad y restricciones de uso; enlazar a la evidencia existente en vez de duplicarla.
-- **Adquisición (Alaín):** mantener CMR/Earthdata, autenticación local, límites, procedencia, inspección y hashes. En la revisión, la rama remota `feature/ful-106-be-02-three-product-samples` está en `78f8a19`, cinco commits detrás de `dev`, sin commits propios respecto a `dev` ni PR abierta. Esto no determina el estado de trabajo externo a GitHub; FUL-106 debe publicar el estado real de extracción de cada fuente antes de describirlo aquí como implementado.
+- **Adquisición (Alaín):** en `dev`, BE-01 mantiene CMR/Earthdata y descarga acotada solo de GLDAS. La PR #9 de FUL-106 permanece Draft hacia `dev` en `e2174d5`; su documentación informa muestras auténticas de MERRA-2 e IMERG y QA espacial exploratoria para las tres grillas. Los checks de GitHub pasan, pero los granules/manifiestos quedan fuera de Git y la PR aún no está integrada ni revisada científicamente. No describir la extensión como funcionalidad de `dev` hasta su merge.
 - **Originales (Alaín + equipo):** conservar cada archivo fuente y manifiesto fuera de Git. Manifiestos actuales no equivalen a un sistema de snapshots compartido.
 - **Investigación/QA/estadística (César, validación científica con Lucas):** explorar en `research/`; migrar a `backend/app/analysis/` solo funciones estables, revisadas y probadas. Mantener separados los valores originales, transformaciones, faltantes y resultados estadísticos.
 - **API (Alaín + equipo):** hoy solo salud. Un futuro servicio podría leer snapshots verificados, no iniciar descargas de NASA en cada request. Los contratos quedan sujetos a FUL-108.
@@ -78,9 +78,9 @@ El flujo objetivo, sujeto a aprobación en FUL-99/107/108, es **fuente y catálo
 
 Los tres productos continúan en el alcance de investigación:
 
-- **MERRA-2 `M2TMNXSLV` 5.12.4 / `T2M`:** la copia NCAR reorganizada contiene 12 meses de 2005 y unidad K; el gránulo NASA original no se abrió y su acceso anónimo devolvió 401.
-- **IMERG Final `GPM_3IMERGM` 07 / `precipitation`:** hay muestras y QA básica, incluida exploración de campos de calidad; quedan filtro QA, máscara de cuenca y validación independiente.
-- **GLDAS Noah `GLDAS_NOAH025_M` 2.1 / `SoilMoi0_10cm_inst`:** hay una descarga autenticada real de enero de 2005 y EDA de 3.360 celdas del rectángulo (3.045 válidas, 315 faltantes). La media 16,0753 kg/m² es sin ponderación; no es una estimación de la cuenca. El linaje respecto del posprocesamiento de aguas continentales sigue pendiente.
+- **MERRA-2 `M2TMNXSLV` 5.12.4 / `T2M`:** en `dev`, la evidencia incluye una copia NCAR reorganizada de 12 meses de 2005, unidad K; el gránulo NASA original no estaba abierto en esa base. La PR #9 abierta documenta ahora una muestra NASA auténtica de enero de 2005, inspección NetCDF4 y conteo por centros para MDBA (323/323 válidos); su archivo, hash y manifiesto aún requieren revisión reproducible y científica, y no están integrados en `dev`.
+- **IMERG Final `GPM_3IMERGM` 07 / `precipitation`:** en `dev` hay muestras derivadas y ensayos QA/geográficos exploratorios. La PR #9 abierta documenta una muestra NASA auténtica V07B de enero de 2005, inspección HDF5 y 10.092/10.092 centros con dato finito/no-fill dentro de MDBA; sus candidatos QA no se aplican. Fuente, filtro QA, máscara regional y validación independiente siguen pendientes.
+- **GLDAS Noah `GLDAS_NOAH025_M` 2.1 / `SoilMoi0_10cm_inst`:** hay una descarga autenticada real de enero de 2005 y EDA FUL-105 de 3.360 celdas del rectángulo (3.045 válidas, 315 faltantes). La media 16,0753 kg/m² es sin ponderación; no es una estimación de la cuenca. La PR #9 también documenta un conteo por centros MDBA de 1.617 celdas (1.615 válidas, 2 faltantes). El linaje respecto del posprocesamiento de aguas continentales sigue pendiente.
 
 Los 240 meses CMR de 2005–2024 por colección son registros de catálogo, no una serie de 240 valores regionales. El límite MDBA y los ensayos exploratorios con IMERG se describen en [region_murray_darling.md](region_murray_darling.md): el GeoJSON versionado es solo un segmento `LineString`, no el polígono completo. La geometría, CRS, celdas de borde, áreas, faltantes y ponderación siguen sujetos a FUL-104. No afirmar agregación de cuenca, tendencia o significancia hasta que los datos y métodos correspondientes estén validados.
 
@@ -88,7 +88,7 @@ Un snapshot futuro debería poder identificar fuente/versión, variable, periodo
 
 ## Responsabilidades y coordinación
 
-El README asigna Data Science/estadística a César, datos y productos NASA a Lucas, backend/extracción a Alaín y frontend a Alejandra. FUL-99 identifica a Lucas como responsable de tarjeta y a César/Alaín como colaboradores; no se encontró una revisión técnica de la antigua PR #2 que ratifique el diseño. No se infieren conformidades de estas personas por el merge de otras tarjetas.
+El README asigna Data Science/estadística a César, productos y procesamiento científico NASA a Lucas, backend/extracción a Alaín y frontend a Alejandra. La descripción de FUL-99 enlazada por Linear en esta PR identifica a Lucas como responsable principal, a César como proponente/responsable científico del esquema y a Lucas, César y Alaín como revisores requeridos; Alejandra se consulta para UX. Esto coincide con los roles funcionales del README, pero no sustituye confirmar la asignación viva en Linear. No se infieren conformidades de estas personas por el merge de otras tarjetas. La nota de coordinación enlazada a FUL-99 nombra MERRA-2/T2M como Plan A provisional para la primera ruta regional implementable, sin excluir IMERG ni GLDAS; FUL-107 aún debe ratificar o ajustar esa prioridad.
 
 - **FUL-104 / Lucas:** confirmar geometría oficial completa, CRS, bordes, ponderación, QA/unidades y linaje GLDAS.
 - **FUL-105 / César:** completar EDA de los tres productos, temporalidad y plan analítico; enero 2005 de GLDAS es un avance parcial.
@@ -98,7 +98,7 @@ El README asigna Data Science/estadística a César, datos y productos NASA a Lu
 
 ## Riesgo de validación automática
 
-`.github/workflows/checks.yml` todavía limita `pull_request` a `develop` y `push` a la antigua rama FUL-103. Además, `pyproject.toml` dirige el descubrimiento predeterminado de pytest a `backend/tests`, dejando fuera `research/tests`. Una corrección pequeña de CI para `dev` y las pruebas de investigación se recomienda por separado; esta PR documental no modifica ese workflow.
+En `dev` al SHA auditado, `.github/workflows/checks.yml` todavía limita `pull_request` a `develop`; la PR #9 propone cambiarlo a `dev` y sus checks de backend/frontend pasan, pero ese cambio sigue sin integrar. `pyproject.toml` dirige el descubrimiento predeterminado de pytest a `backend/tests`, dejando fuera `research/tests`; esa cobertura sigue pendiente incluso con el workflow propuesto. Esta PR documental no modifica CI.
 
 ## Historial de la propuesta anterior
 
