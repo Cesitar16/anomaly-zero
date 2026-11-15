@@ -1,0 +1,10 @@
+{
+  "selection_id": "ful105-panel-row-001",
+  "selection_source": "data/derived/be02_imerg_2005-01_12.portable.csv (first distinct row; panel includes 20 MDBA center cells)",
+  "selection_method": "Existing panel grid-center coordinate; no new location was sampled or inferred.",
+  "latitude": -37.64999771118164,
+  "longitude": 145.75,
+  "coordinate_units": "degrees",
+  "coordinate_order": "latitude, longitude",
+  "grid_registration": "center"
+}
