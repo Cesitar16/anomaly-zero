@@ -62,6 +62,10 @@ describe('Landing (/)', () => {
       'href',
       '/explore',
     )
+    // El pie de página usa la misma etiqueta de estado que la barra y los botones.
+    expect(
+      within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Explorador (demostración)' }),
+    ).toHaveAttribute('href', '/explore')
   })
 
   it('incluye el aviso de proyecto independiente', () => {

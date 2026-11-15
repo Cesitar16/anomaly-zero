@@ -3,7 +3,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -46,6 +45,7 @@ export function TimeSeriesChart({ points, quantity, unit, selectedMonth, onSelec
   const titleId = useId()
   const descriptionId = useId()
   const gaps = missingMonths(points)
+  const gapStripWidth = Math.max(3, Math.min(28, Math.floor(280 / Math.max(points.length, 1))))
   return (
     <figure className="explore-chart">
       <figcaption>
@@ -70,7 +70,7 @@ export function TimeSeriesChart({ points, quantity, unit, selectedMonth, onSelec
             }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-line)" />
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} minTickGap={16} />
+            <XAxis dataKey="month" tick={{ fontSize: 11 }} minTickGap={16} padding={{ left: 24, right: 24 }} />
             <YAxis
               domain={yDomain(points, unit)}
               tick={{ fontSize: 11 }}
@@ -78,8 +78,16 @@ export function TimeSeriesChart({ points, quantity, unit, selectedMonth, onSelec
               label={{ value: unit, angle: -90, position: 'insideLeft', fontSize: 11 }}
             />
             <Tooltip content={(props) => <PointTooltip {...props} points={points} unit={unit} />} />
+            {/* Franja ámbar por cada mes sin dato. El eje es de categorías, así que la franja es una línea gruesa. */}
             {gaps.map((month) => (
-              <ReferenceArea key={month} x1={month} x2={month} fill="var(--color-accent-ink)" fillOpacity={0.12} />
+              <ReferenceLine
+                key={month}
+                x={month}
+                stroke="var(--color-accent-ink)"
+                strokeOpacity={0.18}
+                strokeWidth={gapStripWidth}
+                ifOverflow="visible"
+              />
             ))}
             {selectedMonth !== null && (
               <ReferenceLine x={selectedMonth} stroke="var(--color-accent-ink)" strokeDasharray="4 3" />

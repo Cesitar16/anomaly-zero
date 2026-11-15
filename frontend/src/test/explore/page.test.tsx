@@ -2,8 +2,9 @@ import { configure, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import axe from 'axe-core'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import App from '../../App'
+import { observed } from './helpers'
 import { createExploreApi } from '../../features/explore/data/createExploreApi'
 
 // La primera carga de la ruta diferida (gráficos incluidos) tarda más en jsdom que el valor por defecto.
@@ -41,7 +42,7 @@ async function expectNoA11yViolations(root: HTMLElement) {
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(' | ')}`)).toEqual([])
 }
 
-let fetchSpy: ReturnType<typeof vi.spyOn>
+let fetchSpy: MockInstance<typeof fetch>
 
 beforeEach(() => {
   // El modo predeterminado es el servicio simulado: NADA sale a la red ni pide imágenes.
@@ -257,6 +258,63 @@ describe('Errores: nunca se disfrazan de «sin datos»', () => {
     await openPage('/explore?demo=catalogo-vacio')
     expect(await screen.findByText('Todavía no hay regiones publicadas.')).toBeInTheDocument()
     expect(screen.getByLabelText('Región')).toBeDisabled()
+  })
+})
+
+describe('Errores del contrato que llegan de la API (no de la validación local)', () => {
+  it('422 PERIOD_OUT_OF_COVERAGE: rango válido pero fuera de lo publicado', async () => {
+    await openPage('/explore?region=REG01&product=P02&start=1990-01&end=1990-03')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('El rango está fuera de la cobertura')
+    expect(within(alert).queryByRole('button')).toBeNull()
+    expect(screen.getByText('PERIOD_OUT_OF_COVERAGE')).toBeInTheDocument()
+  })
+})
+
+describe('Pantalla conectada al cliente HTTP con las respuestas reales observadas en dev', () => {
+  function serveDev() {
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const body = url.includes('/regions')
+        ? observed('regions_dev')
+        : url.includes('/products')
+          ? observed('products_dev_sin_snapshot')
+          : observed('series_no_data_dev')
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+  }
+
+  it('sin snapshot: no_data real, sin aviso sintético, sin demos y sin llamar a /analyses', async () => {
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    serveDev()
+    await openPage('/explore?region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
+    expect(await screen.findByText(/No hay datos para el rango pedido/)).toBeInTheDocument()
+
+    // Datos reales (`synthetic: false`): no se rotula como demostración.
+    expect(screen.queryByText(/Datos sintéticos de demostración/)).toBeNull()
+    expect(screen.queryByText('Demostración', { selector: '.badge' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Escenarios de demostración' })).toBeNull()
+    // Todos los productos del catálogo real figuran como no disponibles.
+    expect(screen.getByLabelText('Variable NASA')).toHaveValue('P02')
+    expect(screen.getAllByRole('option').filter((option) => /No disponible/.test(option.textContent ?? ''))).toHaveLength(3)
+    // El análisis sigue deshabilitado y no existe el botón que simula `POST /analyses`.
+    expect(screen.getByRole('button', { name: 'Calcular tendencia' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Ver la respuesta del servicio simulado/ })).toBeNull()
+
+    const urls: string[] = fetchSpy.mock.calls.map((call) => String(call[0]))
+    expect(urls.some((url) => url.startsWith('/api/v1/series?'))).toBe(true)
+    expect(urls.some((url) => url.includes('/analyses'))).toBe(false)
+  })
+
+  it('una ruta de la API que no existe se muestra como «sin respuesta», no como un código del contrato', async () => {
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    fetchSpy.mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify(observed('ruta_inexistente_dev')), { status: 404 })),
+    )
+    await openPage('/explore')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No pudimos conectar')
+    expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 })
 
