@@ -33,6 +33,7 @@ function qualityLabel(state: string): string {
 
 function valueLabel(value: number | null, unit?: string): string {
   if (value === null) return 'Sin dato'
+  if (!Number.isFinite(value)) return 'Valor no finito'
   return `${numberFormatter.format(value)}${unit ? ` ${unit}` : ''}`
 }
 
@@ -77,6 +78,7 @@ function SeriesTooltip({ active, label, payload, points, unit }: {
 export function ScientificSeriesPanel({ response, className }: ScientificSeriesPanelProps) {
   const titleId = useId()
   const points = useMemo<PlotPoint[]>(() => {
+    if (response.data_state === 'no_data') return []
     const byDate = new Map(response.series.map((item) => [item.date, item]))
     const dates = monthSequence(response.requested_coverage?.start, response.requested_coverage?.end)
     const rows = dates.length > 0 ? dates.map((date) => byDate.get(date) ?? {
@@ -88,12 +90,13 @@ export function ScientificSeriesPanel({ response, className }: ScientificSeriesP
       month: monthLabel(item.date),
       date: item.date,
       value: item.value,
+      plotValue: typeof item.value === 'number' && Number.isFinite(item.value) ? item.value : null,
       qualityState: item.quality?.state ?? (item.value === null ? 'missing' : 'unassessed'),
       missingReason: item.quality?.missing_reason ?? null,
       flags: item.quality?.provider_flags ?? [],
       invalidValue: typeof item.value === 'number' && !Number.isFinite(item.value),
     }))
-  }, [response.series, response.requested_coverage?.start, response.requested_coverage?.end])
+  }, [response.data_state, response.series, response.requested_coverage?.start, response.requested_coverage?.end])
 
   const product = response.product
   const unit = product.unit?.trim() || undefined
@@ -129,7 +132,7 @@ export function ScientificSeriesPanel({ response, className }: ScientificSeriesP
           <XAxis dataKey="date" tickFormatter={monthLabel} minTickGap={28} />
           <YAxis width={72} tickFormatter={(value: number) => numberFormatter.format(value)} label={unit ? { value: unit, angle: -90, position: 'insideLeft' } : undefined} />
           <Tooltip content={<SeriesTooltip points={points} unit={unit} />} />
-          <Line type="linear" dataKey="value" name={title} stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
+          <Line type="linear" dataKey="plotValue" name={title} stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>}
@@ -144,7 +147,7 @@ export function ScientificSeriesPanel({ response, className }: ScientificSeriesP
           ? <tr><td colSpan={4}>Sin filas: no hay observaciones en la respuesta.</td></tr>
           : points.map((point) => <tr key={point.date}>
             <th scope="row">{monthLabel(point.date)}</th>
-            <td>{point.invalidValue ? 'Valor inválido' : valueLabel(point.value, unit)}</td>
+            <td>{point.invalidValue ? `Valor no finito (${String(point.value)}); ocultado del gráfico` : valueLabel(point.value, unit)}</td>
             <td>{qualityLabel(point.qualityState)}</td>
             <td>{[point.missingReason, ...point.flags.map((flag) => `${flag.name}: ${String(flag.value)}`)].filter(Boolean).join(' · ') || 'Sin detalle adicional'}</td>
           </tr>)}</tbody>

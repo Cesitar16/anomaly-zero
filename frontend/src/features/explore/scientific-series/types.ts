@@ -102,6 +102,7 @@ export interface PlotPoint {
   month: string
   date: string
   value: number | null
+  plotValue: number | null
   qualityState: string
   missingReason: string | null
   flags: readonly ScientificProviderFlag[]

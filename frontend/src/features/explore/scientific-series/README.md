@@ -3,7 +3,7 @@
 Reusable, presentational monthly NASA series panel. It performs no HTTP requests and no scientific unit conversion, aggregation, interpolation, inference, or prediction.
 
 ```tsx
-import { ScientificSeriesPanel } from '@/features/explore/scientific-series'
+import { ScientificSeriesPanel } from '../features/explore/scientific-series'
 
 <ScientificSeriesPanel response={seriesResponse} />
 ```
@@ -16,6 +16,6 @@ import { ScientificSeriesPanel } from '@/features/explore/scientific-series'
 - Optional `quality.verification_state`, `spatial_aggregation.support_type`, `provenance`, `coverage`, and `region` are defensive metadata.
 - Optional `className` adds a wrapper class.
 
-Zeros render as numeric zero; nulls remain missing and break the line (`connectNulls={false}`). `synthetic: true` always displays an explicit synthetic-data notice. The HTML table is the accessible equivalent of the chart and remains available on narrow screens. `point_sample` and absence of approved regional aggregation are called out explicitly; QA is described as not approved unless the response explicitly says `provider_qa_applied`.
+Zeros render as numeric zero; nulls and non-finite values remain gaps and break the line (`connectNulls={false}`). Non-finite values are marked in the table and are never passed to Recharts as numbers. A `no_data` response suppresses all payload observations and the chart, even if its series array is inconsistent. `synthetic: true` always displays an explicit synthetic-data notice. The HTML table is the accessible equivalent of the chart and remains available on narrow screens. `point_sample` and absence of approved regional aggregation are called out explicitly; provider QA application is not treated as scientific approval.
 
 Tests use only clearly labeled synthetic fixtures.

@@ -1,7 +1,23 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ScientificSeriesPanel } from './ScientificSeriesPanel'
 import type { ScientificSeriesResponse } from './types'
+
+vi.mock('recharts', async () => {
+  const React = await import('react')
+  const chart = ({ children, data }: { children?: React.ReactNode; data?: Array<{ plotValue: number | null }> }) =>
+    React.createElement('div', { 'data-testid': 'mock-line-chart', 'data-values': JSON.stringify(data?.map((point) => point.plotValue)) }, children)
+  const container = ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children)
+  return {
+    CartesianGrid: () => null,
+    Line: () => null,
+    LineChart: chart,
+    ResponsiveContainer: container,
+    Tooltip: () => null,
+    XAxis: () => null,
+    YAxis: () => null,
+  }
+})
 
 // Synthetic fixture only: values below are for component behavior tests, not NASA observations.
 const syntheticResponse: ScientificSeriesResponse = {
@@ -42,6 +58,35 @@ describe('ScientificSeriesPanel', () => {
 
   it('renders an honest no-data state without observations', () => {
     render(<ScientificSeriesPanel response={{ ...syntheticResponse, data_state: 'no_data', series: [] }} />)
+    expect(screen.getByText(/No hay observaciones que graficar/i)).toBeTruthy()
+    expect(screen.getByText(/Sin filas: no hay observaciones/i)).toBeTruthy()
+  })
+
+  it('keeps NaN and infinite source values out of Recharts and warns in the table', () => {
+    render(<ScientificSeriesPanel response={{
+      ...syntheticResponse,
+      data_state: 'available',
+      series: [
+        { date: '2005-01-01', value: Number.NaN },
+        { date: '2005-02-01', value: Number.POSITIVE_INFINITY },
+        { date: '2005-03-01', value: Number.NEGATIVE_INFINITY },
+        { date: '2005-04-01', value: 0 },
+      ],
+    }} />)
+    expect(screen.getByTestId('mock-line-chart').getAttribute('data-values')).toBe('[null,null,null,0]')
+    expect(screen.getByRole('table').textContent).toContain('Valor no finito (NaN); ocultado del gráfico')
+    expect(screen.getByRole('table').textContent).toContain('Valor no finito (Infinity); ocultado del gráfico')
+    expect(screen.getByRole('table').textContent).toContain('Valor no finito (-Infinity); ocultado del gráfico')
+  })
+
+  it('suppresses inconsistent observations when data_state is no_data', () => {
+    render(<ScientificSeriesPanel response={{
+      ...syntheticResponse,
+      data_state: 'no_data',
+      series: [{ date: '2005-01-01', value: 99, quality: { state: 'unassessed' } }],
+    }} />)
+    expect(screen.queryByTestId('mock-line-chart')).toBeNull()
+    expect(screen.queryByRole('row', { name: /ene 2005/i })).toBeNull()
     expect(screen.getByText(/No hay observaciones que graficar/i)).toBeTruthy()
     expect(screen.getByText(/Sin filas: no hay observaciones/i)).toBeTruthy()
   })
