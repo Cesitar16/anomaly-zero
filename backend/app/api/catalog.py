@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
@@ -19,6 +20,13 @@ from backend.app.services.catalog import (
     get_catalog,
     products_for_region,
 )
+from backend.app.services.series import (
+    SeriesRequestError,
+    get_snapshot_path,
+    product_for_snapshot,
+    read_optional_snapshot,
+)
+from backend.app.services.snapshot_reader import SnapshotUnavailableError
 
 
 def _error_response(
@@ -80,6 +88,15 @@ class CatalogRoute(APIRoute):
                 return await catalog_not_found(request, exc)
             except CatalogUnavailable as exc:
                 return await catalog_unavailable(request, exc)
+            except SnapshotUnavailableError:
+                return _error_response(
+                    503,
+                    "SERVICE_UNAVAILABLE",
+                    "El snapshot de datos no está disponible temporalmente.",
+                    retryable=True,
+                )
+            except SeriesRequestError as exc:
+                return _error_response(exc.status_code, exc.code, exc.public_message)
             except Exception as exc:  # noqa: BLE001 - sanitize unexpected catalog faults.
                 return await internal_error(request, exc)
 
@@ -138,12 +155,22 @@ def list_products(
     response: Response,
     region_id: Annotated[str, Query(min_length=1)],
     catalog: Annotated[Catalog, Depends(get_catalog)],
+    snapshot_path: Annotated[Path, Depends(get_snapshot_path)],
 ) -> ProductsResponse:
     response.headers["Cache-Control"] = "no-store"
+    snapshot = read_optional_snapshot(snapshot_path)
+    products = products_for_region(catalog, region_id)
+    if snapshot is not None:
+        products = [
+            product_for_snapshot(product, snapshot)
+            if product.short_name == snapshot["product"]["short_name"]
+            else product
+            for product in products
+        ]
     return ProductsResponse(
         contract_version="0.1-draft",
-        synthetic=catalog.synthetic,
+        synthetic=catalog.synthetic or bool(snapshot and snapshot["synthetic"]),
         generated_at=datetime.now(UTC),
         region_id=region_id,
-        products=products_for_region(catalog, region_id),
+        products=products,
     )
