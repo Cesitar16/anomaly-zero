@@ -1,0 +1,2829 @@
+{
+  "manifest_version": 1,
+  "generated_at_utc": "2026-11-15T19:18:31.254627+00:00",
+  "status": "complete",
+  "year": 2005,
+  "eligible_months_by_product": {
+    "imerg_final": [
+      "2005-01",
+      "2005-02",
+      "2005-03",
+      "2005-04",
+      "2005-05",
+      "2005-06",
+      "2005-07",
+      "2005-08",
+      "2005-09",
+      "2005-10",
+      "2005-11",
+      "2005-12"
+    ],
+    "merra2": [
+      "2005-01",
+      "2005-02",
+      "2005-03",
+      "2005-04",
+      "2005-05",
+      "2005-06",
+      "2005-07",
+      "2005-08",
+      "2005-09",
+      "2005-10",
+      "2005-11",
+      "2005-12"
+    ],
+    "gldas": [
+      "2005-01",
+      "2005-02",
+      "2005-03",
+      "2005-04",
+      "2005-05",
+      "2005-06",
+      "2005-07",
+      "2005-08",
+      "2005-09",
+      "2005-10",
+      "2005-11",
+      "2005-12"
+    ]
+  },
+  "eligible_product_month_records": 36,
+  "triple_overlap_months": [
+    "2005-01",
+    "2005-02",
+    "2005-03",
+    "2005-04",
+    "2005-05",
+    "2005-06",
+    "2005-07",
+    "2005-08",
+    "2005-09",
+    "2005-10",
+    "2005-11",
+    "2005-12"
+  ],
+  "triple_overlap_count": 12,
+  "planned_full_granule_payload_bytes": 873765835,
+  "acquired_full_granule_payload_bytes": 873765835,
+  "payload_byte_difference_actual_minus_estimate": 0,
+  "acquisition_method": "complete original NASA source granules; no spatial subsetting, reprojection, interpolation, or masking",
+  "acquisitions": [
+    {
+      "product": "gldas",
+      "month": "2005-02",
+      "status": "eligible",
+      "granule_id": "G1413723152-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200502.021.nc4",
+      "time_start": "2005-02-01T00:00:00.000Z",
+      "time_end": "2005-02-28T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200502.021.nc4",
+      "bytes": 24704872,
+      "sha256": "1e953ae0107084e91cb441054cdee8fc9af0fb3cd24156d03ee5b9de52eb2f02",
+      "manifest_sha256": "d56a241d01cd648997cc4d290e7c028851e97b3a378c5cbc48e1b13213f1ded0",
+      "downloaded_at_utc": "2026-11-15T18:58:20.610788+00:00",
+      "attempts": null,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              1858.0
+            ],
+            "last_values": [
+              1858.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-03",
+      "status": "eligible",
+      "granule_id": "G1413723124-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200503.021.nc4",
+      "time_start": "2005-03-01T00:00:00.000Z",
+      "time_end": "2005-03-31T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200503.021.nc4",
+      "bytes": 25271000,
+      "sha256": "d327adbdc14b115f97a6669b3005bbd093e2461a1e2ff0f64d4c9596c7891dc9",
+      "manifest_sha256": "355b5922163e4889e11eab45f3c68040ef061b2f7c3069f95e39a54274133d5f",
+      "downloaded_at_utc": "2026-11-15T19:02:18.121930+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              1886.0
+            ],
+            "last_values": [
+              1886.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-04",
+      "status": "eligible",
+      "granule_id": "G1413723186-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200504.021.nc4",
+      "time_start": "2005-04-01T00:00:00.000Z",
+      "time_end": "2005-04-30T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200504.021.nc4",
+      "bytes": 25371935,
+      "sha256": "367148d1329240e1ee464311914856b8f15f224f54c6d89ba85e6c5180b85bb9",
+      "manifest_sha256": "5d56acc58f6b6955c24d2719d82f4177edb89187320084404ac403f87b0d682d",
+      "downloaded_at_utc": "2026-11-15T19:02:33.848553+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              1917.0
+            ],
+            "last_values": [
+              1917.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-05",
+      "status": "eligible",
+      "granule_id": "G1413723146-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200505.021.nc4",
+      "time_start": "2005-05-01T00:00:00.000Z",
+      "time_end": "2005-05-31T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200505.021.nc4",
+      "bytes": 25550383,
+      "sha256": "0935b5b3d58c99cffb3df44a4a5a56736574a37abaead3ae1c7c788b260c29a3",
+      "manifest_sha256": "26ba74badd33e4b369fd418ffb21901a23ae98236a85c24897599d1d11e53b81",
+      "downloaded_at_utc": "2026-11-15T19:02:46.604676+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              1947.0
+            ],
+            "last_values": [
+              1947.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-06",
+      "status": "eligible",
+      "granule_id": "G1413723180-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200506.021.nc4",
+      "time_start": "2005-06-01T00:00:00.000Z",
+      "time_end": "2005-06-30T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200506.021.nc4",
+      "bytes": 25018330,
+      "sha256": "bde1e55aedcb77c17a2db3092a623e4348892fbf63e1e4a25b0f5f134724ab0a",
+      "manifest_sha256": "87284b2ca91f641d8dad505cd712bd246c5952ab2c012b34cabfb98c64c753aa",
+      "downloaded_at_utc": "2026-11-15T19:03:01.367137+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              1978.0
+            ],
+            "last_values": [
+              1978.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-07",
+      "status": "eligible",
+      "granule_id": "G1413723128-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200507.021.nc4",
+      "time_start": "2005-07-01T00:00:00.000Z",
+      "time_end": "2005-07-31T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200507.021.nc4",
+      "bytes": 24657853,
+      "sha256": "fe41c1f29e28ba1cbf43f515237009b6a047b036a2381570e878970542cc7d16",
+      "manifest_sha256": "9c91f13d22f7605bb4dbd16bf474f0b8fccd7a556637101b99511665dbcdf5cb",
+      "downloaded_at_utc": "2026-11-15T19:03:15.651901+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              2008.0
+            ],
+            "last_values": [
+              2008.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-08",
+      "status": "eligible",
+      "granule_id": "G1413723158-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200508.021.nc4",
+      "time_start": "2005-08-01T00:00:00.000Z",
+      "time_end": "2005-08-31T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200508.021.nc4",
+      "bytes": 24881152,
+      "sha256": "f0e5d551dd3b387028940b0e9a86b8a2ee79497b4117d0ac3da64f82d99c36b7",
+      "manifest_sha256": "6120e396f94b0adfe3fc7dacd1e0310dab735c9bf5e7db99f4de2de717403b23",
+      "downloaded_at_utc": "2026-11-15T19:03:28.770668+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              2039.0
+            ],
+            "last_values": [
+              2039.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-09",
+      "status": "eligible",
+      "granule_id": "G1413723168-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200509.021.nc4",
+      "time_start": "2005-09-01T00:00:00.000Z",
+      "time_end": "2005-09-30T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200509.021.nc4",
+      "bytes": 25322117,
+      "sha256": "1ad044fbb8b8a347e78c63d48ad0c2febfa6aa43bac52400d965ca1de4791f43",
+      "manifest_sha256": "96e25af856cb9f6553577dd3fc5f155142160bf94d7fb9715311aa87ffe8283c",
+      "downloaded_at_utc": "2026-11-15T19:03:41.783193+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              2070.0
+            ],
+            "last_values": [
+              2070.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-10",
+      "status": "eligible",
+      "granule_id": "G1413723134-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200510.021.nc4",
+      "time_start": "2005-10-01T00:00:00.000Z",
+      "time_end": "2005-10-31T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200510.021.nc4",
+      "bytes": 25651128,
+      "sha256": "52874114fb06b5146dd9397ba451d9a247483185bfa368f94e91677fba7738ff",
+      "manifest_sha256": "f2d3c398d3d10b2c2faf3c504a9e87cc62736dd5939279f7a34a02f7bf63c54a",
+      "downloaded_at_utc": "2026-11-15T19:03:59.565434+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              2100.0
+            ],
+            "last_values": [
+              2100.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-11",
+      "status": "eligible",
+      "granule_id": "G1413723164-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200511.021.nc4",
+      "time_start": "2005-11-01T00:00:00.000Z",
+      "time_end": "2005-11-30T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200511.021.nc4",
+      "bytes": 25380134,
+      "sha256": "cb92944fe5e3d36a39ed50ccce338aeeb40c88b9eb74f26262b0ded0631f85b5",
+      "manifest_sha256": "f376ec3423cfda4050dc6b4a3acfc896a471e170cada3d70d3259c31044bba56",
+      "downloaded_at_utc": "2026-11-15T19:04:14.896332+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              2131.0
+            ],
+            "last_values": [
+              2131.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "gldas",
+      "month": "2005-12",
+      "status": "eligible",
+      "granule_id": "G1413723140-GES_DISC",
+      "collection_id": "C1342986036-GES_DISC",
+      "producer_granule_id": "GLDAS_NOAH025_M.2.1:GLDAS_NOAH025_M.A200512.021.nc4",
+      "time_start": "2005-12-01T00:00:00.000Z",
+      "time_end": "2005-12-31T23:59:59.000Z",
+      "short_name": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "variable": "SoilMoi0_10cm_inst",
+      "unit": "kg m-2",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "GLDAS_NOAH025_M.A200512.021.nc4",
+      "bytes": 25006900,
+      "sha256": "6decfa31fb19693ee0ea5cc68e2576e7e3cb92fe62eb1e544e3e6b48f8e65b0a",
+      "manifest_sha256": "80fd8448e000ed8b52aa116bf2685db153a7fc8133a07a823886c978e90396af",
+      "downloaded_at_utc": "2026-11-15T19:04:27.497659+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "bnds": 2,
+          "lat": 600,
+          "lon": 1440
+        },
+        "variable": {
+          "name": "SoilMoi0_10cm_inst",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            600,
+            1440
+          ],
+          "dtype": "float32",
+          "units": "kg m-2",
+          "fill_value": -9999.0,
+          "missing_value": -9999.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "standard_name": "time",
+              "long_name": "time",
+              "bounds": "time_bnds",
+              "units": "days since 2000-01-01 00:00:00",
+              "calendar": "standard",
+              "axis": "T"
+            },
+            "first_values": [
+              2161.0
+            ],
+            "last_values": [
+              2161.0
+            ]
+          },
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 1440,
+            "attributes": {
+              "standard_name": "longitude",
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "axis": "X"
+            },
+            "first_values": [
+              -179.875,
+              -179.625,
+              -179.375
+            ],
+            "last_values": [
+              179.375,
+              179.625,
+              179.875
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 600,
+            "attributes": {
+              "standard_name": "latitude",
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "axis": "Y"
+            },
+            "first_values": [
+              -59.875,
+              -59.625,
+              -59.375
+            ],
+            "last_values": [
+              89.375,
+              89.625,
+              89.875
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-02",
+      "status": "eligible",
+      "granule_id": "G1278025988-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200502.nc4",
+      "time_start": "2005-02-01T00:00:00.000Z",
+      "time_end": "2005-02-28T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200502.nc4",
+      "bytes": 54446441,
+      "sha256": "8c056a3f865fb21d0eb29a19a454e1573c6eaa7ef707ed3bc112517e38786ae5",
+      "manifest_sha256": "97d20a3761ef0acbda51ad0920b196b0a776a76073a11a44311581f3fd9d4248",
+      "downloaded_at_utc": "2026-11-15T18:58:10.346737+00:00",
+      "attempts": null,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-02-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050201,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-03",
+      "status": "eligible",
+      "granule_id": "G1278025989-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200503.nc4",
+      "time_start": "2005-03-01T00:00:00.000Z",
+      "time_end": "2005-03-31T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200503.nc4",
+      "bytes": 54271793,
+      "sha256": "2497787c6b4293afd5cf9ca56de99ff062012406809326f150e702a2a63cf37c",
+      "manifest_sha256": "ffde6e747c45799ed6fe2241c9ffdde6131cbedd6e590d647a2a7722e7d8dd13",
+      "downloaded_at_utc": "2026-11-15T19:00:03.548480+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-03-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050301,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-04",
+      "status": "eligible",
+      "granule_id": "G1278025993-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200504.nc4",
+      "time_start": "2005-04-01T00:00:00.000Z",
+      "time_end": "2005-04-30T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200504.nc4",
+      "bytes": 54219879,
+      "sha256": "833605df916b30a93027f1e0395103b1777a8768476120a30abdf8f5708d0b22",
+      "manifest_sha256": "037e27163465268eda720e48c05352e3bbcd16f493e507f0a5d194a36f7f8468",
+      "downloaded_at_utc": "2026-11-15T19:00:18.082309+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-04-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050401,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-05",
+      "status": "eligible",
+      "granule_id": "G1278025992-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200505.nc4",
+      "time_start": "2005-05-01T00:00:00.000Z",
+      "time_end": "2005-05-31T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200505.nc4",
+      "bytes": 54260082,
+      "sha256": "c58fe7099bbe8e86924e917858eab28277cf66ff345038a535b75d1a0de1d688",
+      "manifest_sha256": "5ab53805bd2436f42e0df301c04bc97dad6d2ca845b3b4591289cfa8f2fc8a0c",
+      "downloaded_at_utc": "2026-11-15T19:00:31.017897+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-05-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050501,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-06",
+      "status": "eligible",
+      "granule_id": "G1278025952-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200506.nc4",
+      "time_start": "2005-06-01T00:00:00.000Z",
+      "time_end": "2005-06-30T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200506.nc4",
+      "bytes": 54368040,
+      "sha256": "5810be6c196c436c6c6f5187d79fe842d97576adba97dd586e77511ff30a08ca",
+      "manifest_sha256": "8c35c61a0a344514f114e279ad74dc5cf8385d460306a917519586a182e4d6a3",
+      "downloaded_at_utc": "2026-11-15T19:00:43.341195+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-06-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050601,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-07",
+      "status": "eligible",
+      "granule_id": "G1278025971-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200507.nc4",
+      "time_start": "2005-07-01T00:00:00.000Z",
+      "time_end": "2005-07-31T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200507.nc4",
+      "bytes": 54173088,
+      "sha256": "7edd8d2b3ed6f077e68d8a5fc1d58c6da78548ab3ada0861678c376b3c6662ce",
+      "manifest_sha256": "eefc313ae797438e5791ab7f1502cb939d6896eaffc4c577a6df60a7c4510b33",
+      "downloaded_at_utc": "2026-11-15T19:00:55.693766+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-07-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050701,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-08",
+      "status": "eligible",
+      "granule_id": "G1278025987-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200508.nc4",
+      "time_start": "2005-08-01T00:00:00.000Z",
+      "time_end": "2005-08-31T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200508.nc4",
+      "bytes": 54175490,
+      "sha256": "17d27f8e7b5225467dbe6f64e1db93864b44c7c129aa5b3295dd2ccea85d4ca6",
+      "manifest_sha256": "17290ae6c0f37b492982b78373e8fd38d2be873f954ba6116403b7430072f7b8",
+      "downloaded_at_utc": "2026-11-15T19:01:09.221555+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-08-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050801,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-09",
+      "status": "eligible",
+      "granule_id": "G1278025986-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200509.nc4",
+      "time_start": "2005-09-01T00:00:00.000Z",
+      "time_end": "2005-09-30T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200509.nc4",
+      "bytes": 54167712,
+      "sha256": "c1f8e4dda89a5227d36cc550c0eca55ee9b2b603e0c3de9501d2e6749727801b",
+      "manifest_sha256": "18ec322aea6470fb8e0f9b31a938f2a9b469b315231e622d7debc58423140576",
+      "downloaded_at_utc": "2026-11-15T19:01:22.244885+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-09-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20050901,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-10",
+      "status": "eligible",
+      "granule_id": "G1278025953-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200510.nc4",
+      "time_start": "2005-10-01T00:00:00.000Z",
+      "time_end": "2005-10-31T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200510.nc4",
+      "bytes": 54135587,
+      "sha256": "0b609dc822d102867b7741f4e3fbbbeaab0e1906c36c90317e4fae3f4affa9be",
+      "manifest_sha256": "3a2d73a65f446149b78238ad341337f8a4bfed04c2ac350d4a4ac8545c685b77",
+      "downloaded_at_utc": "2026-11-15T19:01:35.498977+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-10-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20051001,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-11",
+      "status": "eligible",
+      "granule_id": "G1278025991-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200511.nc4",
+      "time_start": "2005-11-01T00:00:00.000Z",
+      "time_end": "2005-11-30T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200511.nc4",
+      "bytes": 54296368,
+      "sha256": "74861e8bf45740e69f03cfa505757d3eed8d732660cc70c60e96add29c1890cc",
+      "manifest_sha256": "f2e8d92570e21f89ce71f04604114320819bc18391042d75a92583392ca0471a",
+      "downloaded_at_utc": "2026-11-15T19:01:49.280124+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-11-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20051101,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    },
+    {
+      "product": "merra2",
+      "month": "2005-12",
+      "status": "eligible",
+      "granule_id": "G1278025985-GES_DISC",
+      "collection_id": "C1276812859-GES_DISC",
+      "producer_granule_id": "M2TMNXSLV.5.12.4:MERRA2_300.tavgM_2d_slv_Nx.200512.nc4",
+      "time_start": "2005-12-01T00:00:00.000Z",
+      "time_end": "2005-12-31T23:59:59.000Z",
+      "short_name": "M2TMNXSLV",
+      "version": "5.12.4",
+      "variable": "T2M",
+      "unit": "K",
+      "acquisition_method": "complete_original_granule_via_earthaccess",
+      "spatial_subsetting_applied": false,
+      "format": "NetCDF4",
+      "relative_path": "merra2/MERRA2_300.tavgM_2d_slv_Nx.200512.nc4",
+      "bytes": 54435551,
+      "sha256": "94752154892f567fa75b4b8f6682af53105fe36c70badb8bded95ea97f4182d7",
+      "manifest_sha256": "b677f1036c0c4abc69279f8500c3d661cd37321736f13b6cfb52ac13710a8984",
+      "downloaded_at_utc": "2026-11-15T19:02:03.889895+00:00",
+      "attempts": 1,
+      "native_payload_verified": true,
+      "native_metadata": {
+        "format": "NetCDF4",
+        "dimensions": {
+          "time": 1,
+          "lat": 361,
+          "lon": 576
+        },
+        "variable": {
+          "name": "T2M",
+          "dimensions": [
+            "time",
+            "lat",
+            "lon"
+          ],
+          "shape": [
+            1,
+            361,
+            576
+          ],
+          "dtype": "float32",
+          "units": "K",
+          "fill_value": 999999986991104.0,
+          "missing_value": 999999986991104.0,
+          "scale_factor": null,
+          "add_offset": null
+        },
+        "coordinates": {
+          "lon": {
+            "dimensions": [
+              "lon"
+            ],
+            "size": 576,
+            "attributes": {
+              "long_name": "longitude",
+              "units": "degrees_east",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -180.0,
+              -179.375,
+              -178.75
+            ],
+            "last_values": [
+              178.125,
+              178.75,
+              179.375
+            ]
+          },
+          "lat": {
+            "dimensions": [
+              "lat"
+            ],
+            "size": 361,
+            "attributes": {
+              "long_name": "latitude",
+              "units": "degrees_north",
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              -90.0,
+              -89.5,
+              -89.0
+            ],
+            "last_values": [
+              89.0,
+              89.5,
+              90.0
+            ]
+          },
+          "time": {
+            "dimensions": [
+              "time"
+            ],
+            "size": 1,
+            "attributes": {
+              "long_name": "time",
+              "units": "minutes since 2005-12-01 00:30:00",
+              "time_increment": 60000,
+              "begin_date": 20051201,
+              "begin_time": 3000,
+              "vmax": 999999986991104.0,
+              "vmin": -999999986991104.0,
+              "valid_range": [
+                -999999986991104.0,
+                999999986991104.0
+              ]
+            },
+            "first_values": [
+              0
+            ],
+            "last_values": [
+              0
+            ]
+          }
+        },
+        "quality_variable_candidates": []
+      }
+    }
+  ],
+  "scientific_status": {
+    "temporal_inventory_compatibility": "verified_for_monthly_2005_periods",
+    "spatial_colocation": "not_approved",
+    "quality_gates": "Gate R and Gate T pending; IMERG QA remains unassessed",
+    "gldas_mask_lineage": "uncertain; existing NASA-05 finding remains",
+    "inference_or_modeling": "not performed"
+  }
+}
