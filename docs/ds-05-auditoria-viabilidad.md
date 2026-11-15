@@ -42,6 +42,15 @@ Estimación usando bytes observados (sin compromiso de descarga): 12 meses de ca
 
 ## Reproducción y siguientes pasos
 
+Regenerar la matriz y verificar hashes/tamaños de todos los granules con:
+
+```powershell
+uv run python -m research.ful122_inventory `
+  --input-dir "C:\ruta\al\checkout\data" `
+  --input-dir "C:\ruta\al\cache\data_root" `
+  --output "C:\ruta\al\resultado\ful122_inventory.json"
+```
+
 Revisar identidad/variable/dimensiones con los manifiestos FUL-116, FUL-113 y FUL-105, y volver a abrir los NetCDF con `uv run python` + xarray (`decode_cf`/escala automáticas deben registrarse). Recalcular SHA-256 antes de reutilizar. Para pasar el go/no-go se necesitan archivos auténticos, hash y manifiesto verificables, al menos varios años completos con los tres productos, política espacial revisada sin aprobarla unilateralmente, QA documentada y una partición cronológica independiente. La primera adquisición recomendada es enero–diciembre de 2005 de MERRA-2 y GLDAS (11 archivos faltantes de cada uno), luego comprobar integridad, solapamiento, tamaño y soporte antes de extender la ventana.
 
 Esta nota es un diagnóstico de disponibilidad y diseño experimental; no produce resultados de EDA espacial o de tendencia ni cambia servicios de FastAPI/frontend.
