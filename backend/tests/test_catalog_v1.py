@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 import yaml
 from fastapi.testclient import TestClient
 from jsonschema import Draft202012Validator, FormatChecker
@@ -7,6 +8,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 from backend.app.main import app
 from backend.app.schemas.catalog import Region
 from backend.app.services.catalog import CATALOG, Catalog, get_catalog
+from backend.app.services.series import get_snapshot_path
 
 CONTRACT = yaml.safe_load(
     (Path(__file__).parents[2] / "docs" / "openapi-contract-v0.yaml").read_text(
@@ -15,6 +17,13 @@ CONTRACT = yaml.safe_load(
 )
 FORMAT_CHECKER = FormatChecker()
 client = TestClient(app, raise_server_exceptions=False)
+
+
+@pytest.fixture(autouse=True)
+def hide_local_snapshot_from_catalog_fixtures(tmp_path):
+    app.dependency_overrides[get_snapshot_path] = lambda: tmp_path / "absent.json"
+    yield
+    app.dependency_overrides.clear()
 
 
 def synthetic_catalog(products=CATALOG.products) -> Catalog:
@@ -240,14 +249,23 @@ def test_internal_error_is_sanitized_and_health_is_unchanged() -> None:
     }
 
 
-def test_generated_openapi_exposes_only_the_catalog_contract_paths() -> None:
+def test_generated_openapi_exposes_catalog_and_series_paths() -> None:
     document = client.get("/openapi.json").json()
     paths = document["paths"]
 
     assert "/api/v1/regions" in paths
     assert "/api/v1/products" in paths
+    assert "/api/v1/series" in paths
     assert "get" in paths["/api/v1/regions"]
     assert "get" in paths["/api/v1/products"]
+    assert "get" in paths["/api/v1/series"]
+    assert [parameter["name"] for parameter in paths["/api/v1/series"]["get"]["parameters"]] == [
+        "region_id",
+        "product_id",
+        "start",
+        "end",
+        "frequency",
+    ]
     product_parameters = paths["/api/v1/products"]["get"]["parameters"]
     assert product_parameters == [
         {

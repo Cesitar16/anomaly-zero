@@ -3,11 +3,12 @@ info:
   title: Anomaly Zero exchange contract
   version: 0.1.0-draft
   description: >-
-    Proposed contract for AZ-04. These routes are not implemented. Product,
-    spatial, statistical and persistence decisions remain subject to approval.
+    Draft exchange contract for AZ-04. The catalog and monthly series reads are
+    implemented; analysis operations and scientific decisions remain subject to
+    approval.
 servers:
   - url: /api/v1
-    description: Proposed versioned API prefix; not yet implemented.
+    description: Versioned API prefix used by the catalog and series routes.
 paths:
   /regions:
     get:
