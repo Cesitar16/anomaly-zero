@@ -38,7 +38,7 @@ Mapa propuesto: `422` (`INVALID_PARAMETER`, `PERIOD_OUT_OF_COVERAGE`, `LIMIT_EXC
 
 ### Región
 
-Propuesta de descriptor: `region_id`, `name`, `geometry_version`, `geometry_source` y `area_km2`. El área, versión y geometría se devuelven como `null` hasta validar y aprobar esos datos. Una coordenada de centro dentro de un polígono no implica que toda su celda esté cubierta.
+Propuesta de descriptor: `region_id`, `name`, `geometry_version`, `geometry_source`, `crs` y `area_km2`. El área, versión, geometría y CRS se devuelven como `null` hasta validar y aprobar esos datos. Una coordenada de centro dentro de un polígono no implica que toda su celda esté cubierta.
 
 ### Producto y dataset
 
@@ -51,7 +51,7 @@ Descriptor de producto propuesto:
 - `availability`: `available` si hay snapshot para todo el rango publicado, `partial` si hay snapshot con huecos, `unavailable` si no hay snapshot utilizable.
 - `current_dataset_id`, `coverage` y `quality` pueden ser `null` si no hay snapshot publicado.
 
-La respuesta de serie lleva `dataset_id` (snapshot exacto), `provenance` (hashes originales, tiempos y manifiesto), `coverage`, `quality`, `transformations` y `spatial_aggregation` en su envelope, no dentro de `Product`. La identidad del snapshot se resuelve con `dataset_id` y `manifest_sha256`; cada checksum de archivo referencia el original conservado. Los campos desconocidos son `null`, no estimaciones. El objeto `quality` incluye `source_flag_fields` (nombres disponibles), `provider_flags_applied`, `source_missing_attributes` (atributos `_FillValue`, `missing_value`, `scale_factor`, `add_offset` con valores crudos o `null`), `finite_non_fill_filter_applied`, `verification_state` y `mask_applied`. Flags disponibles y flags efectivamente aplicados son campos distintos. `quality.verification_state` puede ser `unassessed`, `basic_checks_only` o `provider_qa_applied`; el último solo se usa si se aplicaron de verdad los flags de la fuente. En `series[].quality.provider_flags` se devuelven pares `{name, value}` originales sin reinterpretarlos.
+La respuesta de serie lleva `dataset_id` (snapshot exacto), `provenance` (hashes originales, tiempos y manifiesto), `coverage`, `quality`, `transformations` y `spatial_aggregation` en su envelope, no dentro de `Product`. La identidad del snapshot se resuelve con `dataset_id` y `manifest_sha256`; cada checksum de archivo referencia el original conservado. Los campos desconocidos son `null`, no estimaciones. El objeto `quality` incluye `source_flag_fields` (nombres disponibles), `provider_flags_applied`, `source_missing_attributes` (atributos `_FillValue`, `missing_value`, `scale_factor`, `add_offset` con valores crudos o `null`), `finite_non_fill_filter_applied`, `verification_state`, `mask_applied`, `qa_checks` y `uninterpreted_provider_fields`. `qa_checks` registra controles ejecutados con identificador/versión, estado, si se aplicaron, exclusiones y motivos conocidos; lista vacía significa que no se reportan controles, no que QA haya pasado. Los campos de proveedor disponibles y los efectivamente aplicados son distintos. `quality.verification_state` puede ser `unassessed`, `basic_checks_only` o `provider_qa_applied`; el último solo se usa si se aplicaron de verdad flags de la fuente. Para IMERG, `precipitationQualityIndex`, `randomError` y `gaugeRelativeWeighting` conservan su identidad y significado; no se sustituyen entre sí ni se reinterpretan como porcentaje de exactitud. En `series[].quality.provider_flags` se devuelven pares `{name, value}` originales sin reinterpretarlos.
 
 Catálogo candidato y significado/unidad de trabajo (IDs, versiones y catálogo no quedan aprobados por este borrador):
 
@@ -69,13 +69,13 @@ La versión exacta, atributos de archivo y campos de calidad deben concordar con
 
 Cada elemento de `series` es `{date, value, quality}`. `value` está en la unidad declarada por `product.unit`, con significado físico declarado arriba, o es `null`. `quality.state` describe el conocimiento de calidad: `unassessed`, `missing` o `unknown`; no afirma QA aprobada. `provider_flags` contiene solo los flags originales observados, no reinterpretaciones. `missing_reason` es texto/código o `null`.
 
-`coverage.expected_periods`, `present_periods`, `valid_periods` y `missing_periods` describen períodos de la serie. `present_periods` cuenta períodos con una entrada temporal de la fuente aunque su valor sea fill; `valid_periods` cuenta valores finitos no-fill, sin afirmar que se filtraran QA flags ni medir área. `missing_periods` lista puntos con `value: null`. Un cero finito no-fill cuenta como presente y en `valid_periods`.
+`coverage.expected_periods`, `present_periods`, `valid_periods` y `missing_periods` describen períodos de la serie. `present_periods` cuenta períodos con una entrada temporal de la fuente aunque su valor sea fill; `valid_periods` cuenta valores finitos no-fill, sin afirmar que se filtraran QA flags ni medir área. `missing_periods` lista puntos con `value: null`. Un cero finito no-fill cuenta como presente y en `valid_periods`. La propiedad opcional `spatial_coverage` conserva conteos de celdas y áreas/razones cuando el método espacial los haya calculado: `valid_area_km2 / intersection_area_km2` es cobertura del soporte intersectado y `valid_area_km2 / basin_area_km2` es cobertura de la cuenca completa. Ambos denominadores son distintos; centros de celda o `valid_periods` no los sustituyen. Si no hay medida validada, los números son `null` y no se infieren.
 
 `spatial_aggregation` declara qué soporte espacial representa cada valor de toda la serie. `support_type` distingue `point_sample`, `descriptive_mean` y `regional_aggregate`; no se infiere el significado desde la geometría de `region`.
 
 - `point_sample` identifica una celda/punto (`point.cell_id` y coordenadas, `null` si no se conocen), no una media de la región.
-- `descriptive_mean` significa una media explícita del conjunto de celdas señalado por `cell_count`, con método nombrado y estado `descriptive_only`; no se presenta como media de cuenca validada ni como porcentaje de superficie.
-- `regional_aggregate` solo se emite con `approval_state: "approved"`, método, máscara y referencia de aprobación registrados. La decisión queda pendiente; este contrato no declara ninguna agregación aprobada.
+- `descriptive_mean` significa una media explícita del conjunto de celdas señalado por `cell_count`, con método y referencia de ponderación (si aplica), y estado `descriptive_only`; no se presenta como media de cuenca validada ni como porcentaje de superficie.
+- `regional_aggregate` solo se emite con `approval_state: "approved"`, método, máscara, referencia de ponderación (si aplica) y referencia de aprobación registrados. La decisión queda pendiente; este contrato no declara ninguna agregación aprobada.
 
 Si no hay registros, `spatial_aggregation` es `null`. En el ejemplo de éxito todas las fechas describen el mismo punto sintético; cada `value` corresponde a una muestra de esa celda. El frontend puede distinguirla de una media descriptiva o de una agregación regional aprobada leyendo `support_type` y `approval_state`.
 
@@ -136,7 +136,7 @@ Estados y creación se distinguen así: `not_available` es un rechazo previo a c
 
 Las series quedan limitadas a 240 puntos mensuales por respuesta; se propone JSON sin paginación para ese máximo. No hay SLO de latencia ni tiempos medidos; los endpoints de datos/estadística se proponen sincrónicos solo con ese límite acotado. El límite temporal y el modo sincrónico requieren medición con implementación real antes de considerarse garantía.
 
-No se transmiten rasters NetCDF/HDF5 completos a React. Se propone un descriptor opcional de capa, no una URL de descarga de archivos pesados: `{dataset_id, date, layer_type, unit, state, format, tile_template}`. `date` identifica un instante/mes; `layer_type` distingue `value`, `anomaly`, `slope` o `significance`. Hasta comprobar datos, formato y necesidad de mapa, `state` será `unavailable` y `format`/`tile_template` serán `null`. Si se aprueba, servir tiles o imágenes derivadas con descriptores pequeños; codificación, tamaño máximo por tile y latencia quedan por medir y aprobar. No se propone recurso de exportación: AZ-04 no pide exportar.
+No se transmiten rasters NetCDF/HDF5 completos a React. Se propone un descriptor opcional de capa, no una URL de descarga de archivos pesados: `{dataset_id, date, layer_type, unit, state, format, tile_template}`. `date` identifica un instante/mes; `layer_type` distingue `value`, `anomaly`, `slope` o `significance`, y cada tipo conserva esa semántica en la UI. Hasta comprobar datos, formato y necesidad de mapa, `state` será `unavailable` y `format`/`tile_template` serán `null`. Si se aprueba, servir tiles o imágenes derivadas con descriptores pequeños; codificación, tamaño máximo por tile y latencia quedan por medir y aprobar. La especificación OpenAPI modela esta forma como `RasterLayer`; su presencia no afirma disponibilidad. No se propone recurso de exportación: AZ-04 no pide exportar.
 
 ## Decisiones que requieren aprobación
 
@@ -194,7 +194,7 @@ Este registro no contiene conformidades ni firmas; cada persona debe completar s
 
 ## Ejemplos JSON sintéticos
 
-Los cinco objetos son fixtures de forma, no datos ni resultados científicos. `synthetic: true` aparece en la raíz de cada respuesta. `generated_at` es una marca sintética en estos fixtures; una respuesta real usaría la hora UTC de la petición. El primer ejemplo asigna cada valor a una sola celda sintética; no es un promedio espacial.
+Los ejemplos son fixtures de forma, no datos ni resultados científicos. `synthetic: true` aparece en la raíz de cada respuesta. `generated_at` es una marca sintética en estos fixtures; una respuesta real usaría la hora UTC de la petición. El primer ejemplo asigna cada valor a una sola celda sintética; no es un promedio espacial.
 
 ### 1. Serie con cero válido y un valor ausente
 
@@ -208,6 +208,7 @@ Los cinco objetos son fixtures de forma, no datos ni resultados científicos. `s
     "name": "Región sintética",
     "geometry_version": null,
     "geometry_source": null,
+    "crs": null,
     "area_km2": null
   },
   "product": {
@@ -295,6 +296,7 @@ Los cinco objetos son fixtures de forma, no datos ni resultados científicos. `s
     "approval_state": "not_assessed",
     "method": null,
     "area_weighted": null,
+    "weighting_reference": null,
     "mask_version": null,
     "point": {
       "cell_id": "cell-synthetic-001",
@@ -348,6 +350,7 @@ Los cinco objetos son fixtures de forma, no datos ni resultados científicos. `s
     "name": "Región sintética",
     "geometry_version": null,
     "geometry_source": null,
+    "crs": null,
     "area_km2": null
   },
   "product": {
@@ -519,6 +522,7 @@ Este fixture enseña el envelope `202` si un procesador real aceptó y confirmó
     "approval_state": "not_assessed",
     "method": null,
     "area_weighted": null,
+    "weighting_reference": null,
     "mask_version": null,
     "point": {
       "cell_id": "cell-synthetic-001",
@@ -544,6 +548,25 @@ Este fixture enseña el envelope `202` si un procesador real aceptó y confirmó
 }
 ```
 
+
+### 6. Parámetro inválido
+
+Respuesta sintética `422 INVALID_PARAMETER` para un mes fuera del formato/calendario admitido. La petición se corrige; el error no representa ausencia de datos.
+
+```json
+{
+  "contract_version": "0.1-draft",
+  "synthetic": true,
+  "generated_at": "2026-01-01T00:00:00Z",
+  "error": {
+    "code": "INVALID_PARAMETER",
+    "message": "El formato del mes debe ser YYYY-MM.",
+    "retryable": false,
+    "request_id": "req-synthetic-invalid-001",
+    "details": {"field": "start", "received": "2005-13"}
+  }
+}
+```
 
 ## Archivos del contrato y siguiente implementación
 

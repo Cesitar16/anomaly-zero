@@ -95,6 +95,7 @@ paths:
                       name: Región sintética
                       geometry_version: null
                       geometry_source: null
+                      crs: null
                       area_km2: null
                     product:
                       product_id: P02
@@ -168,6 +169,7 @@ paths:
                       approval_state: not_assessed
                       method: null
                       area_weighted: null
+                      weighting_reference: null
                       mask_version: null
                       point:
                         cell_id: cell-synthetic-001
@@ -205,6 +207,7 @@ paths:
                       name: Región sintética
                       geometry_version: null
                       geometry_source: null
+                      crs: null
                       area_km2: null
                     product:
                       product_id: P03
@@ -362,6 +365,21 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidParameters:
+              summary: Synthetic 422 invalid-parameter response.
+              value:
+                contract_version: 0.1-draft
+                synthetic: true
+                generated_at: '2026-01-01T00:00:00Z'
+                error:
+                  code: INVALID_PARAMETER
+                  message: El formato del mes debe ser YYYY-MM.
+                  retryable: false
+                  request_id: req-synthetic-invalid-001
+                  details:
+                    field: start
+                    received: 2005-13
     ServiceUnavailable:
       description: Internal snapshot or catalog is temporarily unavailable.
       content:
@@ -485,6 +503,7 @@ components:
                   approval_state: not_assessed
                   method: null
                   area_weighted: null
+                  weighting_reference: null
                   mask_version: null
                   point:
                     cell_id: cell-synthetic-001
@@ -535,7 +554,7 @@ components:
                 $ref: '#/components/schemas/Region'
     Region:
       type: object
-      required: [region_id, name, geometry_version, geometry_source, area_km2]
+      required: [region_id, name, geometry_version, geometry_source, crs, area_km2]
       properties:
         region_id:
           type: string
@@ -547,6 +566,9 @@ components:
           type: [string, 'null']
         geometry_source:
           type: [string, 'null']
+        crs:
+          type: [string, 'null']
+          description: CRS identifier or definition for the published region geometry.
         area_km2:
           type: [number, 'null']
           exclusiveMinimum: 0
@@ -711,6 +733,47 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/YearMonth'
+        spatial_coverage:
+          oneOf:
+            - $ref: '#/components/schemas/SpatialCoverage'
+            - type: 'null'
+          description: Optional spatial denominators; null unless computed from a documented method.
+    SpatialCoverage:
+      type: object
+      required:
+        - evaluated_cells
+        - valid_cells
+        - intersection_area_km2
+        - valid_area_km2
+        - basin_area_km2
+        - valid_area_fraction_of_intersection
+        - valid_area_fraction_of_basin
+      properties:
+        evaluated_cells:
+          type: [integer, 'null']
+          minimum: 0
+        valid_cells:
+          type: [integer, 'null']
+          minimum: 0
+        intersection_area_km2:
+          type: [number, 'null']
+          minimum: 0
+        valid_area_km2:
+          type: [number, 'null']
+          minimum: 0
+        basin_area_km2:
+          type: [number, 'null']
+          exclusiveMinimum: 0
+        valid_area_fraction_of_intersection:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+          description: valid_area_km2 divided by intersection_area_km2.
+        valid_area_fraction_of_basin:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+          description: valid_area_km2 divided by basin_area_km2.
     SourceMissingAttributes:
       type: object
       required: [fill_value, missing_value, scale_factor, add_offset]
@@ -744,6 +807,37 @@ components:
           enum: [unassessed, basic_checks_only, provider_qa_applied]
         mask_applied:
           type: [string, 'null']
+        qa_checks:
+          type: array
+          description: Empty means no checks are reported; it does not mean QA passed.
+          items:
+            $ref: '#/components/schemas/QualityCheck'
+        uninterpreted_provider_fields:
+          type: array
+          description: Provider fields present in the source whose semantics were not interpreted/applied.
+          items:
+            type: string
+    QualityCheck:
+      type: object
+      required: [check_id, version, applied, state, excluded_count, exclusion_reasons]
+      properties:
+        check_id:
+          type: string
+          minLength: 1
+        version:
+          type: [string, 'null']
+        applied:
+          type: boolean
+        state:
+          type: string
+          enum: [not_run, passed, failed, partial]
+        excluded_count:
+          type: [integer, 'null']
+          minimum: 0
+        exclusion_reasons:
+          type: array
+          items:
+            type: string
     PointQuality:
       type: object
       required: [state, provider_flags, missing_reason]
@@ -786,7 +880,7 @@ components:
           maximum: 180
     PointSampleSupport:
       type: object
-      required: [support_type, approval_state, method, area_weighted, mask_version, point]
+      required: [support_type, approval_state, method, area_weighted, weighting_reference, mask_version, point]
       properties:
         support_type:
           type: string
@@ -798,13 +892,15 @@ components:
           type: 'null'
         area_weighted:
           type: 'null'
+        weighting_reference:
+          type: 'null'
         mask_version:
           type: 'null'
         point:
           $ref: '#/components/schemas/PointReference'
     DescriptiveMeanSupport:
       type: object
-      required: [support_type, approval_state, method, cell_count, area_weighted, mask_version]
+      required: [support_type, approval_state, method, cell_count, area_weighted, weighting_reference, mask_version]
       properties:
         support_type:
           type: string
@@ -820,11 +916,14 @@ components:
           minimum: 1
         area_weighted:
           type: boolean
+        weighting_reference:
+          type: [string, 'null']
+          description: Versioned method or artifact describing the weights, when weighting is applied.
         mask_version:
           type: [string, 'null']
     ApprovedRegionalSupport:
       type: object
-      required: [support_type, approval_state, method, area_weighted, mask_version, approval_reference]
+      required: [support_type, approval_state, method, area_weighted, weighting_reference, mask_version, approval_reference]
       properties:
         support_type:
           type: string
@@ -837,6 +936,9 @@ components:
           minLength: 1
         area_weighted:
           type: boolean
+        weighting_reference:
+          type: [string, 'null']
+          description: Versioned method or artifact describing the weights, when weighting is applied.
         mask_version:
           type: string
           minLength: 1
@@ -930,6 +1032,11 @@ components:
               oneOf:
                 - $ref: '#/components/schemas/MonthRange'
                 - type: 'null'
+            raster_layers:
+              type: array
+              description: Optional map descriptors; this does not imply a validated raster is available.
+              items:
+                $ref: '#/components/schemas/RasterLayer'
             series:
               type: array
               maxItems: 240
@@ -937,6 +1044,27 @@ components:
                 $ref: '#/components/schemas/SeriesPoint'
             message:
               type: string
+    RasterLayer:
+      type: object
+      required: [dataset_id, date, layer_type, unit, state, format, tile_template]
+      properties:
+        dataset_id:
+          type: string
+        date:
+          $ref: '#/components/schemas/YearMonth'
+        layer_type:
+          type: string
+          enum: [value, anomaly, slope, significance]
+        unit:
+          type: [string, 'null']
+        state:
+          type: string
+          enum: [unavailable, available]
+        format:
+          type: [string, 'null']
+        tile_template:
+          type: [string, 'null']
+          description: Small derived tile URL template; never a raw NetCDF/HDF5 download URL.
     Error:
       type: object
       required: [code, message, retryable, request_id, details]
@@ -1078,6 +1206,11 @@ components:
               $ref: '#/components/schemas/Metrics'
             spatial_aggregation:
               $ref: '#/components/schemas/SpatialAggregation'
+            raster_layers:
+              type: array
+              description: Optional map descriptors; not evidence that a raster product was scientifically validated.
+              items:
+                $ref: '#/components/schemas/RasterLayer'
             limitations:
               type: array
               items:
