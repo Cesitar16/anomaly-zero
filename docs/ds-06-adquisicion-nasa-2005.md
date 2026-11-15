@@ -1,95 +1,84 @@
 # DS-06 — Adquisición NASA mensual 2005
 
-**Tarjeta:** FUL-123 · **Estado de ejecución:** parcial, adquisición bloqueada por Earthdata Login · **Rama:** `feature/ful-123-ds-06-adquisicion-nasa-2005`.
+**Tarjeta:** FUL-123 · **Estado:** adquisición reproducida y lista para revisión científica · **Rama:** `feature/ful-123-ds-06-adquisicion-nasa-2005`.
 
-## Preflight reproducible
+## Resultado reproducido
 
-Se ejecutó `research.ful122_inventory` sobre los tres roots locales usados por FUL-105/116/122: el workspace original, `anomaly-zero-ful-105-eda/data/raw/nasa` y el handoff `data/cache/ful-105/be02-handoff/data_root/data/raw/nasa`. El auditor verificó identidad CMR, manifiesto, SHA-256, tamaño y payload NetCDF/HDF5 antes de considerar una copia elegible.
+La auditoría ejecutada sobre los roots locales de FUL-105/116/122 y `data/raw/nasa` de este worktree verificó identidad de producto/gránulo, manifiesto adyacente, tamaño, SHA-256 y payload NetCDF/HDF5. El inventario encontró 51 archivos candidatos: 36 registros producto-mes elegibles y 15 copias duplicadas idénticas excluidas del conteo. No encontró conflictos entre payloads elegibles ni archivos incompletos o corruptos.
 
-| Producto | Elegibles 2005 | Copias idénticas excluidas | Meses elegibles | Meses por adquirir |
-|---|---:|---:|---|---|
-| IMERG Final V07B | 12 | 13 | enero–diciembre | ninguno |
-| MERRA-2 `M2TMNXSLV` 5.12.4 | 1 | 1 | enero | febrero–diciembre (11) |
-| GLDAS Noah `GLDAS_NOAH025_M` 2.1 | 1 | 1 | enero | febrero–diciembre (11) |
+| Producto | Colección / versión | Elegibles | Meses | Copias idénticas excluidas |
+|---|---|---:|---|---:|
+| IMERG Final V07B | GPM_3IMERGM V07B | 12 | enero–diciembre | 13 |
+| MERRA-2 `T2M` | `M2TMNXSLV` 5.12.4 | 12 | enero–diciembre | 1 |
+| GLDAS Noah `SoilMoi0_10cm_inst` | `GLDAS_NOAH025_M` 2.1 | 12 | enero–diciembre | 1 |
 
-Las 14 observaciones elegibles son únicas por producto/mes y contenido. Una copia idéntica por mes y ubicación se mantiene fuera del conteo. No se detectaron conflictos entre payloads elegibles. La lista de los 22 faltantes se genera dinámicamente desde los meses elegibles; no presupone que tener un archivo en disco lo haga válido.
+**Cobertura auditada:** 36/36 registros producto-mes; coincidencia temporal triple de 12/12 meses. Los enero MERRA-2/GLDAS se reutilizaron desde las ubicaciones locales históricas elegibles; febrero–diciembre de ambos productos (22 gránulos) están en `data/raw/nasa` de FUL-123. IMERG no requirió descarga.
 
-El archivo portátil [`research/manifests/ful123-acquisition-plan-2005.json`](../research/manifests/ful123-acquisition-plan-2005.json) registra los 22 IDs CMR, collection IDs, GranuleUR, periodo, tamaño estimado, URL pública UMM, ROI usada únicamente para buscar granulos y método aún pendiente de piloto. No incluye rutas locales, datos, cookies, credenciales, cabeceras de autorización ni URLs de descarga potencialmente firmadas. Regenerar con:
+El manifiesto portátil [`ful123-acquisition-results-2005.json`](../research/manifests/ful123-acquisition-results-2005.json) es la evidencia detallada de identidad CMR, IDs de colección/gránulo, productor, periodo, tamaño, hash SHA-256 del payload, hash del manifiesto del archivo, variable/unidad, versión, inspección de metadatos y método. Cada hash fue reproducido desde el archivo local. El manifiesto no contiene rutas absolutas, secretos ni enlaces de transferencia autenticados. Los dos pilotos de febrero constan como payload verificados; los 20 resultados de marzo–diciembre reportan `attempts: 1`. El registro local de progreso es transitorio e ignorado por Git; no se usa como evidencia portable.
+
+### Reproducción
+
+Desde el worktree FUL-123, auditar todos los roots pertinentes:
 
 ```powershell
-uv run python -m research.ful123_acquisition `
-  --input-dir "C:\ruta\data\raw\nasa" `
-  --input-dir "C:\ruta\ful-105\data\raw\nasa" `
-  --input-dir "C:\ruta\ful-105\data\cache\ful-105\be02-handoff\data_root\data\raw\nasa" `
-  --output research/manifests/ful123-acquisition-plan-2005.json `
-  --discover
+uv run python -m research.ful122_inventory `
+  --input-dir "C:\ruta\hackNasa2026\data\raw\nasa" `
+  --input-dir "C:\ruta\anomaly-zero-ful-105-eda\data\raw\nasa" `
+  --input-dir "C:\ruta\anomaly-zero-ful-105-eda\data\cache\ful-105\be02-handoff\data_root\data\raw\nasa" `
+  --input-dir data/raw/nasa `
+  --output research/manifests/ful123-inventory-audit-2005.json
 ```
 
-Discovery usa CMR sin autenticación y solo guarda metadata pública. `--discover` no descarga granulos. La estimación total se calcula sumando los tamaños CMR de los elementos `discovered`; no es transferencia observada.
-
-## Fuentes y subsetting
-
-La página oficial de GLDAS confirma resoluciones de 0.25° y 1°, frecuencia mensual y acceso GES DISC con servicios que permiten subset espacial, temporal y por variable ([NASA LDAS GLDAS Dataset](https://ldas.gsfc.nasa.gov/gldas/dataset)). La ficha oficial GES DISC de MERRA-2 `M2TMNXSLV` identifica la colección 5.12.4 ([MERRA-2 dataset](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary)). Los registros CMR UMM actuales de febrero exponen enlaces de descarga de Earthdata Cloud y `OPENDAP DATA` para ambas colecciones; la metadata se consultó en `cmr.earthdata.nasa.gov`, no se copiaron URLs de transferencia al plan.
-
-GES DISC anunció que el acceso HTTPS y OPeNDAP on-premises se migraría a Earthdata Cloud para septiembre de 2026 y recomienda Earthaccess para los flujos Python. También indica que HOSS reemplaza el servicio L3/L4 de subset y que los servicios cloud requieren seguir sus flujos nuevos ([guía de migración GES DISC](https://github.com/nasa/gesdisc-tutorials/blob/main/user-guidance/GES_DISC_Migration_to_Earthdata_Website_and_Earthdata_Cloud.md)). Por ello no se codifican URLs antiguas `*.gesdisc.eosdis.nasa.gov` ni se infiere soporte de selección de variable/ROI a partir de la mera presencia de un enlace OPeNDAP.
-
-El bbox exploratorio actual es `138–153°E, 38–24°S`, usado por la búsqueda CMR existente del proyecto. Su semántica se restringe a seleccionar el granulo global que contiene la zona; no es el polígono Murray–Darling, no recorta celdas, no resuelve celdas de borde y no valida una máscara. Aún falta comparar los resultados de un subset autenticado de variable/ROI con la estructura global. No se afirma que ningún subset preserve íntegramente los metadatos o sea idéntico al original.
-
-**Decisión de adquisición pendiente del piloto:** full granule es la opción de referencia para conservar estructura, coordenadas, metadatos y trazabilidad byte a byte; subset solo se seleccionará si el piloto real demuestra que la respuesta conserva la identidad de origen, variable, unidad, calendario/bounds, coordenadas/bounds, fill, QA disponible y consulta de transformación. Para un subset, el hash es el del derivado, nunca el SHA del granulo fuente. Sin autenticación no se declara aprobado ninguno de los métodos ni se inicia un lote.
-
-## Presupuesto y acceso
-
-- Volumen libre en el volumen C: **133.11 GiB** durante el preflight (requisito: 4 GiB).
-- Estimación CMR de los 11 meses MERRA-2: **596,950,031 bytes**; GLDAS: **276,815,804 bytes**; total 22 granulos: **873,765,835 bytes (~833.1 MiB)**. Los tamaños CMR de febrero son 51.924 MiB (MERRA-2) y 23.560 MiB (GLDAS). La referencia de planificación de Linear (~875 MB) es aproximada y ninguna de estas cifras es transferencia observada.
-- Tope de planificación: 1.5 GiB de transferencia. El orquestador comprueba el límite y el espacio antes de cualquier lote; esta validación no reemplaza la medición real.
-- Transferencia real en DS-06 hasta el momento: **0 bytes**.
-- No se descargaron ni modificaron los archivos NASA ni notebooks previos.
-
-Se intentó únicamente determinar si ya había credenciales/sesión reutilizable: no existen `EARTHDATA_USERNAME`, `EARTHDATA_PASSWORD` ni `EARTHDATA_TOKEN` en el entorno; tampoco se encontró `.netrc`, `_netrc` ni cache local de Earthaccess. El login interactivo se probó sin persistencia y terminó en EOF porque requiere entrada del usuario. No se solicitó ni registró ningún secreto.
-
-**Paso necesario para continuar el piloto:** en esta misma máquina, iniciar sesión en Earthdata Login y autorizar el acceso de la aplicación **NASA GES DISC DATA ARCHIVE**. La herramienta FUL-123 acepta la sesión local vía Earthaccess. Desde el worktree aislado, ejecutar primero el discovery si no se ha generado o actualizado el plan:
+Para regenerar el resumen portable de resultados a partir de los archivos encontrados por el inventario y el plan CMR versionado:
 
 ```powershell
 uv run python -m research.ful123_acquisition `
-  --input-dir "C:\ruta\workspace\data\raw\nasa" `
-  --input-dir "C:\ruta\ful-105\data\raw\nasa" `
-  --input-dir "C:\ruta\ful-105\data\cache\ful-105\be02-handoff\data_root\data\raw\nasa" `
-  --output research/manifests/ful123-acquisition-plan-2005.json `
-  --discover
-```
-
-Después, ejecutar desde la misma carpeta los pilotos de febrero. El flujo reintenta como máximo tres veces solo fallos de transferencia, publica cada granulo y manifiesto de forma atómica mediante los downloaders existentes, valida el resultado con el inventario y registra progreso local en un archivo ignorado por Git. Los granulos completos ya válidos se omiten en una reejecución; los meses restantes se rechazan hasta que ambos pilotos de febrero estén elegibles.
-
-```powershell
-uv run python -m research.ful123_acquisition `
-  --input-dir "C:\ruta\workspace\data\raw\nasa" `
-  --input-dir "C:\ruta\ful-105\data\raw\nasa" `
-  --input-dir "C:\ruta\ful-105\data\cache\ful-105\be02-handoff\data_root\data\raw\nasa" `
-  --output research/manifests/ful123-acquisition-plan-2005.json `
+  --input-dir "C:\ruta\hackNasa2026\data\raw\nasa" `
+  --input-dir "C:\ruta\anomaly-zero-ful-105-eda\data\raw\nasa" `
+  --input-dir "C:\ruta\anomaly-zero-ful-105-eda\data\cache\ful-105\be02-handoff\data_root\data\raw\nasa" `
+  --input-dir data/raw/nasa `
   --data-dir data/raw/nasa `
-  --acquire-pilot `
-  --auth-strategy interactive
+  --plan-file research/manifests/ful123-acquisition-plan-2005.json `
+  --output research/manifests/ful123-acquisition-results-2005.json `
+  --record-results
 ```
 
-Tras comprobar ambos pilotos y volver a auditar el payload, `--acquire-rest --auth-strategy interactive` adquiere secuencialmente los meses marzo–diciembre aún pendientes. No compartir aquí credenciales, cookies, tokens ni capturas del login. Inspeccionar ambos NetCDF y detener el lote si falla identidad, payload o criterio de recursos.
+El manifiesto de plan conserva el inventario CMR y estimaciones previas; el manifiesto de resultados registra los bytes e integridad realmente auditados. No se versionan archivos de datos crudos.
 
-El comando GLDAS existente debe ejecutarse desde el worktree aislado en la rama FUL-123; el downloader preexistente escribe bajo `data/raw/nasa/gldas`. MERRA usa `data/raw/nasa/merra2`. Esas carpetas están ignoradas por Git. Los tests del proyecto no acceden a red ni a secretos.
+## Descarga, método y recursos
 
-## Criterio científico y handoff
+Los 22 archivos de febrero a diciembre son **gránulos NASA completos**, descargados con los clientes Earthaccess del proyecto y verificados como payloads nativos. No se aplicó subsetting espacial o de variable, reproyección, interpolación ni máscara. Tampoco se presentan recortes o valores derivados como si fueran el original. La adquisición completa conserva la grilla global, variables disponibles, atributos y trazabilidad del objeto fuente y permite repetir validaciones sobre el producto nativo; su costo es transferir más datos y requerir almacenamiento local mayor que un subset. Las URLs firmadas/autenticadas no se guardan en el repositorio.
 
-Hasta contar con pilotos payload-verified, los conteos se mantienen en 1/12 MERRA-2 y 1/12 GLDAS; el solapamiento triple elegible se mantiene en enero 2005. La metadata de febrero confirma identidad/catalogo y fecha mensual, pero no representa un valor de observación local. QA IMERG sigue `unassessed`, Gate R y Gate T continúan pendientes, y la incertidumbre de linaje de máscara GLDAS continúa vigente.
+- Estimación CMR para los 22: **873,765,835 bytes** (aprox. 833.1 MiB).
+- Payload de los 22 archivos adquiridos y verificados: **873,765,835 bytes**.
+- Diferencia real menos estimación: **0 bytes**. Es la suma de tamaños de payload, no una medición de overhead de red.
+- Los 20 resultados de marzo–diciembre registran un intento cada uno. Los dos pilotos de febrero se verificaron satisfactoriamente; su contador de intentos no se atribuye porque el registro portable no lo conserva.
+- Los datos permanecen fuera de Git bajo `data/raw/nasa`; no se deben agregar al commit.
 
-La coincidencia de periodos no valida co-localización. La próxima etapa debe comparar las grillas nativas MERRA-2 (0.625° × 0.5°) y GLDAS (0.25°), coordenadas, bounds, calendarios, fill/máscaras y soporte de la muestra IMERG (0.1°). Proponer puntos de grilla co-localizados explícitos y sensibilidad a celdas vecinas, tras fijar la geometría versionada de cuenca. DS-06 no calcula agregados regionales, correlaciones, tendencias ni modelos.
+Se eligieron los gránulos completos como referencia reproducible porque el flujo nativo entregó payload verificable, metadatos y hashes, sin depender de que un servicio de subset conserve todos los atributos necesarios. Esto no demuestra que un subset sea científicamente inválido; solo evita introducir un derivado espacial en esta tarjeta. La documentación oficial informa disponibilidad de productos y servicios de datos/subsetting en [NASA LDAS GLDAS](https://ldas.gsfc.nasa.gov/gldas/dataset), y la ficha identifica [MERRA-2 M2TMNXSLV 5.12.4](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary). El acceso y el modo de transferencia pueden evolucionar; por reproducibilidad se registra aquí el método observado en esta adquisición, no se codifican enlaces autenticados.
 
-## Verificaciones realizadas en el worktree limpio
+## Compatibilidad temporal y metadatos nativos
 
-- `uv sync --group dev --group research`: instaló los grupos necesarios; el primer pytest había mostrado la ausencia de `shapely` en el entorno recién creado.
-- `uv run pytest research/tests/test_ful123_acquisition.py -q`: **16 passed** (fixtures sintéticos, sin red).
-- `uv run pytest backend/tests research/tests -q`: **194 passed**, una advertencia upstream de deprecación Starlette/httpx.
-- `uv run ruff check backend research`: pasó.
-- `git diff --check`: pasó.
-- CMR: búsqueda verificada para los 22 periodos faltantes en ambos productos; identidad, colección, versión, productor, fechas y tamaños se guardan en el manifiesto.
-- Payloads y SHA enero: validados por el inventario existente desde los datos locales. No se pudo reproducir una descarga nueva ni validar los bytes de febrero porque no hay autenticación.
-- Tests de FUL-123 cubren faltantes dinámicos, identidad/período/collection inválidos y CMR ambiguo, presupuesto, reintentos acotados, recuperación idempotente a nivel de granulo, gate de pilotos, no sobrescritura y reporte local sin secretos.
+La cobertura mensual se comprobó por gránulo y los 12 periodos de cada producto cubren enero–diciembre de 2005. Las fechas mensuales son compatibles para construir un índice común de inventario; esto no convierte las observaciones en una muestra espacial común ni implica que sus instantes representativos sean idénticos.
 
-Este es un avance parcial y no satisface Done de adquisición. FUL-123 debe permanecer In Progress hasta ejecutar y validar los pilotos, y solo después adquirir los otros meses en lotes pequeños.
+| Producto | Frecuencia/calendario y tiempo | Resolución y coordenadas nativas | Variable/unidad | Fill y QA |
+|---|---|---|---|---|
+| IMERG Final V07B | Mensual; calendario/granularidad declarados por producto en payload/manifiesto | Grilla global IMERG nominal 0.1°; coordenadas provienen del archivo nativo | Precipitación mensual; `mm/hr` conforme al inventario del proyecto | QA IMERG sigue sin evaluación científica definitiva; no se promueve el estado de ingestión como aprobación QA |
+| MERRA-2 | Mensual, un registro por archivo; calendario `standard`/gregoriano según coordenada temporal del NetCDF. Intervalo mensual del gránulo CMR | `lat` 361 puntos de −90 a 90°, paso 0.5°; `lon` 576 puntos de −180 a 179.375°, paso 0.625° | `T2M`, dimensiones `(time, lat, lon)`, unidad `K` | `_FillValue` y `missing_value` 1e15; sin variables QA explícitas identificadas por el chequeo de nombres |
+| GLDAS Noah | Mensual, `calendar=standard`, coordenada `time` con `time_bnds` | `lat` 600 puntos de −59.875 a 89.875°, paso 0.25°; `lon` 1440 puntos de −179.875 a 179.875°, paso 0.25° | `SoilMoi0_10cm_inst`, dimensiones `(time, lat, lon)`, unidad `kg m-2` | `_FillValue` y `missing_value` −9999; no se identificaron variables QA explícitas para esta variable |
+
+Los doce archivos de MERRA-2 comparten forma de variable `[1,361,576]`; los doce GLDAS `[1,600,1440]`. GLDAS contiene coordenadas de límites temporales `time_bnds`; MERRA-2 no declara bounds en el resumen de la variable temporal examinado. Los metadatos específicos por archivo (incluidos valores temporales) están en el manifiesto de resultados. Los marcadores fill son códigos de ausencia, no mediciones; antes de cualquier estadística deberán enmascararse de acuerdo con el tipo y atributos del archivo. “Sin variables QA explícitas identificadas” no significa que la observación haya pasado una evaluación QA científica.
+
+IMERG, MERRA-2 y GLDAS emplean soportes, resoluciones, máscaras y convenciones distintas. La coincidencia mensual solo demuestra cobertura temporal en el inventario. Aún se deben establecer la geometría versionada de Murray–Darling, soporte espacial común, tratamiento de borde y faltantes, linaje de máscara GLDAS y evaluación QA IMERG antes de proponer co-localización. No se calculan aquí promedios regionales, correlaciones, tendencias ni modelos. **Gate R y Gate T siguen pendientes; no hay aprobación para inferencia ni modelado productivo.**
+
+## Ejecutador y salvaguardas
+
+El CLI retorna un código distinto de cero ante fallos y cualquier resultado bloqueado, incluido `blocked_existing_identity_mismatch`; una prueba de regresión cubre este caso. El manifiesto de resultados es portable: guarda rutas relativas, hashes y metadatos de adquisición, y excluye rutas locales y datos de autenticación. Los errores no se convierten en éxito silencioso. No se modificaron archivos originales, notebooks personales ni los archivos crudos.
+
+## Validación de ingeniería
+
+La validación final de pytest, Ruff y `git diff --check` se registra junto al commit de esta actualización y en los checks de PR #26. Las pruebas de adquisición usan fixtures locales; no requieren acceso de red ni credenciales.
+
+## Próximo EDA científico
+
+Preparar primero una especificación de co-localización reproducible: congelar la geometría de cuenca y su procedencia; documentar las coordenadas y límites nativos; identificar una estrategia de puntos/celdas con soporte común para IMERG 0.1°, MERRA-2 0.625° × 0.5° y GLDAS 0.25°; y evaluar sensibilidad de bordes, máscaras, fill y QA sin agregación o inferencia hasta aprobar Gate R y Gate T. Luego generar una tabla de auditoría de disponibilidad espacial-temporal y someterla a revisión científica antes de construir un panel multivariable.

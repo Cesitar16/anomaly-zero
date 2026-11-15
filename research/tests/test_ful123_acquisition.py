@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -12,6 +13,8 @@ from research.ful123_acquisition import (
     AcquisitionPlanError,
     _record_matches_plan,
     acquire_months,
+    acquisition_exit_code,
+    build_results_manifest,
     discover_plan,
     eligible_months,
     missing_months,
@@ -153,6 +156,76 @@ def test_manifest_must_match_planned_cmr_identity(tmp_path: Any) -> None:
     manifest["granule_id"] = "G9999999999-GES_DISC"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     assert not _record_matches_plan(record, item)
+
+
+def test_existing_identity_mismatch_is_blocked_and_returns_nonzero(tmp_path: Any) -> None:
+    plan = _february_pilot_plan()
+    item = next(x for x in plan["items"] if x["product"] == "merra2" and x["month"] == "2005-02")
+    plan["items"] = [item]
+    manifest_path = tmp_path / "wrong.manifest.json"
+    manifest_path.write_text(json.dumps({
+        "granule_id": "G9999999999-GES_DISC",
+        "producer_granule_id": item["producer_granule_id"],
+        "collection_id": item["collection_id"],
+        "period": {"month": item["month"]},
+        "product": {"short_name": "M2TMNXSLV", "version": "5.12.4", "variable": "T2M"},
+    }), encoding="utf-8")
+
+    results = acquire_months(
+        plan, tmp_path, months={"2005-02"},
+        audit_fn=lambda _: {"records": [{
+            "product_key": "merra2", "period": "2005-02", "eligible": True,
+            "manifest": str(manifest_path),
+        }]},
+        download_fn=lambda *_: pytest.fail("mismatched identity must not download/overwrite"),
+    )
+
+    assert results[0]["status"] == "blocked_existing_identity_mismatch"
+    assert acquisition_exit_code(results) != 0
+
+
+def test_portable_results_manifest_contains_hashes_without_local_paths_or_auth(tmp_path: Any) -> None:
+    plan = _february_pilot_plan()
+    item = next(x for x in plan["items"] if x["product"] == "merra2" and x["month"] == "2005-02")
+    root = tmp_path / "data" / "raw" / "nasa"
+    product_dir = root / "merra2"
+    product_dir.mkdir(parents=True)
+    data_path = product_dir / item["producer_granule_id"].split(":")[-1]
+    data_path.write_bytes(b"synthetic test payload only")
+    manifest_path = Path(f"{data_path}.manifest.json")
+    manifest = {
+        "granule_id": item["granule_id"],
+        "producer_granule_id": item["producer_granule_id"],
+        "collection_id": item["collection_id"],
+        "period": {"month": "2005-02", "start": "2005-02-01T00:00:00Z", "end": "2005-02-28T23:59:59Z"},
+        "product": {"short_name": "M2TMNXSLV", "version": "5.12.4", "variable": "T2M"},
+        "downloaded_at_utc": "2026-11-15T00:00:00+00:00",
+        "inspection": {"format": "NetCDF4", "dimensions": {"time": 1}, "variable": {"name": "T2M", "units": "K", "shape": [1, 2, 2]}, "coordinates": {}},
+        "source": {"granule_metadata": "https://cmr.earthdata.nasa.gov/search/concepts/public.umm_json"},
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    record = {
+        "product_key": "merra2", "period": "2005-02", "eligible": True,
+        "path": str(data_path), "manifest": str(manifest_path), "filename": data_path.name,
+        "bytes": data_path.stat().st_size, "sha256": "a" * 64,
+        "native_payload_verified": True,
+    }
+
+    result = build_results_manifest(
+        {"records": [record], "counts": {}, "matrix": []}, root, plan,
+        {"items": [{"product": "merra2", "month": "2005-02", "attempts": 1}]},
+    )
+
+    assert result["status"] == "partial"
+    assert result["eligible_product_month_records"] == 1
+    acquisition = result["acquisitions"][0]
+    assert acquisition["acquisition_method"] == "complete_original_granule_via_earthaccess"
+    assert acquisition["spatial_subsetting_applied"] is False
+    assert acquisition["sha256"] == "a" * 64
+    assert acquisition["attempts"] == 1
+    serialized = json.dumps(result).lower()
+    assert str(tmp_path).lower() not in serialized
+    assert "password" not in serialized and "cookie" not in serialized and "token" not in serialized
 
 
 def test_resource_budget_boundaries_and_rejection() -> None:

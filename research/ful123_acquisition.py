@@ -8,6 +8,7 @@ stores authenticated URLs or credentials in a portable manifest.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -203,6 +204,143 @@ def _record_matches_plan(record: dict[str, Any], item: dict[str, Any]) -> bool:
     )
 
 
+def acquisition_exit_code(results: list[dict[str, Any]]) -> int:
+    """Return nonzero for every blocked/failed item so CI/CLI callers see it."""
+    return 2 if any(
+        result.get("status") == "failed"
+        or str(result.get("status", "")).startswith("blocked")
+        for result in results
+    ) else 0
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _portable_inspection_summary(inspection: dict[str, Any]) -> dict[str, Any]:
+    variable = inspection.get("variable", {})
+    coordinates = inspection.get("coordinates", {})
+    return {
+        "format": inspection.get("format"),
+        "dimensions": inspection.get("dimensions"),
+        "variable": {
+            key: variable.get(key)
+            for key in ("name", "dimensions", "shape", "dtype", "units", "fill_value", "missing_value", "scale_factor", "add_offset")
+            if key in variable
+        },
+        "coordinates": {
+            name: {
+                key: coordinate.get(key)
+                for key in ("dimensions", "size", "attributes", "first_values", "last_values")
+                if key in coordinate
+            }
+            for name, coordinate in coordinates.items()
+        } if isinstance(coordinates, dict) else {},
+        "quality_variable_candidates": inspection.get("quality_variable_candidates", []),
+    }
+
+
+def build_results_manifest(
+    audit: dict[str, Any], acquisition_root: Path, plan: dict[str, Any],
+    progress: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Create a portable record of payload-verified February–December acquisitions."""
+    root = acquisition_root.resolve()
+    planned = {
+        (item.get("product"), item.get("month")): item
+        for item in plan.get("items", []) if item.get("status") == "discovered"
+    }
+    attempts = {
+        (item.get("product"), item.get("month")): item.get("attempts")
+        for item in (progress or {}).get("items", [])
+        if isinstance(item, dict)
+    }
+    acquisitions: list[dict[str, Any]] = []
+    for record in audit.get("records", []):
+        product = record.get("product_key")
+        month = record.get("period")
+        if product not in TARGET_PRODUCTS or month not in EXPECTED_MONTHS[1:] or record.get("eligible") is not True:
+            continue
+        data_path = Path(record["path"]).resolve()
+        try:
+            relative_path = data_path.relative_to(root).as_posix()
+        except ValueError:
+            continue
+        item = planned.get((product, month))
+        if not item or not _record_matches_plan(record, item):
+            raise AcquisitionPlanError(f"eligible {product} {month} payload does not match the saved CMR plan")
+        manifest_path = Path(record["manifest"]).resolve()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        spec = plan["products"][product]
+        acquisitions.append({
+            "product": product,
+            "month": month,
+            "status": "eligible",
+            "granule_id": item["granule_id"],
+            "collection_id": item["collection_id"],
+            "producer_granule_id": item["producer_granule_id"],
+            "time_start": manifest.get("period", {}).get("start"),
+            "time_end": manifest.get("period", {}).get("end"),
+            "short_name": spec["short_name"],
+            "version": spec["version"],
+            "variable": spec["variable"],
+            "unit": spec["unit"],
+            "acquisition_method": "complete_original_granule_via_earthaccess",
+            "spatial_subsetting_applied": False,
+            "format": manifest.get("inspection", {}).get("format"),
+            "relative_path": relative_path,
+            "bytes": record["bytes"],
+            "sha256": record["sha256"],
+            "manifest_sha256": _file_sha256(manifest_path),
+            "downloaded_at_utc": manifest.get("downloaded_at_utc"),
+            "attempts": attempts.get((product, month)),
+            "native_payload_verified": True,
+            "native_metadata": _portable_inspection_summary(manifest.get("inspection", {})),
+        })
+    acquisitions.sort(key=lambda row: (row["product"], row["month"]))
+    coverages = {
+        product: sorted({
+            record["period"] for record in audit.get("records", [])
+            if record.get("product_key") == product and record.get("eligible") is True
+            and record.get("period") in EXPECTED_MONTHS
+        })
+        for product in ("imerg_final", *TARGET_PRODUCTS)
+    }
+    triple = sorted(set(coverages["imerg_final"]) & set(coverages["merra2"]) & set(coverages["gldas"]))
+    planned_bytes = sum(
+        item.get("estimated_bytes", 0) for item in planned.values()
+        if item.get("product") in TARGET_PRODUCTS and item.get("month") in EXPECTED_MONTHS[1:]
+    )
+    actual_bytes = sum(row["bytes"] for row in acquisitions)
+    complete = all(len(coverages[p]) == 12 for p in ("imerg_final", *TARGET_PRODUCTS)) and len(triple) == 12 and len(acquisitions) == 22
+    return {
+        "manifest_version": 1,
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "status": "complete" if complete else "partial",
+        "year": 2005,
+        "eligible_months_by_product": coverages,
+        "eligible_product_month_records": sum(len(coverages[p]) for p in coverages),
+        "triple_overlap_months": triple,
+        "triple_overlap_count": len(triple),
+        "planned_full_granule_payload_bytes": planned_bytes,
+        "acquired_full_granule_payload_bytes": actual_bytes,
+        "payload_byte_difference_actual_minus_estimate": actual_bytes - planned_bytes,
+        "acquisition_method": "complete original NASA source granules; no spatial subsetting, reprojection, interpolation, or masking",
+        "acquisitions": acquisitions,
+        "scientific_status": {
+            "temporal_inventory_compatibility": "verified_for_monthly_2005_periods",
+            "spatial_colocation": "not_approved",
+            "quality_gates": "Gate R and Gate T pending; IMERG QA remains unassessed",
+            "gldas_mask_lineage": "uncertain; existing NASA-05 finding remains",
+            "inference_or_modeling": "not performed",
+        },
+    }
+
+
 def _default_download(item: dict[str, Any], output_dir: Path, auth_strategy: str) -> dict[str, Any]:
     if item["product"] == "merra2":
         from backend.app.data_sources.earthdata_samples import download_product
@@ -279,10 +417,21 @@ def acquire_months(
         progress_path = output_dir / ".ful123-acquisition-progress.json"
         staged_path = output_dir / ".ful123-acquisition-progress.json.tmp"
         progress_path.parent.mkdir(parents=True, exist_ok=True)
+        previous: list[dict[str, Any]] = []
+        if progress_path.is_file():
+            saved = json.loads(progress_path.read_text(encoding="utf-8"))
+            previous = [item for item in saved.get("items", []) if isinstance(item, dict)]
+        merged = {
+            (item.get("product"), item.get("month")): item
+            for item in [*previous, *results]
+            if item.get("product") in TARGET_PRODUCTS and item.get("month") in EXPECTED_MONTHS
+        }
+        product_order = {product: index for index, product in enumerate(TARGET_PRODUCTS)}
+        ordered = sorted(merged.values(), key=lambda item: (product_order[item["product"]], item["month"]))
         staged_path.write_text(json.dumps({
             "manifest_version": PLAN_VERSION,
             "updated_at_utc": datetime.now(UTC).isoformat(),
-            "items": results,
+            "items": ordered,
         }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         os.replace(staged_path, progress_path)
 
@@ -348,10 +497,31 @@ def main(argv: list[str] | None = None) -> int:
     mode.add_argument("--discover", action="store_true", help="Query NASA CMR without downloading data.")
     mode.add_argument("--acquire-pilot", action="store_true", help="Acquire and verify February 2005 for both products.")
     mode.add_argument("--acquire-rest", action="store_true", help="Acquire remaining planned months after both February pilots pass.")
+    mode.add_argument("--record-results", action="store_true", help="Reaudit local files and write a portable result manifest.")
     parser.add_argument("--data-dir", type=Path, default=Path("data/raw/nasa"))
+    parser.add_argument("--plan-file", type=Path, default=Path("research/manifests/ful123-acquisition-plan-2005.json"))
     parser.add_argument("--auth-strategy", choices=("netrc", "environment", "interactive"), default="netrc")
     args = parser.parse_args(argv)
-    audit = load_audit(args.input_dir)
+    input_dirs = list(dict.fromkeys([*args.input_dir, *([args.data_dir] if args.record_results else [])]))
+    audit = load_audit(input_dirs)
+    if args.record_results:
+        if not args.plan_file.is_file():
+            parser.error("a saved CMR acquisition plan is required in --plan-file")
+        plan = json.loads(args.plan_file.read_text(encoding="utf-8"))
+        progress_path = args.data_dir / ".ful123-acquisition-progress.json"
+        progress = json.loads(progress_path.read_text(encoding="utf-8")) if progress_path.is_file() else None
+        report = build_results_manifest(audit, args.data_dir, plan, progress)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(json.dumps({
+            "status": report["status"],
+            "results_manifest": args.output.as_posix(),
+            "eligible_product_month_records": report["eligible_product_month_records"],
+            "triple_overlap_count": report["triple_overlap_count"],
+            "acquisitions": len(report["acquisitions"]),
+            "payload_bytes": report["acquired_full_granule_payload_bytes"],
+        }, indent=2))
+        return 0 if report["status"] == "complete" else 2
     if args.acquire_pilot or args.acquire_rest:
         if not args.output.is_file():
             parser.error("an existing discovered plan is required in --output")
@@ -365,7 +535,7 @@ def main(argv: list[str] | None = None) -> int:
             auth_strategy=args.auth_strategy,
         )
         print(json.dumps({"results": results}, indent=2))
-        return 2 if any(result["status"] in {"failed", "blocked_existing_unverified"} for result in results) else 0
+        return acquisition_exit_code(results)
     if args.discover:
         import earthaccess
 
