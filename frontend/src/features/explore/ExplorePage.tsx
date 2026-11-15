@@ -7,6 +7,7 @@ import { ROUTES, SITE } from '../../config/site'
 import useDocumentTitle from '../../hooks/useDocumentTitle'
 import { AnalysisUnavailable } from './components/AnalysisUnavailable'
 import { CoverageSummary } from './components/CoverageSummary'
+import { DataSourceSwitch } from './components/DataSourceSwitch'
 import { DemoScenarios } from './components/DemoScenarios'
 import { ErrorState } from './components/ErrorState'
 import { ExploreFilters } from './components/ExploreFilters'
@@ -19,9 +20,11 @@ import { SupportNotice } from './components/SupportNotice'
 import { TimeSeriesChart } from './components/TimeSeriesChart'
 import { COPY, DEMO_SCENARIOS } from './content/exploreCopy'
 import type { DemoScenarioId } from './content/exploreCopy'
-import { createExploreApi } from './data/createExploreApi'
+import { createExploreApi, defaultSource } from './data/createExploreApi'
 import { useExplorer } from './hooks/useExplorer'
 import { toChartPoints } from './lib/chartModel'
+import { isExploreSource } from './lib/exploreUrl'
+import type { ExploreSource } from './lib/exploreUrl'
 import type { SeriesResponse } from './types/contracts'
 import './explore.css'
 
@@ -46,9 +49,12 @@ function stateLabel(series: SeriesResponse): string {
  */
 export default function ExplorePage() {
   const [params, setParams] = useSearchParams()
+  const requestedSource = params.get('fuente')
+  const source: ExploreSource = isExploreSource(requestedSource) ? requestedSource : defaultSource()
   const requested = params.get('demo')
-  const scenario = isScenario(requested) ? requested : null
-  const api = useMemo(() => createExploreApi(scenario), [scenario])
+  // Los escenarios solo existen en el servicio simulado.
+  const scenario = source === 'demo' && isScenario(requested) ? requested : null
+  const api = useMemo(() => createExploreApi(source, scenario), [source, scenario])
   const explorer = useExplorer(api, scenario)
   const { series, regions } = explorer
   const isMock = api.mode === 'mock'
@@ -65,6 +71,14 @@ export default function ExplorePage() {
     [params, setParams],
   )
 
+  const changeSource = useCallback(
+    (next: ExploreSource) => {
+      // Los identificadores de un servicio no existen en el otro: se parte de cero y se conserva solo la fuente.
+      setParams(new URLSearchParams({ fuente: next }))
+    },
+    [setParams],
+  )
+
   const points = series.status === 'success' ? toChartPoints(series.data.series) : []
   const noCatalog = regions.status === 'success' && regions.data.length === 0
 
@@ -79,6 +93,8 @@ export default function ExplorePage() {
         </div>
 
         {(isMock || (series.status === 'success' && series.data.synthetic)) && <MockDataNotice />}
+
+        <DataSourceSwitch source={source} onChange={changeSource} />
 
         <ExploreFilters
           regions={explorer.regions}

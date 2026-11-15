@@ -16,6 +16,14 @@ export const COPY = {
       'Elige una región, una variable NASA y un rango de meses para ver la serie mensual con su fuente, su unidad y su calidad.',
     back: 'Volver al inicio',
   },
+  source: {
+    legend: 'Fuente de los datos',
+    demo: 'Servicio simulado (demostración)',
+    api: 'Servicio real (API)',
+    demoNote: 'Todas las respuestas son sintéticas y se generan en este navegador.',
+    apiNote:
+      'Consulta la API de Anomaly Zero. Si no responde verás el error; nunca se cambia a datos simulados por su cuenta.',
+  },
   mock: 'Datos sintéticos de demostración. Nada de esta pantalla es una observación NASA ni un resultado estadístico.',
   sample:
     'Muestra NASA exploratoria. Es el valor de un solo punto, no el promedio validado de la cuenca.',

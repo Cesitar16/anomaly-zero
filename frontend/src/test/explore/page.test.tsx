@@ -5,7 +5,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import App from '../../App'
 import { observed } from './helpers'
-import { createExploreApi } from '../../features/explore/data/createExploreApi'
+import { createExploreApi, defaultSource } from '../../features/explore/data/createExploreApi'
 
 // La primera carga de la ruta diferida (gráficos incluidos) tarda más en jsdom que el valor por defecto.
 configure({ asyncUtilTimeout: 6000 })
@@ -82,10 +82,12 @@ describe('Entrada al explorador', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('el modo HTTP no se activa solo: sin la variable el adaptador es el simulado', () => {
-    expect(createExploreApi(null).mode).toBe('mock')
+  it('la fuente por defecto es la simulada; VITE_EXPLORE_API=http solo cambia el valor por defecto', () => {
+    expect(defaultSource()).toBe('demo')
+    expect(createExploreApi('demo').mode).toBe('mock')
     vi.stubEnv('VITE_EXPLORE_API', 'http')
-    expect(createExploreApi(null).mode).toBe('http')
+    expect(defaultSource()).toBe('api')
+    expect(createExploreApi('api').mode).toBe('http')
   })
 })
 
@@ -315,6 +317,84 @@ describe('Pantalla conectada al cliente HTTP con las respuestas reales observada
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos conectar')
     expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+})
+
+describe('Fuente de los datos: simulada o real, siempre a la vista y sin respaldo automático', () => {
+  function serveDev() {
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const body = url.includes('/regions')
+        ? observed('regions_dev')
+        : url.includes('/products')
+          ? observed('products_dev_sin_snapshot')
+          : observed('series_no_data_dev')
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+  }
+
+  it('por defecto la fuente es el servicio simulado y está marcada en el selector', async () => {
+    await openPage('/explore')
+    const group = screen.getByRole('group', { name: 'Fuente de los datos' })
+    expect(within(group).getByRole('radio', { name: 'Servicio simulado (demostración)' })).toBeChecked()
+    expect(within(group).getByRole('radio', { name: 'Servicio real (API)' })).not.toBeChecked()
+  })
+
+  it('al cambiar a la API real se pide el catálogo real, se descartan los filtros y desaparece lo simulado', async () => {
+    const user = userEvent.setup()
+    serveDev()
+    await openPage(`/explore?${SERIES}`)
+    await screen.findByText(/Serie con huecos/)
+
+    await user.click(screen.getByRole('radio', { name: 'Servicio real (API)' }))
+
+    expect(location()).toBe('/explore?fuente=api')
+    await waitFor(() => expect(screen.getByLabelText('Región')).toHaveValue('murray-darling-basin'))
+    // Nada de lo simulado sobrevive: ni la serie, ni el aviso, ni la insignia, ni los escenarios.
+    expect(screen.queryByText(/Serie con huecos/)).toBeNull()
+    expect(screen.queryByRole('table')).toBeNull()
+    expect(screen.queryByText(/Datos sintéticos de demostración/)).toBeNull()
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent('Demostración')
+    expect(screen.queryByRole('heading', { name: 'Escenarios de demostración' })).toBeNull()
+    const urls: string[] = fetchSpy.mock.calls.map((call) => String(call[0]))
+    expect(urls.some((url) => url.startsWith('/api/v1/regions'))).toBe(true)
+  })
+
+  it('un escenario de demostración en la dirección no afecta a la API real', async () => {
+    serveDev()
+    await openPage('/explore?fuente=api&demo=error-503')
+    await waitFor(() => expect(screen.getByLabelText('Región')).toHaveValue('murray-darling-basin'))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('si la API real no responde se muestra el error y NO se pasa a datos simulados', async () => {
+    await openPage('/explore?fuente=api')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No pudimos conectar')
+    expect(screen.queryByText(/Datos sintéticos de demostración/)).toBeNull()
+    expect(screen.queryByRole('option', { name: /Precipitación \(IMERG Final\)/ })).toBeNull()
+  })
+
+  it('volver al servicio simulado restablece el catálogo simulado', async () => {
+    const user = userEvent.setup()
+    serveDev()
+    await openPage('/explore?fuente=api')
+    await waitFor(() => expect(screen.getByLabelText('Región')).toHaveValue('murray-darling-basin'))
+    await user.click(screen.getByRole('radio', { name: 'Servicio simulado (demostración)' }))
+    expect(location()).toBe('/explore?fuente=demo')
+    await waitFor(() => expect(screen.getByLabelText('Región')).toHaveValue('REG01'))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Demostración')
+  })
+
+  it('enviar una consulta conserva la fuente elegida en la dirección', async () => {
+    const user = userEvent.setup()
+    await openPage('/explore?fuente=demo')
+    await waitFor(() => expect(screen.getByLabelText('Región')).toHaveValue('REG01'))
+    await screen.findByRole('option', { name: /Precipitación/ })
+    await user.selectOptions(screen.getByLabelText('Variable NASA'), 'P02')
+    await user.click(screen.getByRole('button', { name: 'Ver serie' }))
+    expect(await screen.findByText(/Serie con huecos/)).toBeInTheDocument()
+    expect(location()).toBe(`/explore?${SERIES}&fuente=demo`)
   })
 })
 

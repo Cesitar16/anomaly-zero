@@ -22,10 +22,19 @@ export interface UrlState {
   month: YearMonth | null
   /** Escenario de demostración (solo lo entiende el servicio simulado). */
   scenario: string | null
+  /** Fuente de datos elegida en la dirección (`fuente=demo|api`); `null` si no dice nada. */
+  source: ExploreSource | null
+}
+
+/** De dónde salen los datos: el servicio simulado (`demo`) o la API real (`api`). */
+export type ExploreSource = 'demo' | 'api'
+
+export function isExploreSource(value: string | null): value is ExploreSource {
+  return value === 'demo' || value === 'api'
 }
 
 /**
- * Lee `region`, `product`, `start`, `end`, `month` y `demo` de la dirección.
+ * Lee `region`, `product`, `start`, `end`, `month`, `demo` y `fuente` de la dirección.
  * Una dirección incompleta o inválida rellena el formulario pero no dispara ninguna consulta.
  */
 export function readUrl(params: URLSearchParams): UrlState {
@@ -49,6 +58,7 @@ export function readUrl(params: URLSearchParams): UrlState {
     rangeErrors,
     month: month !== null && isYearMonth(month) ? month : null,
     scenario: params.get('demo'),
+    source: isExploreSource(params.get('fuente')) ? (params.get('fuente') as ExploreSource) : null,
   }
 }
 
@@ -56,11 +66,12 @@ export function queryKey(query: SeriesQuery | null): string {
   return query === null ? '' : [query.regionId, query.productId, query.start, query.end].join('|')
 }
 
-/** Construye la dirección de una consulta enviada. El escenario de demostración se conserva. */
+/** Construye la dirección de una consulta enviada. El escenario de demostración y la fuente se conservan. */
 export function buildParams(input: {
   query: SeriesQuery
   month: YearMonth | null
   scenario: string | null
+  source?: ExploreSource | null
 }): URLSearchParams {
   const params = new URLSearchParams({
     region: input.query.regionId,
@@ -70,5 +81,6 @@ export function buildParams(input: {
   })
   if (input.month) params.set('month', input.month)
   if (input.scenario) params.set('demo', input.scenario)
+  if (input.source) params.set('fuente', input.source)
   return params
 }

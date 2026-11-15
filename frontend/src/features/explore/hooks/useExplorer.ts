@@ -61,6 +61,8 @@ function lastMonthOfWindow(start: YearMonth, end: YearMonth): YearMonth {
 export function useExplorer(api: ExploreApi, scenario: string | null): Explorer {
   const [params, setParams] = useSearchParams()
   const url = useMemo(() => readUrl(params), [params])
+  // Cambiar de fuente (simulada o real) o de escenario invalida todo lo cargado antes.
+  const sourceKey = `${api.mode}:${scenario ?? ''}`
 
   // --- Filtros del formulario. Siguen a la dirección cuando esta cambia (atrás/adelante). ------------
   const urlDraftKey = JSON.stringify(url.draft)
@@ -73,7 +75,7 @@ export function useExplorer(api: ExploreApi, scenario: string | null): Explorer 
 
   // --- Catálogo ----------------------------------------------------------------------------------
   const regionsRemote = useResource(
-    `${scenario ?? ''}|regions`,
+    `${sourceKey}|regions`,
     (signal) => api.listRegions(signal).then((result) => mapResult(result, (body) => body.regions)),
     catalogNonce,
   )
@@ -90,7 +92,7 @@ export function useExplorer(api: ExploreApi, scenario: string | null): Explorer 
   )
 
   const productsRemote = useResource(
-    draft.regionId === '' ? null : `${scenario ?? ''}|products|${draft.regionId}`,
+    draft.regionId === '' ? null : `${sourceKey}|products|${draft.regionId}`,
     (signal) =>
       api.listProducts(draft.regionId, signal).then((result) => mapResult(result, (body) => body.products)),
     catalogNonce,
@@ -121,7 +123,7 @@ export function useExplorer(api: ExploreApi, scenario: string | null): Explorer 
     url.query !== null && !waitingForCatalog && regionKnown && productKnown ? url.query : null
 
   const seriesRemote = useResource(
-    sendQuery === null ? null : `${scenario ?? ''}|series|${queryKey(sendQuery)}`,
+    sendQuery === null ? null : `${sourceKey}|series|${queryKey(sendQuery)}`,
     (signal) => (sendQuery === null ? Promise.resolve(NO_QUERY) : api.getSeries(sendQuery, signal)),
     retryNonce,
   )
@@ -208,8 +210,8 @@ export function useExplorer(api: ExploreApi, scenario: string | null): Explorer 
       setRetryNonce((nonce) => nonce + 1)
       return
     }
-    setParams(buildParams({ query, month: null, scenario }))
-  }, [liveErrors, draft, url.query, scenario, setParams])
+    setParams(buildParams({ query, month: null, scenario, source: url.source }))
+  }, [liveErrors, draft, url.query, url.source, scenario, setParams])
 
   const retrySeries = useCallback(() => setRetryNonce((nonce) => nonce + 1), [])
   const retryCatalog = useCallback(() => setCatalogNonce((nonce) => nonce + 1), [])
