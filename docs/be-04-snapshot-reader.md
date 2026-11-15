@@ -8,6 +8,10 @@ La operación acepta `region_id`, `product_id`, `start`, `end` (`YYYY-MM`) y `fr
 
 La región `murray-darling-basin` es una referencia exploratoria autorizada. Cada valor servido es el valor de una celda IMERG en el punto del snapshot (`spatial_aggregation.support_type: point_sample`), no una media de la cuenca. El producto servido identifica IMERG Final collection `07`, archivo `V07B`, precipitación como tasa media mensual en `mm/hr`. Cero se conserva; `null` conserva su `missing_reason`. `provider_flags_applied` sigue `false`; `basic_checks_only` no significa QA del proveedor aprobada.
 
+### Comprobación espacial del punto
+
+El punto usado (`ful105-panel-row-001`, −37.64999771118164°, 145.75°) viene del panel FUL-105, descrito como 20 centros dentro de Murray–Darling. DS-03 registra que esta coordenada es el centro IMERG `(lon 3257, lat 523)` y fue elegida de los centros dentro de la geometría MDBA con SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`; el nuevo informe DS-07 / FUL-124 identifica esa misma geometría por hash y reporta los conteos de centros IMERG. Por tanto, la pertenencia puntual está respaldada por la selección espacial documentada. En esta actualización no se recalculó la contención del punto contra el polígono: el GeoJSON completo es una caché local ignorada y no está en el worktree. Esa limitación no cambia `point_sample` ni convierte la referencia exploratoria en una máscara o cobertura de superficie aprobada.
+
 ## Lector e identidad
 
 `backend/app/services/snapshot_reader.py` limita a 1 MiB antes de parsear, rechaza claves duplicadas y números no finitos, y valida esquema `1.0.0`, identidad, producto/unidad, origen, hash canónico, doce períodos, cobertura, valores, soporte puntual y QA. Productor y lector comparten `snapshot_sha256`, `canonical_json` y `dataset_id_for_input_fingerprint` en `research/snapshot_format.py`; el hash del snapshot excluye `snapshot_sha256`.
