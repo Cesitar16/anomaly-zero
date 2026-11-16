@@ -12,6 +12,12 @@ El servicio lee y valida el artefacto derivado (esquema tabular, meses ordenados
 
 El selector de la interfaz etiqueta los sitios como candidatos no aprobados. No se aplica conversión de unidad, imputación, agregación regional ni máscara. QA del proveedor no está aplicada. La metadata de soporte no significa que el sitio esté validado ni que las huellas de las distintas grillas coincidan.
 
+## Integración de exploración y mapa contextual
+
+El rediseño del explorador conserva los filtros plegables, el detalle mensual, la selección de mes, la tabla, el CSV y el panel MapLibre. El `site_id` se muestra también en el resumen de filtros plegado. El adaptador HTTP consulta el endpoint BE-10 de geometría únicamente en modo API y pasa al mapa el GeoJSON junto con su atribución, licencia y SHA-256 de artefacto. Este hash identifica el contorno contextual; no es una versión temporal ni una aprobación científica. El contorno es cartográfico y no se usa como máscara o agregación.
+
+El endpoint solo entrega el límite cuando está montado el artefacto oficial local, con tamaño 477805 bytes y SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`. Su estado sigue siendo `contextual_outline_only` y `not_approved`. Gate M continúa en HOLD: no se genera ni publica raster NASA.
+
 ## Métodos estadísticos
 
 La serie temporal individual es descriptiva. `/explore` muestra tres small multiples con eje Y propio por variable/unidad y tablas HTML accesibles; los meses se alinean por etiqueta, y cada panel indica su cell ID para hacer visibles las posiciones distintas. Esta vista lado a lado no prueba co-localización. Comparación de unidades mezcladas, correlaciones, scatter, regresión, tendencias, p-values e incertidumbre permanecen deshabilitadas. Los tres productos comparten etiquetas de mes, pero el experimento DS-09 no aprobó soporte espacial/temporal comparable; con solo un año también existe estacionalidad y dependencia serial. No se interpreta causalidad.

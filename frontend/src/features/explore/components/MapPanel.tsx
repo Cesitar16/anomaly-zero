@@ -103,7 +103,7 @@ export function MapPanel(props: MapPanelProps) {
             {safeHttpsUrl(verifiedGeometry.sourceUrl) && <> · <a href={safeHttpsUrl(verifiedGeometry.sourceUrl)!} target="_blank" rel="noopener noreferrer">ver fuente</a></>}
             {' '}· Licencia {verifiedGeometry.licenseName}
             {safeHttpsUrl(verifiedGeometry.licenseUrl) && <> (<a href={safeHttpsUrl(verifiedGeometry.licenseUrl)!} target="_blank" rel="noopener noreferrer">ver licencia</a>)</>}
-            {' '}· versión <code>{verifiedGeometry.geometryVersion}</code> · SHA-256 <code>{verifiedGeometry.sha256}</code>
+            {' '}· identificador del artefacto (SHA-256) <code>{verifiedGeometry.sha256}</code>
           </p>
         )}
         {contextGeometry && !verifiedGeometry && <p role="status">Geometría contextual sin procedencia verificable; no se dibuja.</p>}

@@ -70,6 +70,39 @@ describe('Cliente HTTP (compatible con el backend integrado en dev)', () => {
     expect(url.searchParams.get('site_id')).toBe('site_west_extent')
   })
 
+  it('obtiene y adapta la geometría BE-10 con su hash de artefacto verificable', async () => {
+    const sha256 = 'd36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53'
+    const { api, fetchMock } = apiWith((url, init) => {
+      expect(url).toBe('/api/v1/regions/murray-darling-basin/geometry')
+      expect(init?.headers).toEqual({ Accept: 'application/geo+json' })
+      return respond({
+        type: 'FeatureCollection',
+        synthetic: false,
+        features: [{ type: 'Feature', properties: { region_id: 'murray-darling-basin', name: 'Murray–Darling Basin' }, geometry: { type: 'Polygon', coordinates: [[[138, -37], [139, -37], [139, -36], [138, -37]]] } }],
+        metadata: {
+          geometry_use: 'contextual_outline_only', scientific_approval: 'not_approved',
+          region_id: 'murray-darling-basin',
+          source_url: 'https://example.org/layer', source_item_url: 'https://example.org/item',
+          license: 'CC BY 4.0', license_url: 'https://creativecommons.org/licenses/by/4.0/',
+          attribution: 'DCCEEW', artifact_sha256: sha256,
+        },
+      })
+    })
+    const result = await api.getContextGeometry?.('murray-darling-basin')
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(result?.ok).toBe(true)
+    if (!result?.ok) throw new Error('Expected verified contextual outline')
+    expect(result.data.data.type).toBe('FeatureCollection')
+    expect(result.data.sha256).toBe(sha256)
+    expect(result.data.label).toBe('Murray–Darling Basin')
+  })
+
+  it('rechaza una geometría no sintética si faltan metadatos de procedencia', async () => {
+    const { api } = apiWith(() => respond({ type: 'FeatureCollection', synthetic: false, features: [], metadata: {} }))
+    const result = await api.getContextGeometry?.('murray-darling-basin')
+    expect(result?.ok === false && result.failure.kind).toBe('network')
+  })
+
   it('pide CSV como archivo y preserva errores JSON del contrato', async () => {
     let exportCount = 0
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {

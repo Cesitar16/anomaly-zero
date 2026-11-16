@@ -70,7 +70,7 @@ describe('FiltersPanel', () => {
       <FiltersPanel
         open={open}
         onToggle={() => setOpen((value) => !value)}
-        summary={{ region: 'Región sintética', product: 'Precipitación (IMERG Final)', range: '2005-01 a 2005-03' }}
+        summary={{ region: 'Región sintética', product: 'Precipitación (IMERG Final)', range: '2005-01 a 2005-03', site: 'Sitio site_central_extent' }}
       >
         <label>
           Campo <input type="text" />
@@ -96,6 +96,7 @@ describe('FiltersPanel', () => {
       'Región sintética',
       'Precipitación (IMERG Final)',
       '2005-01 a 2005-03',
+      'Sitio site_central_extent',
     ])
 
     await user.click(show)
