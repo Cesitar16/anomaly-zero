@@ -1,12 +1,13 @@
 # AZ-06 / FUL-132 — Informe de validación E2E
 
-**Resultado: E2E funcional aprobado para la demo local con IMERG auténtico.** La rama incorpora FE-04 y se verificó el recorrido navegador → Nginx → FastAPI → snapshot NASA. Esto no constituye aprobación científica de QA regional, una tendencia, ni autorización para publicar inferencias o modelos.
+**Resultado: serie E2E NASA verificada; BE-08 validado por API, parser local y pruebas automatizadas. Descarga desde el botón del navegador pendiente de comprobación manual.** No se completó esa interacción de navegador en esta actualización. La evidencia no constituye aprobación científica de QA regional, una tendencia ni autorización para publicar inferencias o modelos.
 
 ## Identidad del entorno
 
 - Rama de validación: `test/ful-132-az-06-e2e-validation`.
-- `origin/dev` integrado: `5512fdb03961c6daec5e992874c1196edd326589` (merge de FE-04 / PR #36).
-- Commit de integración local de `origin/dev`: `d7bff8fe6b94084d8dd8933d3303d41416523b83`.
+- `origin/dev` integrado: `1bd970d88a549af96e34021e8f5096a200d8a03d` (incluye FE-04 / PR #36 y BE-08 / PR #40).
+- Commit de merge local de `origin/dev`: `cb9fdd67c26dc2d61b815afd5278743360332d45`.
+- SHA de `origin/dev` evaluado: `1bd970d88a549af96e34021e8f5096a200d8a03d`.
 - Snapshot de Compose: proyecto `az-ful132`; frontend `127.0.0.1:18080`, backend `127.0.0.1:18000`.
 - Los puertos 8080 y 8000 estaban ocupados por otro proyecto Compose activo; no se detuvo ni modificó ese proyecto. Se eligieron puertos aislados para no interrumpirlo.
 - Ambos contenedores quedaron `healthy`. La configuración del entorno apunta al directorio local procesado mediante un bind mount de solo lectura.
@@ -22,9 +23,9 @@ Comprobaciones de límites de datos:
 - Docker informa el montaje de `/app/data/processed` como `readOnly=true` (`RW=false`).
 - No se añadieron datos NASA, credenciales ni rutas personales al commit.
 
-## Navegador y recorrido
+## Explorador y serie NASA
 
-En Microsoft Edge abrí la landing local y la ruta `/explore?fuente=api`; seleccioné la cuenca Murray–Darling, precipitación IMERG P02 y el rango inclusivo `2005-01`–`2005-12`, y envié el formulario.
+La iteración anterior de AZ-06 (build sin BE-08, SHA `927a4782783cb9c2cbb41b9b8dd6a361c330d59d`) comprobó la serie real en Edge, con gráfico, tabla, unidad y advertencias. Para esta actualización reconstruí FE-04 + BE-08; la API y el snapshot se volvieron a consultar. Al iniciar la repetición del flujo visual, Computer Use fue detenido por Escape físico; no afirmo haber revisado en navegador esta build ni el click del botón de descarga. Los puntos siguientes describen aquella ejecución previa.
 
 - Landing y `/explore` respondieron y se renderizaron. La fuente activa fue **Servicio real (API)**.
 - Apareció `Serie completa`, sin el aviso de datos sintéticos asociado a la respuesta (`MockDataNotice`). La cabecera conserva la etiqueta global `Demostración` que representa el estado general configurado del explorador, no el origen de esta respuesta; en la página, el selector confirmó API.
@@ -34,7 +35,7 @@ En Microsoft Edge abrí la landing local y la ruta `/explore?fuente=api`; selecc
 - El mapa informa que no hay capa geográfica y no dibuja una escala engañosa. El análisis de tendencia aparece no disponible y su botón deshabilitado.
 - En escritorio maximizado (1536 px) comprobé el formulario y el gráfico. En una ventana compacta de 632 px (por debajo del breakpoint de 768 px) comprobé que los filtros se apilan y que el gráfico y la tabla siguen accesibles. Esto prueba el layout responsive en viewport estrecho, no una emulación de dispositivo físico ni una auditoría exhaustiva de accesibilidad móvil.
 - La ruta sin parámetros también conserva el modo de demostración configurado por defecto. No fue necesario establecer `VITE_EXPLORE_API=http`: `?fuente=api` selecciona explícitamente la API y el control de la interfaz permite cambiar a demo. No alteré el modo inicial del sitio.
-- No guardé una captura en el repositorio; las vistas se inspeccionaron en vivo en Edge.
+- No se guardó una captura nueva para esta actualización.
 
 ## Snapshot y respuesta JSON auténticos
 
@@ -58,13 +59,18 @@ La respuesta conserva el identificador de dataset y hashes de los doce archivos 
 
 La serie se pidió a través del proxy Nginx. `/health`, `/api/v1/regions`, `/api/v1/products` y `/api/v1/series` respondieron correctamente. El recurso de productos expone tres productos; en la interfaz MERRA-2 y GLDAS se muestran como no disponibles para esta API. No se presentan los datos descargados en investigación offline como series API aprobadas.
 
-## Paridad de exportación CSV
+## BE-08 — exportación CSV
 
-`GET /api/v1/series/export.csv` respondió HTTP 200 con tipo `text/csv; charset=utf-8`, descarga adjunta y 12 filas `observation`. Comparé las 12 filas con JSON: período, valor, estado QA, motivo de faltante, región, producto y versión, variable, cantidad, unidad, soporte y estado de aprobación espacial, dataset, los 12 hashes fuente, clasificación sintética y flags del proveedor. **Los valores y metadatos comparados coinciden en las 12 filas.** Esta verificación cubre el endpoint CSV; no afirma que haya una función de descarga CSV en la interfaz.
+`GET /api/v1/series/export.csv` a través del proxy respondió HTTP 200 con `Content-Type: text/csv; charset=utf-8`, encabezado de descarga y doce filas `observation`. Guardé la respuesta en `%TEMP%\anomaly-zero_be08_imerg_2005.csv` y `Import-Csv` la abrió y parseó correctamente: 12 filas, desde `2005-01-01` hasta `2005-12-01`, y 12 hashes fuente. El archivo temporal quedó fuera del repositorio.
+
+Comparé las doce filas con `/api/v1/series`: período, valor, estado de calidad, producto/versión, unidad, soporte, dataset, hashes fuente, `synthetic` y `provider_flags_applied`. **Las 12 filas coinciden.** Los valores permanecen en `mm/hr`; QA continúa `unassessed` por observación y `basic_checks_only` como estado de verificación; no se aplican flags del proveedor.
+
+La funcionalidad BE-08 está integrada y sus pruebas de página/adaptador automatizadas verifican: Blob y nombre de descarga, MIME `text/csv`, parámetros de la consulta, bloqueo en modo demo, `no_data`, carga y filtros sin aplicar, cancelación de solicitud obsoleta, y rechazo de respuesta HTML/error para impedir archivos inválidos. Sin embargo, el click y la descarga del botón en un navegador real **no se verificaron** en esta ejecución.
 
 ## Estados y límites verificados
 
 - HTTP 404 por región desconocida y HTTP 422 por rango inválido: cliente frontend integrado con FastAPI real, 6 pruebas de integración HTTP aprobadas en total.
+- Respuesta CSV real del endpoint: 200, `text/csv`, archivo parseable, 12/12 valores y metadatos coincidentes con JSON.
 - `no_data`, 404, 422, 500, 503, pérdida de respuesta, datos sintéticos y la distinción cero/null están cubiertos por las pruebas de contrato, cliente, componentes y página de FE-04 con fixtures rotuladas. Esos casos de error no se provocaron manipulando el snapshot real.
 - Cero frente a null se valida con fixtures sintéticas. El snapshot NASA observado contiene doce valores válidos no nulos y ninguno igual a cero.
 - No se calculó agregación regional, correlación, tendencia ni modelo. No se aprobó Gate R, Gate T ni QA de proveedor.
@@ -76,21 +82,23 @@ La serie se pidió a través del proxy Nginx. `/health`, `/api/v1/regions`, `/ap
 - `uv run ruff check backend research` — correcto.
 - `npm ci --prefix frontend` — correcto; npm informó 0 vulnerabilidades.
 - `npm run lint --prefix frontend` — correcto.
-- `npm run test --prefix frontend` — **197 passed, 6 skipped** porque son las pruebas condicionales contra un backend en vivo.
+- `npm run test --prefix frontend` — **205 passed, 6 skipped** porque son las pruebas condicionales contra un backend en vivo.
 - `EXPLORE_LIVE_API=http://127.0.0.1:18000/api/v1 npm run test --prefix frontend -- --run liveBackend` — **6 passed**; quedaron ejercitadas las pruebas condicionales anteriores contra FastAPI en Docker.
 - `npm run build --prefix frontend` — correcto. Vite advierte que un chunk del mapa supera 500 kB; el build no falla.
 - `git diff --check` — correcto.
 
-Las 6 pruebas condicionales se ejecutaron también contra el backend real, por lo que el resultado combinado del frontend es **203 pruebas aprobadas**, sin atribuir datos de fixture al snapshot NASA.
+Las 6 pruebas condicionales se ejecutaron también contra el backend real, por lo que el resultado combinado del frontend es **211 pruebas aprobadas**. La prueba de exportación en el navegador usa fixtures sintéticas; la respuesta HTTP independiente sí se verificó contra el snapshot NASA local.
 
 ## Checklist FUL-132
 
 - [x] FE-04 actualizada desde el merge presente en `origin/dev`; cambios incorporados sin conflicto.
 - [x] Docker reconstruido; frontend y backend saludables; proxy y snapshot de solo lectura comprobados.
-- [x] Recorrido real en navegador con 12 valores IMERG NASA, gráfico, tabla y advertencias.
-- [x] Metadatos científicos, procedencia y 12 hashes comprobados; CSV comparado con JSON.
+- [x] Serie real IMERG NASA, 12 períodos, metadatos, procedencia y hashes verificados por API.
+- [x] CSV del endpoint parseado localmente; sus doce filas y metadatos coinciden con JSON.
+- [x] BE-08 probado con fixtures para MIME/Blob, disponibilidad, filtros pendientes y errores.
+- [ ] Confirmar en navegador que el botón BE-08 se habilita con la serie real, iniciar descarga y abrir el archivo bajado.
 - [x] Layout escritorio y compacto revisados; estadísticas no autorizadas permanecen deshabilitadas.
 - [x] Suite backend/frontend, Ruff, lint, build y pruebas HTTP en vivo aprobadas.
 - [ ] Revisión humana y merge de PR #39.
 
-La demo local es funcional con datos NASA auténticos como **muestra puntual exploratoria**. No equivale a una demo de promedio espacial, QA del proveedor aprobada, tendencia científica, ni resultado inferencial. Repetir el smoke test después de cualquier cambio de datos o código antes de usarlo en una presentación.
+La serie del MVP sigue siendo una **muestra puntual exploratoria** y no equivale a un promedio espacial, QA del proveedor aprobada, tendencia científica ni resultado inferencial. Para cerrar la aceptación de BE-08 falta que una persona ejecute el click de descarga en Edge, confirme la descarga y abra el archivo descargado; el endpoint y su CSV sí están verificados.
