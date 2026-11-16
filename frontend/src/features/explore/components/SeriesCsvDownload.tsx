@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ExploreApi } from '../data/exploreApi'
 import type { ExploreFailure, Remote, SeriesResponse, SeriesQuery } from '../types/contracts'
 import { ErrorState } from './ErrorState'
@@ -31,6 +31,7 @@ export function SeriesCsvDownload({
   const current = series.status === 'success' ? series.data : null
   const query = current ? queryFor(current) : null
   const requestKey = JSON.stringify([api.mode, dirty, query])
+  const latestRequestKey = useRef(requestKey)
   const pending = pendingKey === requestKey
   const failure = lastFailure?.key === requestKey ? lastFailure.failure : null
   const available = current !== null && current.data_state !== 'no_data' && current.coverage.valid_periods > 0 && current.series.length > 0
@@ -46,6 +47,10 @@ export function SeriesCsvDownload({
     activeRequest.current?.abort()
     activeRequest.current = null
     return () => activeRequest.current?.abort()
+  }, [requestKey])
+
+  useLayoutEffect(() => {
+    latestRequestKey.current = requestKey
   }, [requestKey])
 
   const reason = api.mode !== 'http'
@@ -67,7 +72,7 @@ export function SeriesCsvDownload({
     setPendingKey(requestKey)
     setLastFailure(null)
     const result = await api.downloadSeriesCsv(query, controller.signal)
-    if (controller.signal.aborted) return
+    if (controller.signal.aborted || latestRequestKey.current !== requestKey) return
     activeRequest.current = null
     if (!result.ok) {
       setLastFailure({ key: requestKey, failure: result.failure })
