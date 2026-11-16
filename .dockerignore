@@ -24,6 +24,11 @@ research/tests
 **/*.key
 data/raw
 data/processed
+!data/processed/
+data/processed/*
+!data/processed/ful116/
+data/processed/ful116/*
+!data/processed/ful116/imerg_2005_point_snapshot.json
 data/cache
 **/*.nc
 **/*.nc4
