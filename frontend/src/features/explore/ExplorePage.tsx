@@ -16,6 +16,7 @@ import { MockDataNotice } from './components/MockDataNotice'
 import { QualityNotice } from './components/QualityNotice'
 import { SeriesTable } from './components/SeriesTable'
 import { SourceProvenance } from './components/SourceProvenance'
+import { SeriesCsvDownload } from './components/SeriesCsvDownload'
 import { SupportNotice } from './components/SupportNotice'
 import { TimeSeriesChart } from './components/TimeSeriesChart'
 import { COPY, DEMO_SCENARIOS } from './content/exploreCopy'
@@ -110,6 +111,8 @@ export default function ExplorePage() {
           onSubmit={explorer.submit}
           onRetryCatalog={explorer.retryCatalog}
         />
+
+        {explorer.submitted && <SeriesCsvDownload api={api} series={series} dirty={explorer.dirty} />}
 
         {noCatalog ? (
           <div className="explore-placeholder" role="note">

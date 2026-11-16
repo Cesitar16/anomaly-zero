@@ -56,6 +56,43 @@ export function createHttpExploreApi(
 
   const get = { method: 'GET' } satisfies RequestInit
 
+  async function downloadSeriesCsv(query: SeriesQuery, signal?: AbortSignal): Promise<ApiResult<Blob>> {
+    const params = new URLSearchParams({
+      region_id: query.regionId,
+      product_id: query.productId,
+      start: query.start,
+      end: query.end,
+      frequency: 'monthly',
+    })
+    let response: Response
+    try {
+      response = await fetchImpl(`${baseUrl}/series/export.csv?${params}`, {
+        method: 'GET',
+        signal,
+        headers: { Accept: 'text/csv' },
+      })
+    } catch {
+      return { ok: false, failure: { kind: 'network' } }
+    }
+    const contentType = response.headers.get('content-type')
+    if (response.ok && contentType?.toLowerCase().split(';', 1)[0].trim() === 'text/csv') {
+      try {
+        return { ok: true, data: await response.blob() }
+      } catch {
+        return { ok: false, failure: { kind: 'unexpected', httpStatus: response.status, contentType } }
+      }
+    }
+    if (!response.ok && contentType?.toLowerCase().includes('application/json')) {
+      try {
+        const body: unknown = await response.json()
+        if (isErrorResponse(body)) return { ok: false, failure: { kind: 'api', httpStatus: response.status, body } }
+      } catch {
+        // El cuerpo de error no es JSON válido.
+      }
+    }
+    return { ok: false, failure: { kind: 'unexpected', httpStatus: response.status, contentType } }
+  }
+
   return {
     mode: 'http',
     capabilities: { analyses: false, raster: () => null },
@@ -83,6 +120,8 @@ export function createHttpExploreApi(
         isSeriesResponse,
         signal,
       ),
+
+    downloadSeriesCsv,
 
     createAnalysis: (body: CreateAnalysisRequest, signal) =>
       request(

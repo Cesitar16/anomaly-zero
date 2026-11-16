@@ -58,6 +58,44 @@ describe('Cliente HTTP (compatible con el backend integrado en dev)', () => {
     })
   })
 
+  it('pide CSV como archivo y preserva errores JSON del contrato', async () => {
+    let exportCount = 0
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes('/export.csv')) {
+        expect(init?.headers).toEqual({ Accept: 'text/csv' })
+        exportCount += 1
+        return Promise.resolve(exportCount === 1
+          ? new Response('record_type\r\nstatus\r\n', { headers: { 'Content-Type': 'text/csv; charset=utf-8' } })
+          : respond(observed('error_503_dev'), 503))
+      }
+      return Promise.resolve(respond(observed('error_503_dev'), 503))
+    })
+    const api = createHttpExploreApi('/api/v1', fetchMock as unknown as typeof fetch)
+    const result = await api.downloadSeriesCsv?.(query)
+    expect(result?.ok).toBe(true)
+    if (!result?.ok) throw new Error('CSV should be returned as a Blob')
+    expect(result.data.type).toContain('text/csv')
+    expect(result.data.size).toBeGreaterThan(0)
+    const error = await api.downloadSeriesCsv?.(query)
+    expect(error?.ok).toBe(false)
+    if (!error || error.ok || error.failure.kind !== 'api') throw new Error('Expected a contract error envelope')
+    expect(error.failure.body.error.code).toBe('SERVICE_UNAVAILABLE')
+  })
+
+  it('rechaza HTML y un tipo de contenido distinto de CSV como respuesta inesperada', async () => {
+    const html = createHttpExploreApi('/api/v1', (() => Promise.resolve(new Response('<html>proxy</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }))) as typeof fetch)
+    const json = createHttpExploreApi('/api/v1', (() => Promise.resolve(new Response('{}', { headers: { 'Content-Type': 'application/json' } }))) as typeof fetch)
+    for (const result of [await html.downloadSeriesCsv?.(query), await json.downloadSeriesCsv?.(query)]) {
+      expect(result?.ok === false && result.failure.kind).toBe('unexpected')
+    }
+  })
+
+  it('clasifica una caída de red al exportar sin crear un archivo', async () => {
+    const down = createHttpExploreApi('/api/v1', (() => Promise.reject(new TypeError('offline'))) as typeof fetch)
+    const result = await down.downloadSeriesCsv?.(query)
+    expect(result?.ok === false && result.failure.kind).toBe('network')
+  })
+
   it.each([
     ['error_404_producto_dev', 404, 'RESOURCE_NOT_FOUND'],
     ['error_422_limit_exceeded_dev', 422, 'LIMIT_EXCEEDED'],

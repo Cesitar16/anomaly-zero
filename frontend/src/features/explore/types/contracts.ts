@@ -337,7 +337,13 @@ export interface NetworkFailure {
   kind: 'network'
 }
 
-export type ExploreFailure = ApiFailure | NetworkFailure
+export interface UnexpectedResponseFailure {
+  kind: 'unexpected'
+  httpStatus: number
+  contentType: string | null
+}
+
+export type ExploreFailure = ApiFailure | NetworkFailure | UnexpectedResponseFailure
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; failure: ExploreFailure }
 
