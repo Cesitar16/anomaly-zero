@@ -29,6 +29,9 @@ _netrc
 # NASA data and generated outputs
 data/raw/**
 data/processed/**
+!data/processed/ful116/
+data/processed/ful116/*
+!data/processed/ful116/imerg_2005_point_snapshot.json
 data/cache/**
 data/contextual/**
 !data/raw/.gitkeep

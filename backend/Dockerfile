@@ -23,6 +23,7 @@ RUN groupadd --system app && useradd --system --gid app --home-dir /app app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --chown=app:app backend /app/backend
 COPY --chown=app:app research /app/research
+COPY --chown=app:app data/processed/ful116/imerg_2005_point_snapshot.json /app/data/processed/ful116/imerg_2005_point_snapshot.json
 
 USER app
 EXPOSE 8000
