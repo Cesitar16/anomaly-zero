@@ -5,10 +5,17 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
+      ANOMALY_ZERO_CONTEXT_GEOMETRY: /app/data/contextual/mdba_boundary_4326.geojson
     volumes:
       - type: bind
         source: ${ANOMALY_ZERO_PROCESSED_DIR:-./data/processed}
         target: /app/data/processed
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${ANOMALY_ZERO_CONTEXT_GEOMETRY_DIR:-./data/contextual}
+        target: /app/data/contextual
         read_only: true
         bind:
           create_host_path: false

@@ -2,7 +2,7 @@
 
 ## Publicación en el catálogo BE-03
 
-César autorizó publicar **Murray–Darling Basin** con el ID estable `murray-darling-basin` como referencia geográfica y administrativa para exploración puntual. El catálogo cita el [ítem ArcGIS publicado por MDBA](https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json), que documenta la fuente del límite. El ítem declara CC BY 4.0, identifica a DCCEEW como fuente de los límites y a MDBA como publicador; la atribución y las condiciones de redistribución constan en la sección siguiente. Esto no publica una geometría ni aprueba una máscara, agregación regional, QA o inferencia. Por ello `geometry_source` identifica el ítem documental, mientras `geometry_version`, `crs` y `area_km2` siguen `null`: la exportación consultada en EPSG:4326 no determina por sí sola el CRS nativo ni establece una versión oficial validada para el contrato.
+César autorizó publicar **Murray–Darling Basin** con el ID estable `murray-darling-basin` como referencia geográfica y administrativa para exploración puntual. El catálogo cita el [ítem ArcGIS publicado por MDBA](https://www.arcgis.com/sharing/rest/content/items/ba731d77d80947fbbcbf7524364372ff?f=json), que documenta la fuente del límite. El ítem declara CC BY 4.0, identifica a DCCEEW como fuente de los límites y a MDBA como publicador; la atribución y las condiciones de redistribución constan en la sección siguiente. BE-10 sirve el artefacto contextual aprobado desde un archivo local verificado mediante `GET /api/v1/regions/murray-darling-basin/geometry`, si está montado. Esto no aprueba una máscara, agregación regional, QA o inferencia. Por ello `geometry_source` identifica el ítem documental, mientras `geometry_version`, `crs` y `area_km2` siguen `null`: la exportación consultada en EPSG:4326 no determina por sí sola el CRS nativo ni establece una versión oficial para el catálogo.
 
 El catálogo permite consultar metadatos de MERRA-2, IMERG Final y GLDAS Noah asociados a esa referencia. Los tres permanecen `unavailable`, con `current_dataset_id`, `coverage` y `quality` en `null`, hasta publicar y verificar snapshots mediante el mecanismo de la API. Archivos locales o cobertura histórica de NASA no bastan para declararlos disponibles.
 
@@ -19,7 +19,7 @@ La autorización no modifica AZ-03 ni los gates R/T, no valida área o cobertura
 
 ## Fragmento geométrico de integración
 
-El [segmento GeoJSON](examples/murray_darling_boundary_segment.geojson) contiene 12 vértices consecutivos extraídos de la geometría MDBA descargada como EPSG:4326. Incluye la atribución DCCEEW indicada en el ítem, el publicador MDBA, enlaces, licencia CC BY 4.0 y descripción de la modificación. Está representado como `LineString` para probar lectura de coordenadas: **no es un polígono cerrado ni sirve para recortar, calcular superficies o decidir si un punto está en la cuenca**. La geometría completa debe obtenerse del servicio oficial y verificarse al usarla.
+El [segmento GeoJSON](examples/murray_darling_boundary_segment.geojson) contiene 12 vértices consecutivos extraídos de la geometría MDBA descargada como EPSG:4326. Incluye la atribución DCCEEW indicada en el ítem, el publicador MDBA, enlaces, licencia CC BY 4.0 y descripción de la modificación. Está representado como `LineString` para probar lectura de coordenadas: **no es un polígono cerrado ni sirve para recortar, calcular superficies o decidir si un punto está en la cuenca**. El servicio contextual obtiene el polígono completo solo desde el artefacto local fijado por hash; consulta la [guía de montaje BE-10](be-10-context-geometry.md).
 
 ## Punto de prueba
 
@@ -27,7 +27,7 @@ El [segmento GeoJSON](examples/murray_darling_boundary_segment.geojson) contiene
 
 [Repetir consulta de intersección](https://services8.arcgis.com/5xxEi7I2m6ml97fE/arcgis/rest/services/boundary_gdb/FeatureServer/0/query?f=json&where=1%3D1&returnCountOnly=true&geometry=147.36%2C-35.11&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects).
 
-Para una copia GeoJSON, consultar el servicio con `where=1=1`, `outFields=*`, `outSR=4326` y `f=geojson`. Verificar resultado y licencia antes de guardar o redistribuir. La respuesta utilizada en la prueba queda únicamente en la caché local ignorada; no se incorpora una copia versionada aquí.
+Para recuperar una copia GeoJSON, consultar el servicio con `where=1=1`, `outFields=*`, `outSR=4326` y `f=geojson`. Verificar resultado, hash y licencia antes de guardar o redistribuir. El endpoint BE-10 no consulta el servicio remoto durante una petición: requiere el archivo local exacto autorizado y devuelve 503 si falta.
 
 ## Uso con productos NASA
 
@@ -36,7 +36,7 @@ La caja `138,-38,153,-24` contiene la extensión aproximada y sirve para descubr
 
 ## Prueba espacial de una muestra IMERG
 
-El 2026-11-14 se consultó la geometría MDBA con `outSR=4326` y GeoJSON; la respuesta guardada temporalmente en `data/cache/ful-102/mdba_boundary_4326.geojson` contiene un polígono válido según Shapely 2.2.0 y tiene SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`. La prueba compara coordenadas geográficas con los centros y límites declarados en el gránulo IMERG mensual V07B de enero de 2005; no transforma las coordenadas ni calcula áreas. La extensión del polígono queda dentro de la caja revisada de 138–153° E, 38–24° S.
+El 2026-11-14 se consultó la geometría MDBA con `outSR=4326` y GeoJSON; la respuesta guardada temporalmente en `data/cache/ful-102/mdba_boundary_4326.geojson` contiene un polígono válido según Shapely 2.2.0 y tiene SHA-256 `d36fe31424758cc4fb8eef25e21b835bb5c05c793c746e8a1eb7b5a5841f6a53`. La misma geometría fue autorizada por César y es la que BE-10 sirve desde archivo local de solo lectura. La prueba compara coordenadas geográficas con los centros y límites declarados en el gránulo IMERG mensual V07B de enero de 2005; no transforma las coordenadas ni calcula áreas. La extensión del polígono queda dentro de la caja revisada de 138–153° E, 38–24° S.
 
 De las 21 000 celdas cuyos centros quedan en esa caja, **10 092 centros** están cubiertos por el polígono, todos con precipitación finita y distinta del `_FillValue` en esta muestra. Si en lugar de centros se incluyen las cajas de celda que intersectan el polígono, hay **10 467 celdas**; 9 720 están cubiertas completamente y 747 intersectan parcialmente. De estas últimas, 375 tienen el centro fuera y 372 lo tienen dentro. `covers` incluye el borde y `intersects` incluye el contacto con el borde; los resultados dependen de la geometría y precisión usadas.
 

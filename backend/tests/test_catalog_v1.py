@@ -254,9 +254,18 @@ def test_generated_openapi_exposes_catalog_and_series_paths() -> None:
     paths = document["paths"]
 
     assert "/api/v1/regions" in paths
+    assert "/api/v1/regions/{region_id}/geometry" in paths
     assert "/api/v1/products" in paths
     assert "/api/v1/series" in paths
     assert "get" in paths["/api/v1/regions"]
+    geometry_operation = paths["/api/v1/regions/{region_id}/geometry"]["get"]
+    assert geometry_operation["operationId"] == "getContextRegionGeometry"
+    assert geometry_operation["responses"]["200"]["content"][
+        "application/geo+json"
+    ]["schema"]["$ref"] == "#/components/schemas/ContextualGeometryFeatureCollection"
+    assert geometry_operation["responses"]["404"]["content"]["application/json"][
+        "schema"
+    ]["$ref"] == "#/components/schemas/ErrorResponse"
     assert "get" in paths["/api/v1/products"]
     assert "get" in paths["/api/v1/series"]
     assert [parameter["name"] for parameter in paths["/api/v1/series"]["get"]["parameters"]] == [

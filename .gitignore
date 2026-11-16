@@ -30,9 +30,11 @@ _netrc
 data/raw/**
 data/processed/**
 data/cache/**
+data/contextual/**
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/cache/.gitkeep
+!data/contextual/.gitkeep
 
 # Editors and operating systems
 .vscode/
