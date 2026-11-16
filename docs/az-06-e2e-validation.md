@@ -1,13 +1,13 @@
 # AZ-06 / FUL-132 — Informe de validación E2E
 
-**Resultado: serie E2E NASA verificada; BE-08 validado por API, parser local y pruebas automatizadas. Descarga desde el botón del navegador pendiente de comprobación manual.** No se completó esa interacción de navegador en esta actualización. La evidencia no constituye aprobación científica de QA regional, una tendencia ni autorización para publicar inferencias o modelos.
+**Estado al 2026-11-15: serie E2E NASA verificada; BE-08 validado por API, parser local y pruebas automatizadas. La descarga iniciada por el botón en Edge sigue pendiente: Computer Use se interrumpió y no había Playwright/WebDriver disponible para repetirla. La PR #39 no se considera lista para merge bajo el criterio de aceptación del navegador.** Esta evidencia no aprueba QA regional, tendencias ni inferencias o modelos.
 
 ## Identidad del entorno
 
 - Rama de validación: `test/ful-132-az-06-e2e-validation`.
-- `origin/dev` integrado: `1bd970d88a549af96e34021e8f5096a200d8a03d` (incluye FE-04 / PR #36 y BE-08 / PR #40).
-- Commit de merge local de `origin/dev`: `cb9fdd67c26dc2d61b815afd5278743360332d45`.
-- SHA de `origin/dev` evaluado: `1bd970d88a549af96e34021e8f5096a200d8a03d`.
+- `origin/dev` integrado: `f6b689454d6d4e2d2820931339cb9027fe48a9ba` (incluye FE-04 / PR #36, BE-08 / PR #40 y BE-09 / PR #41).
+- Commit de merge local de `origin/dev`: `b5471a0cda96027d863cc109c72fa844ebb81011`.
+- SHA de `origin/dev` evaluado el 2026-11-15: `f6b689454d6d4e2d2820931339cb9027fe48a9ba`.
 - Snapshot de Compose: proyecto `az-ful132`; frontend `127.0.0.1:18080`, backend `127.0.0.1:18000`.
 - Los puertos 8080 y 8000 estaban ocupados por otro proyecto Compose activo; no se detuvo ni modificó ese proyecto. Se eligieron puertos aislados para no interrumpirlo.
 - Ambos contenedores quedaron `healthy`. La configuración del entorno apunta al directorio local procesado mediante un bind mount de solo lectura.
@@ -25,7 +25,7 @@ Comprobaciones de límites de datos:
 
 ## Explorador y serie NASA
 
-La iteración anterior de AZ-06 (build sin BE-08, SHA `927a4782783cb9c2cbb41b9b8dd6a361c330d59d`) comprobó la serie real en Edge, con gráfico, tabla, unidad y advertencias. Para esta actualización reconstruí FE-04 + BE-08; la API y el snapshot se volvieron a consultar. Al iniciar la repetición del flujo visual, Computer Use fue detenido por Escape físico; no afirmo haber revisado en navegador esta build ni el click del botón de descarga. Los puntos siguientes describen aquella ejecución previa.
+La iteración anterior de AZ-06 (build sin BE-08, SHA `927a4782783cb9c2cbb41b9b8dd6a361c330d59d`) comprobó la serie real en Edge, con gráfico, tabla, unidad y advertencias. En esta actualización se integró BE-09 mediante el merge de `origin/dev`; no cambió código frontend o backend de ejecución, así que no se reconstruyeron imágenes. La API y el snapshot se volvieron a consultar. Computer Use volvió a interrumpirse por Escape físico al abrir la URL local; no afirmo haber revisado en navegador la build actual ni el click de descarga.
 
 - Landing y `/explore` respondieron y se renderizaron. La fuente activa fue **Servicio real (API)**.
 - Apareció `Serie completa`, sin el aviso de datos sintéticos asociado a la respuesta (`MockDataNotice`). La cabecera conserva la etiqueta global `Demostración` que representa el estado general configurado del explorador, no el origen de esta respuesta; en la página, el selector confirmó API.
@@ -70,7 +70,7 @@ La funcionalidad BE-08 está integrada y sus pruebas de página/adaptador automa
 ## Estados y límites verificados
 
 - HTTP 404 por región desconocida y HTTP 422 por rango inválido: cliente frontend integrado con FastAPI real, 6 pruebas de integración HTTP aprobadas en total.
-- Respuesta CSV real del endpoint: 200, `text/csv`, archivo parseable, 12/12 valores y metadatos coincidentes con JSON.
+- Respuesta CSV real del endpoint: 200, `text/csv`, archivo parseable, 12/12 valores y metadatos coincidentes con JSON. Esta comprobación HTTP no demuestra una descarga iniciada por el botón.
 - `no_data`, 404, 422, 500, 503, pérdida de respuesta, datos sintéticos y la distinción cero/null están cubiertos por las pruebas de contrato, cliente, componentes y página de FE-04 con fixtures rotuladas. Esos casos de error no se provocaron manipulando el snapshot real.
 - Cero frente a null se valida con fixtures sintéticas. El snapshot NASA observado contiene doce valores válidos no nulos y ninguno igual a cero.
 - No se calculó agregación regional, correlación, tendencia ni modelo. No se aprobó Gate R, Gate T ni QA de proveedor.
@@ -99,6 +99,8 @@ Las 6 pruebas condicionales se ejecutaron también contra el backend real, por l
 - [ ] Confirmar en navegador que el botón BE-08 se habilita con la serie real, iniciar descarga y abrir el archivo bajado.
 - [x] Layout escritorio y compacto revisados; estadísticas no autorizadas permanecen deshabilitadas.
 - [x] Suite backend/frontend, Ruff, lint, build y pruebas HTTP en vivo aprobadas.
+- [ ] Reproducir en Edge el click del botón, la descarga del archivo y su apertura/paridad contra JSON. No había automatización alternativa Playwright/WebDriver instalada en el entorno.
+- [ ] Checks de GitHub Actions sobre el HEAD final; pendiente de publicación de la sincronización.
 - [ ] Revisión humana y merge de PR #39.
 
-La serie del MVP sigue siendo una **muestra puntual exploratoria** y no equivale a un promedio espacial, QA del proveedor aprobada, tendencia científica ni resultado inferencial. Para cerrar la aceptación de BE-08 falta que una persona ejecute el click de descarga en Edge, confirme la descarga y abra el archivo descargado; el endpoint y su CSV sí están verificados.
+La serie del MVP sigue siendo una **muestra puntual exploratoria** y no equivale a un promedio espacial, QA del proveedor aprobada, tendencia científica ni resultado inferencial. Para cerrar la aceptación de BE-08 falta ejecutar en navegador el click del botón, confirmar la descarga y abrir ese archivo. El CSV guardado con una petición directa al endpoint fue parseado y comparado con JSON, pero no sustituye esa prueba. La suite backend/frontend, Ruff, lint y build se reejecutaron el 2026-11-15 tras integrar `origin/dev`; GitHub Actions del HEAD publicado aún debe confirmarse.
