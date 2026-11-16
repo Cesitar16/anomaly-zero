@@ -10,12 +10,14 @@
  *  - No llama a `/analyses`: no existe en `dev` y no hay método aprobado (`capabilities.analyses: false`).
  */
 import type { ApiResult, CreateAnalysisRequest, SeriesQuery } from '../types/contracts'
+import type { ContextGeometryOverlay } from '../lib/contextMap'
 import {
   isAnalysisResponse,
   isErrorResponse,
   isProductsResponse,
   isRegionsResponse,
   isSeriesResponse,
+  isContextGeometryResponse,
 } from './exploreApi'
 import type { ExploreApi } from './exploreApi'
 
@@ -64,6 +66,7 @@ export function createHttpExploreApi(
       end: query.end,
       frequency: 'monthly',
     })
+    if (query.siteId) params.set('site_id', query.siteId)
     let response: Response
     try {
       response = await fetchImpl(`${baseUrl}/series/export.csv?${params}`, {
@@ -115,6 +118,7 @@ export function createHttpExploreApi(
           start: query.start,
           end: query.end,
           frequency: 'monthly',
+          ...(query.siteId ? { site_id: query.siteId } : {}),
         })}`,
         get,
         isSeriesResponse,
@@ -122,6 +126,28 @@ export function createHttpExploreApi(
       ),
 
     downloadSeriesCsv,
+
+    getContextGeometry: async (regionId: string, signal?: AbortSignal) => {
+      const result = await request(
+        `/regions/${encodeURIComponent(regionId)}/geometry`,
+        { ...get, headers: { Accept: 'application/geo+json' } },
+        isContextGeometryResponse,
+        signal,
+      )
+      if (!result.ok) return result
+      const body = result.data
+      const metadata = body.metadata
+      const overlay: ContextGeometryOverlay = {
+        data: { type: 'FeatureCollection', features: body.features } as unknown as ContextGeometryOverlay['data'],
+        label: body.features[0].properties.name,
+        attribution: String(metadata.attribution),
+        sourceUrl: String(metadata.source_item_url),
+        licenseName: String(metadata.license),
+        licenseUrl: String(metadata.license_url),
+        sha256: String(metadata.artifact_sha256),
+      }
+      return { ok: true, data: overlay }
+    },
 
     createAnalysis: (body: CreateAnalysisRequest, signal) =>
       request(

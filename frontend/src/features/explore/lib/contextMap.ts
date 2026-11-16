@@ -18,7 +18,7 @@ export interface MapMarkerDetails extends MapPoint {
   providerFlagsApplied: boolean
 }
 
-/** Adaptador interno sobre GeoJSON RFC 7946; no representa un endpoint ni contrato BE-10. */
+/** Forma normalizada del GeoJSON BE-10 para MapLibre, con procedencia retenida aparte del GeoJSON. */
 export interface ContextGeometryOverlay {
   data: Exclude<GeoJSONSourceSpecification['data'], string>
   label: string
@@ -27,7 +27,6 @@ export interface ContextGeometryOverlay {
   licenseName: string
   licenseUrl: string
   sha256: string
-  geometryVersion: string
 }
 
 /** Resuelve únicamente un point_sample declarado; nunca deriva un punto del encuadre regional. */
@@ -61,7 +60,6 @@ export function hasVerifiedContextGeometry(overlay: ContextGeometryOverlay | nul
     typeof overlay.label !== 'string' || !overlay.label.trim() ||
     typeof overlay.attribution !== 'string' || !overlay.attribution.trim() ||
     typeof overlay.licenseName !== 'string' || !overlay.licenseName.trim() ||
-    typeof overlay.geometryVersion !== 'string' || !overlay.geometryVersion.trim() ||
     typeof overlay.sha256 !== 'string' || !/^[a-f\d]{64}$/i.test(overlay.sha256) ||
     typeof overlay.sourceUrl !== 'string' || typeof overlay.licenseUrl !== 'string'
   ) return false

@@ -6,6 +6,7 @@ export interface FiltersSummary {
   region: string | null
   product: string | null
   range: string | null
+  site?: string | null
 }
 
 export interface FiltersPanelProps {
@@ -21,7 +22,7 @@ export interface FiltersPanelProps {
  */
 export function FiltersPanel({ open, onToggle, summary, children }: FiltersPanelProps) {
   const bodyId = useId()
-  const chips = [summary.region, summary.product, summary.range].filter(
+  const chips = [summary.region, summary.product, summary.range, summary.site ?? null].filter(
     (chip): chip is string => chip !== null && chip !== '',
   )
   return (

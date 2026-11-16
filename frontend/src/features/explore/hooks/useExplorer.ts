@@ -205,13 +205,14 @@ export function useExplorer(api: ExploreApi, scenario: string | null): Explorer 
       productId: draft.productId,
       start: draft.start,
       end: draft.end,
+      siteId: params.get('site_id') ?? undefined,
     }
     if (queryKey(query) === queryKey(url.query)) {
       setRetryNonce((nonce) => nonce + 1)
       return
     }
     setParams(buildParams({ query, month: null, scenario, source: url.source }))
-  }, [liveErrors, draft, url.query, url.source, scenario, setParams])
+  }, [liveErrors, draft, url.query, url.source, scenario, setParams, params])
 
   const retrySeries = useCallback(() => setRetryNonce((nonce) => nonce + 1), [])
   const retryCatalog = useCallback(() => setCatalogNonce((nonce) => nonce + 1), [])

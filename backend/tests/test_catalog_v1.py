@@ -137,7 +137,7 @@ def test_products_return_documented_metadata_for_a_known_fixture_region() -> Non
     validate_contract("ProductsResponse", body)
 
 
-def test_authorized_region_returns_unavailable_products() -> None:
+def test_authorized_region_returns_products_when_ds09_tables_exist() -> None:
     response = client.get(
         "/api/v1/products", params={"region_id": "murray-darling-basin"}
     )
@@ -170,7 +170,7 @@ def test_authorized_region_returns_unavailable_products() -> None:
             "precipitation",
             "monthly_mean_rate",
             "mm/hr",
-            "07",
+            "V07B",
             "C2723754851-GES_DISC",
         ),
         (
@@ -182,13 +182,8 @@ def test_authorized_region_returns_unavailable_products() -> None:
             "C1342986036-GES_DISC",
         ),
     ]
-    assert all(
-        product["availability"] == "unavailable"
-        and product["current_dataset_id"] is None
-        and product["coverage"] is None
-        and product["quality"] is None
-        for product in body["products"]
-    )
+    assert all(product["availability"] == "available" for product in body["products"])
+    assert all(product["coverage"] == {"start": "2005-01", "end": "2005-12"} for product in body["products"])
     validate_contract("ProductsResponse", body)
 
 
@@ -274,6 +269,7 @@ def test_generated_openapi_exposes_catalog_and_series_paths() -> None:
         "start",
         "end",
         "frequency",
+        "site_id",
     ]
     product_parameters = paths["/api/v1/products"]["get"]["parameters"]
     assert product_parameters == [

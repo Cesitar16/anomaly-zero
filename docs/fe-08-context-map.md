@@ -16,7 +16,9 @@ El panel mantiene visible que `point_sample` no equivale a promedio regional y q
 
 ## Límite de cuenca y BE-10
 
-FUL-137 / BE-10 no tiene aún un contrato o implementación publicada; por ello no se hace una petición ni se incorpora un polígono. El componente acepta opcionalmente un `ContextGeometryOverlay` interno (GeoJSON Polygon/MultiPolygon en memoria, etiqueta, atribución, URL segura de fuente/licencia, versión geométrica y SHA-256). No es un contrato de FastAPI. El panel rechaza el overlay sin procedencia HTTPS, hash SHA-256 de 64 caracteres y geometría poligonal. Cuando BE-10 publique su esquema y evidencia, el adaptador de la API deberá validar fuente, CRS, tipo de geometría, atribución y licencia antes de mapearla a esa interfaz. La capa futura se representa solo con un contorno discontinuo contextual y nunca como máscara de celdas, cálculo de área o agregación.
+El adaptador HTTP solicita `GET /api/v1/regions/{region_id}/geometry` al backend cuando `/explore` usa la API. Valida que la respuesta sea una FeatureCollection no sintética, de polígono, con procedencia, licencia y SHA-256; retiene metadatos fuera del objeto GeoJSON que MapLibre puede descartar. La interfaz muestra el hash como identidad del artefacto, no como fecha o versión geométrica. Sin respuesta verificable no se dibuja el contorno.
+
+El borde discontinuo se representa solo como referencia cartográfica. Su uso sigue `contextual_outline_only` y `scientific_approval: not_approved`; nunca se usa como máscara de celdas, cálculo de área o agregación. No sustituye al raster NASA; Gate M continúa en HOLD.
 
 ## Carga y fallos
 

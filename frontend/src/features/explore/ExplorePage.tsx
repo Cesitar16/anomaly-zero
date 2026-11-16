@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Badge from '../../components/ui/Badge'
 import ButtonLink from '../../components/ui/ButtonLink'
@@ -19,8 +19,10 @@ import { QualityNotice } from './components/QualityNotice'
 import { SeriesTable } from './components/SeriesTable'
 import { SourceProvenance } from './components/SourceProvenance'
 import { SeriesCsvDownload } from './components/SeriesCsvDownload'
+import { MultivariableComparison } from './components/MultivariableComparison'
 import { SupportNotice } from './components/SupportNotice'
 import { TimeSeriesChart } from './components/TimeSeriesChart'
+import type { ContextGeometryOverlay } from './lib/contextMap'
 import { COPY, DEMO_SCENARIOS, productLabel } from './content/exploreCopy'
 import type { DemoScenarioId } from './content/exploreCopy'
 import { createExploreApi, defaultSource } from './data/createExploreApi'
@@ -101,6 +103,7 @@ export default function ExplorePage() {
       explorer.draft.start !== '' && explorer.draft.end !== ''
         ? `${explorer.draft.start} a ${explorer.draft.end}`
         : null,
+    site: params.get('site_id') ? `Sitio ${params.get('site_id')}` : null,
   }
 
   return (
@@ -132,6 +135,27 @@ export default function ExplorePage() {
                 onSubmit={explorer.submit}
                 onRetryCatalog={explorer.retryCatalog}
               />
+              {source === 'api' && (
+                <div className="explore-site-select">
+                  <label htmlFor="explore-site">Sitio candidato DS-09</label>
+                  <select
+                    id="explore-site"
+                    value={params.get('site_id') ?? ''}
+                    onChange={(event) => {
+                      const updated = new URLSearchParams(params)
+                      if (event.target.value) updated.set('site_id', event.target.value)
+                      else updated.delete('site_id')
+                      setParams(updated)
+                    }}
+                  >
+                    <option value="">Selecciona un sitio candidato</option>
+                    <option value="site_west_extent">Extensión oeste (no aprobado)</option>
+                    <option value="site_central_extent">Extensión central (no aprobado)</option>
+                    <option value="site_east_extent">Extensión este (no aprobado)</option>
+                  </select>
+                  <p role="note">Las celdas de cada producto son distintas; las relaciones y correlaciones siguen deshabilitadas.</p>
+                </div>
+              )}
               <DataSourceSwitch source={source} onChange={changeSource} />
             </FiltersPanel>
           </div>
@@ -155,7 +179,20 @@ export default function ExplorePage() {
             ) : series.status === 'error' ? (
               <ErrorState failure={series.failure} onRetry={explorer.retrySeries} headingLevel="h2" />
             ) : (
-              <SeriesResult series={series.data} points={points} explorer={explorer} />
+              <SeriesResult series={series.data} points={points} explorer={explorer} api={explorer.api} />
+            )}
+
+            {source === 'api' && params.get('site_id') && explorer.submitted && !explorer.dirty && series.status === 'success' && series.data.data_state !== 'no_data' && (
+              <MultivariableComparison
+                api={api}
+                query={{
+                  regionId: series.data.region.region_id,
+                  productId: series.data.product.product_id,
+                  start: series.data.requested_coverage.start,
+                  end: series.data.requested_coverage.end,
+                  siteId: params.get('site_id') ?? undefined,
+                }}
+              />
             )}
 
             {isMock && <DemoScenarios scenario={scenario} onChange={changeScenario} />}
@@ -176,13 +213,27 @@ function SeriesResult({
   series,
   points,
   explorer,
+  api,
 }: {
   series: SeriesResponse
   points: ReturnType<typeof toChartPoints>
   explorer: ReturnType<typeof useExplorer>
+  api: ReturnType<typeof createExploreApi>
 }) {
   const { month, months } = explorer
   const noData = series.data_state === 'no_data'
+  const [geometryResult, setGeometryResult] = useState<{ regionId: string; overlay: ContextGeometryOverlay } | null>(null)
+  const contextGeometry = !noData && geometryResult?.regionId === series.region.region_id ? geometryResult.overlay : null
+  useEffect(() => {
+    if (api.mode !== 'http' || noData || !api.getContextGeometry) return
+    const controller = new AbortController()
+    void api.getContextGeometry(series.region.region_id, controller.signal).then((result) => {
+      if (!controller.signal.aborted && result.ok) {
+        setGeometryResult({ regionId: series.region.region_id, overlay: result.data })
+      }
+    })
+    return () => controller.abort()
+  }, [api, noData, series.region.region_id])
   return (
     <>
       <section className="explore-results" aria-labelledby="explore-results-title">
@@ -237,6 +288,7 @@ function SeriesResult({
                     product={series.product}
                     quality={series.quality}
                     synthetic={series.synthetic}
+                    contextGeometry={contextGeometry}
                   />
                 </div>
               </div>

@@ -630,7 +630,6 @@
     height: 24rem;
   }
 }
-
 /* ---------- Disposición: panel de filtros + resultados ---------- */
 
 .explore-layout {
@@ -875,3 +874,23 @@
     min-width: 0;
   }
 }
+
+.explore-site-select {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 34rem;
+  margin-block: 1rem;
+}
+
+.explore-site-select p {
+  margin: 0;
+  color: var(--color-text-muted, #5c6672);
+  font-size: 0.9rem;
+}
+.az-multivariable { margin-block: 2rem; }
+.az-multivariable > p { max-width: 70ch; }
+.az-multivariable__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
+.az-multivariable__chart { min-width: 0; margin: 0; padding: 1rem; border: 1px solid var(--color-border, #d8dee5); border-radius: 0.75rem; }
+.az-multivariable__chart figcaption { display: grid; gap: 0.2rem; }
+.az-multivariable__chart figcaption small { overflow-wrap: anywhere; color: var(--color-text-muted, #5c6672); }
+.az-multivariable__plot { height: 15rem; min-width: 0; }

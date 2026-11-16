@@ -11,6 +11,7 @@
  * se disfrazan de "sin datos".
  */
 import type { RasterResolver } from '../lib/rasterTarget'
+import type { ContextGeometryOverlay } from '../lib/contextMap'
 import type {
   AnalysisResponse,
   ApiResult,
@@ -39,6 +40,7 @@ export interface ExploreApi {
   listProducts(regionId: string, signal?: AbortSignal): Promise<ApiResult<ProductsResponse>>
   getSeries(query: SeriesQuery, signal?: AbortSignal): Promise<ApiResult<SeriesResponse>>
   downloadSeriesCsv?(query: SeriesQuery, signal?: AbortSignal): Promise<ApiResult<Blob>>
+  getContextGeometry?(regionId: string, signal?: AbortSignal): Promise<ApiResult<ContextGeometryOverlay>>
   createAnalysis(
     request: CreateAnalysisRequest,
     signal?: AbortSignal,
@@ -96,4 +98,27 @@ export function isAnalysisResponse(value: unknown): value is AnalysisResponse {
     typeof value.analysis_id === 'string' &&
     typeof value.status === 'string'
   )
+}
+
+export function isContextGeometryResponse(value: unknown): value is Record<string, unknown> & {
+  type: 'FeatureCollection'
+  synthetic: false
+  features: Array<{ properties: { name: string }; geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown[] } }>
+  metadata: Record<string, unknown>
+} {
+  if (!isRecord(value) || value.type !== 'FeatureCollection' || value.synthetic !== false || !Array.isArray(value.features) || !isRecord(value.metadata)) return false
+  const metadata = value.metadata
+  if (
+    metadata.region_id !== 'murray-darling-basin' ||
+    metadata.geometry_use !== 'contextual_outline_only' || metadata.scientific_approval !== 'not_approved' ||
+    typeof metadata.source_url !== 'string' || typeof metadata.source_item_url !== 'string' ||
+    typeof metadata.license !== 'string' || typeof metadata.license_url !== 'string' ||
+    typeof metadata.attribution !== 'string' || !/^[a-f\d]{64}$/i.test(String(metadata.artifact_sha256 ?? ''))
+  ) return false
+  return value.features.length > 0 && value.features.every((feature) => {
+    if (!isRecord(feature) || !isRecord(feature.properties) || !isRecord(feature.geometry)) return false
+    return feature.properties.region_id === 'murray-darling-basin' && typeof feature.properties.name === 'string' &&
+      (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') &&
+      Array.isArray(feature.geometry.coordinates)
+  })
 }

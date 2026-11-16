@@ -51,6 +51,7 @@ export function readUrl(params: URLSearchParams): UrlState {
     complete && Object.keys(rangeErrors).length === 0
       ? { regionId: draft.regionId, productId: draft.productId, start: draft.start, end: draft.end }
       : null
+  if (query !== null && params.has('site_id')) query.siteId = params.get('site_id') ?? undefined
   const month = params.get('month')
   return {
     draft,
@@ -63,7 +64,9 @@ export function readUrl(params: URLSearchParams): UrlState {
 }
 
 export function queryKey(query: SeriesQuery | null): string {
-  return query === null ? '' : [query.regionId, query.productId, query.start, query.end].join('|')
+  if (query === null) return ''
+  const base = [query.regionId, query.productId, query.start, query.end].join('|')
+  return query.siteId ? `${base}|${query.siteId}` : base
 }
 
 /** Construye la dirección de una consulta enviada. El escenario de demostración y la fuente se conservan. */
@@ -82,5 +85,6 @@ export function buildParams(input: {
   if (input.month) params.set('month', input.month)
   if (input.scenario) params.set('demo', input.scenario)
   if (input.source) params.set('fuente', input.source)
+  if (input.query.siteId) params.set('site_id', input.query.siteId)
   return params
 }

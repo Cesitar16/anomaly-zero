@@ -11,6 +11,7 @@ from fastapi.routing import APIRoute
 
 from backend.app.schemas.catalog import (
     ErrorResponse,
+    MonthRange,
     ProductsResponse,
     RegionsResponse,
 )
@@ -28,6 +29,7 @@ from backend.app.services.context_geometry import (
     get_context_geometry_path,
     read_context_geometry,
 )
+from backend.app.services.ds09_series import SITE_IDS, TABLE_PRODUCT, table_available
 from backend.app.services.series import (
     SeriesRequestError,
     get_snapshot_path,
@@ -121,7 +123,7 @@ class CatalogRoute(APIRoute):
                 return _error_response(
                     exc.status_code, exc.code, exc.public_message, details=exc.details
                 )
-            except Exception as exc:  # noqa: BLE001 - sanitize unexpected catalog faults.
+            except Exception as exc:
                 logger.exception("Unexpected catalog request failure")
                 return await internal_error(request, exc)
 
@@ -224,6 +226,21 @@ def list_products(
     response.headers["Cache-Control"] = "no-store"
     snapshot = read_optional_snapshot(snapshot_path)
     products = products_for_region(catalog, region_id)
+    products = [
+        product.model_copy(update={
+            "availability": "available",
+            "product_version": TABLE_PRODUCT[product.product_id][2],
+            "current_dataset_id": f"ds09-{product.product_id.lower()}-candidate-sites-2005",
+            "coverage": MonthRange(start="2005-01", end="2005-12"),
+            "quality": {
+                "source_flag_fields": [], "provider_flags_applied": False,
+                "source_missing_attributes": {"fill_value": None, "missing_value": None, "scale_factor": None, "add_offset": None},
+                "finite_non_fill_filter_applied": False, "verification_state": "unassessed",
+                "mask_applied": None, "qa_checks": [], "uninterpreted_provider_fields": [],
+            },
+        }) if not catalog.synthetic and region_id == "murray-darling-basin" and any(table_available(product.product_id, site) for site in SITE_IDS) else product
+        for product in products
+    ]
     if snapshot is not None:
         products = [
             product_for_snapshot(product, snapshot)

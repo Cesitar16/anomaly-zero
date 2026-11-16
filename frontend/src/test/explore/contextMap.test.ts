@@ -34,7 +34,6 @@ describe('coordenadas del mapa contextual', () => {
       licenseName: 'Test fixture only',
       licenseUrl: 'https://example.invalid/license',
       sha256: 'a'.repeat(64),
-      geometryVersion: 'synthetic-test-1',
       data: {
         type: 'FeatureCollection',
         features: [{
