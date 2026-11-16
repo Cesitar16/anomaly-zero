@@ -11,6 +11,7 @@ export interface ErrorStateProps {
 
 function copyFor(failure: ExploreFailure): { title: string; body: string } {
   if (failure.kind === 'network') return ERROR_COPY.NETWORK
+  if (failure.kind === 'unexpected') return { title: 'La respuesta no era un archivo CSV', body: 'El servidor o proxy devolvió un contenido inesperado. No se inició la descarga.' }
   const { code, details } = failure.body.error
   if (code === 'INVALID_PARAMETER') {
     const field = typeof details?.field === 'string' ? details.field : undefined
@@ -27,7 +28,7 @@ function copyFor(failure: ExploreFailure): { title: string; body: string } {
 export function ErrorState({ failure, onRetry, retryLabel = 'Reintentar', headingLevel = 'h3' }: ErrorStateProps) {
   const { title, body } = copyFor(failure)
   const Heading = headingLevel
-  const canRetry = onRetry !== undefined && (failure.kind === 'network' || failure.body.error.retryable)
+  const canRetry = onRetry !== undefined && (failure.kind === 'network' || (failure.kind === 'api' && failure.body.error.retryable))
   return (
     <div className="explore-error" role="alert">
       <Heading className="explore-error__title">{title}</Heading>
@@ -36,6 +37,9 @@ export function ErrorState({ failure, onRetry, retryLabel = 'Reintentar', headin
         <p className="explore-error__meta">
           Código: <code>{failure.body.error.code}</code> · Referencia: <code>{failure.body.error.request_id}</code>
         </p>
+      )}
+      {failure.kind === 'unexpected' && (
+        <p className="explore-error__meta">HTTP {failure.httpStatus} · Tipo: <code>{failure.contentType ?? 'desconocido'}</code></p>
       )}
       {canRetry && (
         <button type="button" className="btn btn--secondary" onClick={onRetry}>

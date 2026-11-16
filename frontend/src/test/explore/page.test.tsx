@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } fr
 import App from '../../App'
 import { observed } from './helpers'
 import { createExploreApi, defaultSource } from '../../features/explore/data/createExploreApi'
+import { seriesPointSample } from '../../features/explore/data/fixtures/official'
 
 // La primera carga de la ruta diferida (gráficos incluidos) tarda más en jsdom que el valor por defecto.
 configure({ asyncUtilTimeout: 6000 })
@@ -291,6 +292,7 @@ describe('Pantalla conectada al cliente HTTP con las respuestas reales observada
     serveDev()
     await openPage('/explore?region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
     expect(await screen.findByText(/No hay datos para el rango pedido/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Descargar CSV' })).toBeDisabled()
 
     // Datos reales (`synthetic: false`): no se rotula como demostración.
     expect(screen.queryByText(/Datos sintéticos de demostración/)).toBeNull()
@@ -317,6 +319,124 @@ describe('Pantalla conectada al cliente HTTP con las respuestas reales observada
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos conectar')
     expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+  })
+})
+
+describe('Descarga CSV de la consulta visible (fixtures sintéticas)', () => {
+  function serveHttpWithCsv(csv: Response | Promise<Response> = Promise.resolve(new Response('record_type\n', { headers: { 'Content-Type': 'text/csv; charset=utf-8' } }))) {
+    const series = { ...structuredClone(seriesPointSample), region: { ...seriesPointSample.region, region_id: 'murray-darling-basin' } }
+    fetchSpy.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/series/export.csv')) return Promise.resolve(csv).then((response) => {
+        expect(init?.headers).toMatchObject({ Accept: 'text/csv' })
+        return response
+      })
+      const body = url.includes('/regions')
+        ? observed('regions_dev')
+        : url.includes('/products')
+          ? observed('products_dev_sin_snapshot')
+          : series
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+  }
+
+  it('descarga como archivo con la URL exacta de la consulta aplicada y nombre seguro', async () => {
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    serveHttpWithCsv()
+    const createUrl = vi.fn((_blob: Blob) => 'blob:test-csv')
+    const revokeUrl = vi.fn()
+    const clickedDownloads: string[] = []
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clickedDownloads.push(this.download)
+    })
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createUrl })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeUrl })
+    await openPage('/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
+    const button = await screen.findByRole('button', { name: 'Descargar CSV' })
+    await waitFor(() => expect(button).toBeEnabled())
+    const user = userEvent.setup()
+    await user.click(button)
+    await waitFor(() => expect(fetchSpy.mock.calls.some(([input]) => String(input).includes('/series/export.csv'))).toBe(true))
+    const call = fetchSpy.mock.calls.find(([input]) => String(input).includes('/series/export.csv'))
+    const url = new URL(String(call?.[0]), 'http://localhost')
+    expect(url.pathname).toBe('/api/v1/series/export.csv')
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      region_id: 'murray-darling-basin', product_id: 'P02', start: '2005-01', end: '2005-03', frequency: 'monthly',
+    })
+    expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes('/series/export.csv'))).toHaveLength(1)
+    await waitFor(() => expect(createUrl).toHaveBeenCalledOnce())
+    const downloadedBlob = createUrl.mock.calls[0]?.[0] as Blob | undefined
+    expect(downloadedBlob?.size).toBeGreaterThan(0)
+    expect(downloadedBlob?.type).toContain('text/csv')
+    expect(anchorClick).toHaveBeenCalledOnce()
+    expect(clickedDownloads).toEqual(['anomaly-zero_murray-darling-basin_P02_2005-01_2005-03.csv'])
+    await new Promise((resolve) => window.setTimeout(resolve, 5))
+    expect(revokeUrl).toHaveBeenCalledWith('blob:test-csv')
+    anchorClick.mockRestore()
+  })
+
+  it('no habilita el modo demo ni no_data', async () => {
+    const demoPage = await openPage(`/explore?${SERIES}`)
+    await screen.findByText(/Serie con huecos/)
+    expect(screen.getByRole('button', { name: 'Descargar CSV' })).toBeDisabled()
+    demoPage.unmount()
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const body = url.includes('/regions') ? observed('regions_dev') : url.includes('/products') ? observed('products_dev_sin_snapshot') : observed('series_no_data_dev')
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+    await openPage('/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
+    expect(await screen.findByRole('button', { name: 'Descargar CSV' })).toBeDisabled()
+  })
+
+  it('mantiene la descarga deshabilitada mientras carga la consulta real', async () => {
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/series?')) return new Promise<Response>(() => {})
+      const body = url.includes('/regions') ? observed('regions_dev') : observed('products_dev_sin_snapshot')
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+    await openPage('/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
+    const button = await screen.findByRole('button', { name: 'Descargar CSV' })
+    expect(button).toBeDisabled()
+    expect(screen.getByText('Espera a que termine la consulta.')).toBeInTheDocument()
+  })
+
+  it('no descarga HTML del proxy y muestra el contenido inesperado', async () => {
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    serveHttpWithCsv(new Response('<html>proxy error</html>', { status: 502, headers: { 'Content-Type': 'text/html' } }))
+    await openPage('/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
+    const button = await screen.findByRole('button', { name: 'Descargar CSV' })
+    await waitFor(() => expect(button).toBeEnabled())
+    await userEvent.click(button)
+    expect(await screen.findByText('La respuesta no era un archivo CSV')).toBeInTheDocument()
+    expect(screen.getByText(/HTTP 502/)).toBeInTheDocument()
+  })
+
+  it('los filtros pendientes bloquean una descarga y abortan una solicitud obsoleta', async () => {
+    vi.stubEnv('VITE_EXPLORE_API', 'http')
+    let signal: AbortSignal | undefined
+    const series = { ...structuredClone(seriesPointSample), region: { ...seriesPointSample.region, region_id: 'murray-darling-basin' } }
+    fetchSpy.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/series/export.csv')) {
+        signal = init?.signal ?? undefined
+        return new Promise<Response>(() => {})
+      }
+      const body = url.includes('/regions') ? observed('regions_dev') : url.includes('/products') ? observed('products_dev_sin_snapshot') : series
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    })
+    const user = userEvent.setup()
+    await openPage('/explore?fuente=api&region=murray-darling-basin&product=P02&start=2005-01&end=2005-03')
+    const button = await screen.findByRole('button', { name: 'Descargar CSV' })
+    await waitFor(() => expect(button).toBeEnabled())
+    await user.click(button)
+    await user.clear(screen.getByLabelText('Hasta'))
+    await user.type(screen.getByLabelText('Hasta'), '2005-02')
+    await waitFor(() => expect(button).toBeDisabled())
+    expect(signal?.aborted).toBe(true)
   })
 })
 
