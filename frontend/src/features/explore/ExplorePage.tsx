@@ -189,6 +189,10 @@ function SeriesResult({
                 month={month}
                 resolver={explorer.api.capabilities.raster}
                 onSelectMonth={explorer.selectMonth}
+                support={series.spatial_aggregation}
+                product={series.product}
+                quality={series.quality}
+                synthetic={series.synthetic}
               />
             </div>
             <h3 className="explore-chart__title">Datos mes a mes</h3>

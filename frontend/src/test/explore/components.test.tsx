@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import type { ComponentProps } from 'react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +8,7 @@ import { CoverageSummary } from '../../features/explore/components/CoverageSumma
 import { ErrorState } from '../../features/explore/components/ErrorState'
 import { ExploreFilters } from '../../features/explore/components/ExploreFilters'
 import { MapPanel } from '../../features/explore/components/MapPanel'
+import { MapCanvasBoundary } from '../../features/explore/components/MapCanvasBoundary'
 import { MonthTimeline } from '../../features/explore/components/MonthTimeline'
 import { QualityNotice } from '../../features/explore/components/QualityNotice'
 import { SeriesTable } from '../../features/explore/components/SeriesTable'
@@ -17,11 +19,24 @@ import { productsAll, regionsOne } from '../../features/explore/data/fixtures/de
 import { error503SnapshotUnavailable, seriesNoData, seriesPointSample } from '../../features/explore/data/fixtures/official'
 import { error404NotFound, error500Internal } from '../../features/explore/data/fixtures/derived'
 import { toChartPoints } from '../../features/explore/lib/chartModel'
-import type { RasterLayer, Quality, ErrorResponse } from '../../features/explore/types/contracts'
+import type { PointSampleSupport, RasterLayer, Quality, ErrorResponse } from '../../features/explore/types/contracts'
 
 // MapLibre no corre en jsdom (necesita WebGL): el lienzo se reemplaza por un marcador.
 vi.mock('../../features/explore/components/MapCanvas', () => ({
-  default: ({ month }: { month: string }) => <div data-testid="map-canvas">{month}</div>,
+  default: ({ month, raster, marker }: {
+    month?: string | null
+    raster?: { url: string } | null
+    marker?: { latitude: number; longitude: number; label: string; synthetic: boolean } | null
+  }) => (
+    <div
+      data-testid="map-canvas"
+      data-month={month ?? ''}
+      data-raster={raster ? 'true' : 'false'}
+      data-marker={marker ? `${marker.longitude},${marker.latitude}` : ''}
+      data-marker-label={marker?.label ?? ''}
+      data-synthetic={marker?.synthetic ? 'true' : 'false'}
+    >{month}</div>
+  ),
 }))
 
 afterEach(() => vi.useRealTimers())
@@ -199,23 +214,34 @@ describe('TimeSeriesChart', () => {
   })
 })
 
-describe('MapPanel: ausencia honesta de capas raster', () => {
+describe('MapPanel: mapa contextual separado de las capas raster', () => {
   const months = ['2005-01', '2005-02', '2005-03']
   const layer = (date: string, over: Partial<RasterLayer> = {}): RasterLayer => ({ dataset_id: 'ds', date, layer_type: 'value', unit: 'mm/hr', state: 'available', format: 'image/png', tile_template: `/x/${date}.png`, ...over })
   const draw = (item: RasterLayer) => ({ url: item.tile_template ?? '', bbox: { west: 0, south: 0, east: 1, north: 1 } })
+  const props = (over: Partial<ComponentProps<typeof MapPanel>> = {}) => ({
+    layers: undefined,
+    months,
+    month: '2005-01',
+    resolver: () => null,
+    onSelectMonth: vi.fn(),
+    support: seriesPointSample.spatial_aggregation,
+    product: seriesPointSample.product,
+    quality: seriesPointSample.quality,
+    synthetic: true,
+    ...over,
+  })
 
-  it('sin raster_layers (el backend de hoy): no hay mapa, ni leyenda de color, ni lienzo', () => {
-    const { container } = render(<MapPanel layers={undefined} months={months} month="2005-01" resolver={() => null} onSelectMonth={vi.fn()} />)
-    expect(screen.getByText('Sin capa geográfica disponible para este mes.')).toBeInTheDocument()
+  it('sin raster_layers ofrece mapa contextual y no dibuja una capa ni leyenda NASA', async () => {
+    const { container } = render(<MapPanel {...props()} />)
+    expect(screen.getByText(/Mapa geográfico contextual/)).toBeInTheDocument()
     expect(screen.getByText(/La API todavía no publica una capa de mapa/)).toBeInTheDocument()
-    expect(screen.getByText(/no se dibuja una escala/)).toBeInTheDocument()
-    expect(screen.queryByTestId('map-canvas')).toBeNull()
+    expect(await screen.findByTestId('map-canvas')).toHaveAttribute('data-raster', 'false')
     expect(container.querySelector('.explore-legend__bar')).toBeNull()
-    expect(container.querySelector('canvas, img')).toBeNull()
+    expect(screen.getByRole('link', { name: /OpenStreetMap contributors/ })).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright')
   })
 
   it('solo la capa de valor está habilitada; el resto figura como no disponible', () => {
-    render(<MapPanel layers={undefined} months={months} month="2005-01" resolver={() => null} onSelectMonth={vi.fn()} />)
+    render(<MapPanel {...props()} />)
     expect(screen.getByRole('radio', { name: 'Valor' })).toBeEnabled()
     for (const name of [/Anomalía/, /Tendencia \(pendiente\)/, /Significancia/]) {
       expect(screen.getByRole('radio', { name })).toBeDisabled()
@@ -223,29 +249,79 @@ describe('MapPanel: ausencia honesta de capas raster', () => {
   })
 
   it('mes con capa: dibuja y avisa que la capa es sintética', async () => {
-    render(<MapPanel layers={[layer('2005-01'), layer('2005-03')]} months={months} month="2005-01" resolver={draw} onSelectMonth={vi.fn()} />)
+    render(<MapPanel {...props({ layers: [layer('2005-01'), layer('2005-03')], resolver: draw })} />)
     expect(await screen.findByTestId('map-canvas')).toHaveTextContent('2005-01')
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-raster', 'true')
     expect(screen.getByText(/Capa sintética de demostración/)).toBeInTheDocument()
     expect(screen.getByText(/La escala de colores es de demostración/)).toBeInTheDocument()
   })
 
   it('mes sin capa: se declara ausente y NO se deja la capa de otro mes', () => {
-    render(<MapPanel layers={[layer('2005-01'), layer('2005-02', { state: 'unavailable', format: null, tile_template: null }), layer('2005-03')]} months={months} month="2005-02" resolver={draw} onSelectMonth={vi.fn()} />)
+    render(<MapPanel {...props({ layers: [layer('2005-01'), layer('2005-02', { state: 'unavailable', format: null, tile_template: null }), layer('2005-03')], month: '2005-02', resolver: draw })} />)
     expect(screen.getByText(/Este mes no tiene capa en la API/)).toBeInTheDocument()
-    expect(screen.queryByTestId('map-canvas')).toBeNull()
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-raster', 'false')
   })
 
-  it('capa declarada pero con formato que esta versión no sabe leer: no se dibuja', () => {
-    render(<MapPanel layers={[layer('2005-01')]} months={months} month="2005-01" resolver={() => null} onSelectMonth={vi.fn()} />)
+  it('capa declarada pero con formato que esta versión no sabe leer: conserva el mapa contextual', () => {
+    render(<MapPanel {...props({ layers: [layer('2005-01')], resolver: () => null })} />)
     expect(screen.getByText(/todavía no sabe dibujarla/)).toBeInTheDocument()
-    expect(screen.queryByTestId('map-canvas')).toBeNull()
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-raster', 'false')
   })
 
   it('el selector de mes funciona aunque no haya capas', async () => {
     const onSelectMonth = vi.fn()
-    render(<MapPanel layers={undefined} months={months} month="2005-01" resolver={() => null} onSelectMonth={onSelectMonth} />)
+    render(<MapPanel {...props({ onSelectMonth })} />)
     await userEvent.click(screen.getByRole('button', { name: 'Mes siguiente' }))
     expect(onSelectMonth).toHaveBeenCalledWith('2005-02')
+  })
+
+  it('usa solo las coordenadas point_sample verificadas y conserva su orden lon/lat', async () => {
+    const support: PointSampleSupport = {
+      support_type: 'point_sample',
+      approval_state: 'not_assessed',
+      method: null,
+      area_weighted: null,
+      weighting_reference: null,
+      mask_version: null,
+      point: { cell_id: 'cell-synthetic-verified', latitude: -35.11, longitude: 147.36 },
+    }
+    render(<MapPanel {...props({ support })} />)
+    expect(await screen.findByTestId('map-canvas')).toHaveAttribute('data-marker', '147.36,-35.11')
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-marker-label', 'Muestra puntual IMERG')
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-synthetic', 'true')
+    expect(screen.getByText('cell-synthetic-verified', { selector: 'code' })).toBeInTheDocument()
+    expect(screen.getByText(/marcador y la serie son sintéticos/)).toBeInTheDocument()
+    expect(screen.getByText(/QA del proveedor no aprobada/)).toBeInTheDocument()
+  })
+
+  it.each([
+    { latitude: null, longitude: null },
+    { latitude: Number.NaN, longitude: 147.36 },
+    { latitude: -35.11, longitude: Number.POSITIVE_INFINITY },
+    { latitude: 91, longitude: 147.36 },
+    { latitude: -35.11, longitude: 181 },
+  ])('no inventa punto cuando las coordenadas son ausentes o inválidas (%o)', async (point) => {
+    const support: PointSampleSupport = {
+      support_type: 'point_sample',
+      approval_state: 'not_assessed',
+      method: null,
+      area_weighted: null,
+      weighting_reference: null,
+      mask_version: null,
+      point: { cell_id: 'cell-synthetic-001', ...point },
+    }
+    render(<MapPanel {...props({ support })} />)
+    expect(await screen.findByTestId('map-canvas')).toHaveAttribute('data-marker', '')
+    expect(screen.getByText(/Coordenadas no disponibles o inválidas/)).toBeInTheDocument()
+  })
+
+  it('una falla del componente cartográfico queda contenida y deja visible la serie del panel', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    function BrokenMap(): never { throw new Error('webgl unavailable') }
+    render(<><p>Tabla y serie mensual conservadas</p><MapCanvasBoundary><BrokenMap /></MapCanvasBoundary></>)
+    expect(screen.getByRole('alert')).toHaveTextContent(/El mapa no pudo iniciarse/)
+    expect(screen.getByText('Tabla y serie mensual conservadas')).toBeInTheDocument()
+    consoleError.mockRestore()
   })
 })
 
