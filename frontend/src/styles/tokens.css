@@ -68,6 +68,7 @@
 
   /* Layout */
   --container: 72rem;
+  --container-wide: 90rem; /* /explore: panel de filtros más resultados lado a lado */
   --gutter: 1.25rem;
   --header-h: 4.25rem;
   --bp-nav: 64rem; /* referencia: el CSS usa este valor literal en @media */
