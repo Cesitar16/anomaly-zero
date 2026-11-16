@@ -70,7 +70,7 @@ describe('Entrada al explorador', () => {
     await userEvent.click(cta)
     expect(await screen.findByRole('heading', { level: 1, name: /Explorador de tendencias/ })).toBeInTheDocument()
     expect(location()).toBe('/explore')
-    expect(document.title).toMatch(/Explorador de tendencias \| Anomaly Zero/)
+    await waitFor(() => expect(document.title).toMatch(/Explorador de tendencias \| Anomaly Zero/))
   })
 
   it('estado inicial: aviso sintético, una región ya elegida y sin gráfico ni tabla', async () => {
