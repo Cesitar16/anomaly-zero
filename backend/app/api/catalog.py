@@ -123,7 +123,7 @@ class CatalogRoute(APIRoute):
                 return _error_response(
                     exc.status_code, exc.code, exc.public_message, details=exc.details
                 )
-            except Exception as exc:  # noqa: BLE001 - sanitize unexpected catalog faults.
+            except Exception as exc:
                 logger.exception("Unexpected catalog request failure")
                 return await internal_error(request, exc)
 
