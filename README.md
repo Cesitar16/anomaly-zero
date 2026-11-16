@@ -69,6 +69,8 @@ uv run jupyter lab research/notebooks
 
 ## Seguimiento
 
+Despliegue gratuito en Render (React estático + API Docker): [guía de publicación](docs/render-free.md).
+
 Tarjeta de Linear: [FUL-99](https://linear.app/fullstack-track/issue/FUL-99/az-02-acordar-arquitectura-minima-flujo-cientifico-y-responsabilidades).
 
 Contribuciones y flujo Git: [CONTRIBUTING.md](CONTRIBUTING.md). Las pull requests usan la [plantilla del proyecto](.github/PULL_REQUEST_TEMPLATE.md). Este repositorio se distribuye bajo la [licencia MIT](LICENSE).

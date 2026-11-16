@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -36,6 +37,8 @@ from backend.app.services.series import (
     read_optional_snapshot,
 )
 from backend.app.services.snapshot_reader import SnapshotUnavailableError
+
+logger = logging.getLogger(__name__)
 
 
 class GeoJSONResponse(JSONResponse):
@@ -121,6 +124,7 @@ class CatalogRoute(APIRoute):
                     exc.status_code, exc.code, exc.public_message, details=exc.details
                 )
             except Exception as exc:  # noqa: BLE001 - sanitize unexpected catalog faults.
+                logger.exception("Unexpected catalog request failure")
                 return await internal_error(request, exc)
 
         return handle
