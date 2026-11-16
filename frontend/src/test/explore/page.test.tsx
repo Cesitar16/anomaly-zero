@@ -5,17 +5,19 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import App from '../../App'
 import { observed } from './helpers'
+
+// MapLibre requiere WebGL y una red de teselas; las pruebas de la página verifican el contrato del panel sin red.
+vi.mock('../../features/explore/components/MapCanvas', () => ({
+  default: ({ month, raster, marker }: { month?: string | null; raster?: unknown; marker?: { longitude: number; latitude: number } | null }) => (
+    <div data-testid="map-canvas" data-month={month ?? ''} data-raster={raster ? 'true' : 'false'} data-marker={marker ? `${marker.longitude},${marker.latitude}` : ''}>{month}</div>
+  ),
+}))
 import { createExploreApi, defaultSource } from '../../features/explore/data/createExploreApi'
 import { seriesPointSample } from '../../features/explore/data/fixtures/official'
 
 // La primera carga de la ruta diferida (gráficos incluidos) tarda más en jsdom que el valor por defecto.
 configure({ asyncUtilTimeout: 6000 })
 vi.setConfig({ testTimeout: 20000 })
-
-// MapLibre no corre en jsdom (necesita WebGL): el lienzo se reemplaza por un marcador.
-vi.mock('../../features/explore/components/MapCanvas', () => ({
-  default: ({ month }: { month: string }) => <div data-testid="map-canvas">{month}</div>,
-}))
 
 const SERIES = 'region=REG01&product=P02&start=2005-01&end=2005-03'
 
@@ -129,11 +131,12 @@ describe('Consulta de una serie', () => {
     expect(screen.queryByText(/Agregado regional aprobado/)).toBeNull()
   })
 
-  it('sin capas: la ausencia del mapa es explícita y no se pide ninguna imagen', async () => {
+  it('sin capas raster NASA sigue habiendo mapa contextual; no se pide imagen de precipitación', async () => {
     await openPage(`/explore?${SERIES}`)
     await screen.findByText(/Serie con huecos/)
-    expect(screen.getByText('Sin capa geográfica disponible para este mes.')).toBeInTheDocument()
-    expect(screen.queryByTestId('map-canvas')).toBeNull()
+    expect(screen.getByText(/Mapa geográfico contextual/)).toBeInTheDocument()
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-raster', 'false')
+    expect(screen.getByText(/Capa raster NASA/)).toBeInTheDocument()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -527,7 +530,7 @@ describe('Mapa con capas sintéticas de demostración (E9 y E10)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Mes siguiente' }))
     expect(await screen.findByText(/Este mes no tiene capa en la API/)).toBeInTheDocument()
-    expect(screen.queryByTestId('map-canvas')).toBeNull()
+    expect(screen.getByTestId('map-canvas')).toHaveAttribute('data-raster', 'false')
     expect(location()).toContain('month=2005-02')
     expect(document.querySelector('tr[aria-current="true"]')).toHaveTextContent('2005-02')
 
@@ -535,10 +538,10 @@ describe('Mapa con capas sintéticas de demostración (E9 y E10)', () => {
     expect(await screen.findByTestId('map-canvas')).toHaveTextContent('2005-03')
   })
 
-  it('capas declaradas no disponibles: igual que sin capas, y sin pedir imágenes', async () => {
+  it('capas declaradas no disponibles mantienen el mapa contextual sin pedir raster', async () => {
     await openPage(`/explore?${SERIES}&demo=capas-no-disponibles`)
-    expect(await screen.findByText('Sin capa geográfica disponible para este mes.')).toBeInTheDocument()
-    expect(screen.queryByTestId('map-canvas')).toBeNull()
+    expect(await screen.findByText(/Mapa geográfico contextual/)).toBeInTheDocument()
+    expect(await screen.findByTestId('map-canvas')).toHaveAttribute('data-raster', 'false')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
