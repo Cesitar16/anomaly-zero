@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 import re
 from datetime import date, datetime, timedelta
@@ -28,6 +29,7 @@ PRODUCT = {
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _DATASET_ID = re.compile(r"^imerg-2005-point-[0-9a-f]{20}$")
 _MONTHS = tuple(f"2005-{month:02d}" for month in range(1, 13))
+logger = logging.getLogger(__name__)
 
 
 class SnapshotUnavailableError(Exception):
@@ -290,7 +292,9 @@ def _validate_snapshot(snapshot: Any) -> dict[str, Any]:
         actual_digest = snapshot_sha256(snapshot)
     except (TypeError, ValueError, OverflowError) as exc:
         raise SnapshotInvalidError("Snapshot contains values that cannot be canonically hashed") from exc
-    _require(actual_digest == snapshot_digest, "Snapshot hash does not match its content")
+    if actual_digest != snapshot_digest:
+        logger.error("Snapshot integrity check failed: expected=%s actual=%s", snapshot_digest, actual_digest)
+        _invalid("Snapshot hash does not match its content")
     return snapshot
 
 
