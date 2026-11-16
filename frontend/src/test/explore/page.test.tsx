@@ -343,7 +343,7 @@ describe('Descarga CSV de la consulta visible (fixtures sintéticas)', () => {
   it('descarga como archivo con la URL exacta de la consulta aplicada y nombre seguro', async () => {
     vi.stubEnv('VITE_EXPLORE_API', 'http')
     serveHttpWithCsv()
-    const createUrl = vi.fn(() => 'blob:test-csv')
+    const createUrl = vi.fn((_blob: Blob) => 'blob:test-csv')
     const revokeUrl = vi.fn()
     const clickedDownloads: string[] = []
     const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
@@ -364,7 +364,10 @@ describe('Descarga CSV de la consulta visible (fixtures sintéticas)', () => {
       region_id: 'murray-darling-basin', product_id: 'P02', start: '2005-01', end: '2005-03', frequency: 'monthly',
     })
     expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes('/series/export.csv'))).toHaveLength(1)
-    await waitFor(() => expect(createUrl).toHaveBeenCalledWith(expect.any(Blob)))
+    await waitFor(() => expect(createUrl).toHaveBeenCalledOnce())
+    const downloadedBlob = createUrl.mock.calls[0]?.[0] as Blob | undefined
+    expect(downloadedBlob?.size).toBeGreaterThan(0)
+    expect(downloadedBlob?.type).toContain('text/csv')
     expect(anchorClick).toHaveBeenCalledOnce()
     expect(clickedDownloads).toEqual(['anomaly-zero_murray-darling-basin_P02_2005-01_2005-03.csv'])
     await new Promise((resolve) => window.setTimeout(resolve, 5))
