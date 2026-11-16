@@ -17,6 +17,7 @@ import { QualityNotice } from './components/QualityNotice'
 import { SeriesTable } from './components/SeriesTable'
 import { SourceProvenance } from './components/SourceProvenance'
 import { SeriesCsvDownload } from './components/SeriesCsvDownload'
+import { MultivariableComparison } from './components/MultivariableComparison'
 import { SupportNotice } from './components/SupportNotice'
 import { TimeSeriesChart } from './components/TimeSeriesChart'
 import { COPY, DEMO_SCENARIOS } from './content/exploreCopy'
@@ -97,6 +98,28 @@ export default function ExplorePage() {
 
         <DataSourceSwitch source={source} onChange={changeSource} />
 
+        {source === 'api' && (
+          <div className="explore-site-select">
+            <label htmlFor="explore-site">Sitio candidato DS-09</label>
+            <select
+              id="explore-site"
+              value={params.get('site_id') ?? ''}
+              onChange={(event) => {
+                const updated = new URLSearchParams(params)
+                if (event.target.value) updated.set('site_id', event.target.value)
+                else updated.delete('site_id')
+                setParams(updated)
+              }}
+            >
+              <option value="">Serie API existente / sitio sin seleccionar</option>
+              <option value="site_west_extent">Extensión oeste (candidato, no aprobado)</option>
+              <option value="site_central_extent">Extensión central (candidato, no aprobado)</option>
+              <option value="site_east_extent">Extensión este (candidato, no aprobado)</option>
+            </select>
+            <p role="note">Las celdas de cada producto son distintas; las relaciones y correlaciones siguen deshabilitadas.</p>
+          </div>
+        )}
+
         <ExploreFilters
           regions={explorer.regions}
           products={explorer.products}
@@ -131,6 +154,19 @@ export default function ExplorePage() {
           <ErrorState failure={series.failure} onRetry={explorer.retrySeries} headingLevel="h2" />
         ) : (
           <SeriesResult series={series.data} points={points} explorer={explorer} />
+        )}
+
+        {source === 'api' && params.get('site_id') && explorer.submitted && !explorer.dirty && series.status === 'success' && series.data.data_state !== 'no_data' && (
+          <MultivariableComparison
+            api={api}
+            query={{
+              regionId: series.data.region.region_id,
+              productId: series.data.product.product_id,
+              start: series.data.requested_coverage.start,
+              end: series.data.requested_coverage.end,
+              siteId: params.get('site_id') ?? undefined,
+            }}
+          />
         )}
 
         {isMock && <DemoScenarios scenario={scenario} onChange={changeScenario} />}

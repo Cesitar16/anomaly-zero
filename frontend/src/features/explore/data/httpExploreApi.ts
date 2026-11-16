@@ -64,6 +64,7 @@ export function createHttpExploreApi(
       end: query.end,
       frequency: 'monthly',
     })
+    if (query.siteId) params.set('site_id', query.siteId)
     let response: Response
     try {
       response = await fetchImpl(`${baseUrl}/series/export.csv?${params}`, {
@@ -115,6 +116,7 @@ export function createHttpExploreApi(
           start: query.start,
           end: query.end,
           frequency: 'monthly',
+          ...(query.siteId ? { site_id: query.siteId } : {}),
         })}`,
         get,
         isSeriesResponse,

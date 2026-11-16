@@ -359,4 +359,5 @@ export interface SeriesQuery {
   productId: string
   start: YearMonth
   end: YearMonth
+  siteId?: string
 }

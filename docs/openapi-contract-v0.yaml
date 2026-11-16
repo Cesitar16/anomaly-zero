@@ -268,8 +268,8 @@ paths:
   /series:
     get:
       operationId: getSeries
-      summary: Read a monthly series from one immutable snapshot
-      description: Inclusive YYYY-MM range, start must be at or before end, with a maximum of 240 months per response.
+      summary: Read a monthly product series from a verified snapshot or DS-09 derived table
+      description: Inclusive YYYY-MM range, start must be at or before end, with a maximum of 240 months. Optional site_id selects a diagnostic DS-09 candidate cell; source granule hashes are inherited provenance references and are not reverified by this endpoint.
       parameters:
         - $ref: '#/components/parameters/RegionId'
         - $ref: '#/components/parameters/ProductId'
@@ -281,6 +281,13 @@ paths:
           schema:
             type: string
             const: monthly
+        - name: site_id
+          in: query
+          required: false
+          description: DS-09 candidate site identifier; preserves distinct product grid-cell support and does not imply site approval or co-location.
+          schema:
+            type: string
+            enum: [site_west_extent, site_central_extent, site_east_extent]
       responses:
         '200':
           description: Data, data with gaps, or a valid request with no records.
@@ -501,6 +508,13 @@ paths:
           schema:
             type: string
             const: monthly
+        - name: site_id
+          in: query
+          required: false
+          description: DS-09 candidate site identifier; preserves distinct product grid-cell support and does not imply site approval or co-location.
+          schema:
+            type: string
+            enum: [site_west_extent, site_central_extent, site_east_extent]
       responses:
         '200':
           description: UTF-8 CSV containing observation rows or one no-data status row.

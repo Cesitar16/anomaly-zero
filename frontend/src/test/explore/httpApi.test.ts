@@ -58,6 +58,18 @@ describe('Cliente HTTP (compatible con el backend integrado en dev)', () => {
     })
   })
 
+  it('incluye site_id al consultar o exportar una serie derivada DS-09', async () => {
+    const { api, fetchMock } = apiWith(() => respond(observed('series_no_data_dev')))
+    const siteQuery = { ...query, siteId: 'site_west_extent' }
+    await api.getSeries(siteQuery)
+    let url = new URL(String(fetchMock.mock.calls[0][0]), 'http://localhost')
+    expect(url.searchParams.get('site_id')).toBe('site_west_extent')
+    fetchMock.mockImplementation(() => Promise.resolve(new Response('record_type\nstatus\n', { headers: { 'Content-Type': 'text/csv' } })))
+    await api.downloadSeriesCsv?.(siteQuery)
+    url = new URL(String(fetchMock.mock.calls[1][0]), 'http://localhost')
+    expect(url.searchParams.get('site_id')).toBe('site_west_extent')
+  })
+
   it('pide CSV como archivo y preserva errores JSON del contrato', async () => {
     let exportCount = 0
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {

@@ -73,6 +73,16 @@ describe('Entrada al explorador', () => {
     await waitFor(() => expect(document.title).toMatch(/Explorador de tendencias \| Anomaly Zero/))
   })
 
+  it('expone sitios candidatos solo en la fuente API y conserva site_id en la dirección', async () => {
+    const user = userEvent.setup()
+    await openPage('/explore?fuente=api')
+    const site = screen.getByRole('combobox', { name: 'Sitio candidato DS-09' })
+    await user.selectOptions(site, 'site_west_extent')
+    expect(site).toHaveValue('site_west_extent')
+    expect(location()).toContain('site_id=site_west_extent')
+    expect(screen.getByRole('note')).toHaveTextContent(/celdas de cada producto son distintas/)
+  })
+
   it('estado inicial: aviso sintético, una región ya elegida y sin gráfico ni tabla', async () => {
     await openPage('/explore')
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Demostración')
