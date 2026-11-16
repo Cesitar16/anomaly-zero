@@ -3,9 +3,9 @@ info:
   title: Anomaly Zero exchange contract
   version: 0.1.0-draft
   description: >-
-    Draft exchange contract for AZ-04. The catalog and monthly series reads are
-    implemented; analysis operations and scientific decisions remain subject to
-    approval.
+    Draft exchange contract for AZ-04. The catalog, monthly series, and
+    contextual map outline are implemented. Scientific spatial uses remain
+    subject to their separate approvals.
 servers:
   - url: /api/v1
     description: Versioned API prefix used by the catalog and series routes.
@@ -26,6 +26,215 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegionsResponse'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /regions/{region_id}/geometry:
+    get:
+      operationId: getContextRegionGeometry
+      summary: Read the contextual Murray–Darling outline
+      description: >-
+        Returns only the published murray-darling-basin outline for map display.
+        This geometry is not an approved scientific mask, area denominator, or
+        regional aggregation boundary. Metadata is a GeoJSON foreign member;
+        MapLibre may discard it after tiling, so clients should retain it from
+        the HTTP response when they need to show source attribution.
+      parameters:
+        - name: region_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Context-only GeoJSON; coordinates remain in EPSG:4326.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/geo+json:
+              schema:
+                type: object
+                required: [type, synthetic, features, metadata]
+                properties:
+                  type:
+                    type: string
+                    const: FeatureCollection
+                  synthetic:
+                    type: boolean
+                    description: False for this verified provider artifact; true in synthetic examples.
+                  features:
+                    type: array
+                    minItems: 1
+                    maxItems: 1
+                    items:
+                      type: object
+                      required: [type, properties, geometry]
+                      properties:
+                        type:
+                          type: string
+                          const: Feature
+                        properties:
+                          type: object
+                          required: [region_id, name]
+                          properties:
+                            region_id:
+                              type: string
+                              const: murray-darling-basin
+                            name:
+                              type: string
+                              const: Murray–Darling Basin
+                          additionalProperties: false
+                        geometry:
+                          oneOf:
+                            - type: object
+                              required: [type, coordinates]
+                              properties:
+                                type:
+                                  type: string
+                                  const: Polygon
+                                coordinates:
+                                  type: array
+                                  minItems: 1
+                                  items:
+                                    type: array
+                                    minItems: 4
+                                    items:
+                                      $ref: '#/components/schemas/GeoJSONPosition'
+                              additionalProperties: false
+                            - type: object
+                              required: [type, coordinates]
+                              properties:
+                                type:
+                                  type: string
+                                  const: MultiPolygon
+                                coordinates:
+                                  type: array
+                                  minItems: 1
+                                  items:
+                                    type: array
+                                    minItems: 1
+                                    items:
+                                      type: array
+                                      minItems: 4
+                                      items:
+                                        $ref: '#/components/schemas/GeoJSONPosition'
+                              additionalProperties: false
+                      additionalProperties: false
+                  metadata:
+                    type: object
+                    required:
+                      - region_id
+                      - geometry_use
+                      - scientific_approval
+                      - source_title
+                      - source_url
+                      - source_item_url
+                      - license
+                      - license_url
+                      - attribution
+                      - publisher
+                      - retrieved_utc
+                      - source_item_modified_utc
+                      - service_layer_crs
+                      - output_crs
+                      - native_datum
+                      - artifact_sha256
+                      - artifact_sha256_scope
+                    properties:
+                      region_id:
+                        type: string
+                        const: murray-darling-basin
+                      geometry_use:
+                        type: string
+                        const: contextual_outline_only
+                      scientific_approval:
+                        type: string
+                        const: not_approved
+                      source_title:
+                        type: string
+                      source_url:
+                        type: string
+                        format: uri
+                      source_item_url:
+                        type: string
+                        format: uri
+                      license:
+                        type: string
+                        description: The item declares CC BY 4.0; preserve its attribution conditions.
+                      license_url:
+                        type: [string, 'null']
+                        format: uri
+                      attribution:
+                        type: string
+                      publisher:
+                        type: string
+                      retrieved_utc:
+                        type: [string, 'null']
+                        format: date
+                      source_item_modified_utc:
+                        type: [string, 'null']
+                        format: date-time
+                        description: Item metadata timestamp, not a geometry version date.
+                      service_layer_crs:
+                        type: [string, 'null']
+                      output_crs:
+                        type: string
+                        const: EPSG:4326
+                      native_datum:
+                        type: 'null'
+                        description: Unknown; do not infer it from the output CRS.
+                      artifact_sha256:
+                        type: [string, 'null']
+                        pattern: '^[a-f0-9]{64}$'
+                        description: Null only in the synthetic example; otherwise hash of exact stored source GeoJSON bytes.
+                      artifact_sha256_scope:
+                        type: string
+                    additionalProperties: false
+                additionalProperties: false
+              examples:
+                syntheticContextOutline:
+                  summary: Synthetic polygon fixture only; not the MDBA boundary or real provenance.
+                  value:
+                    type: FeatureCollection
+                    synthetic: true
+                    features:
+                      - type: Feature
+                        properties:
+                          region_id: murray-darling-basin
+                          name: Murray–Darling Basin
+                        geometry:
+                          type: Polygon
+                          coordinates:
+                            - - [0, 0]
+                              - [1, 0]
+                              - [1, 1]
+                              - [0, 1]
+                              - [0, 0]
+                    metadata:
+                      region_id: murray-darling-basin
+                      geometry_use: contextual_outline_only
+                      scientific_approval: not_approved
+                      source_title: Synthetic test fixture only.
+                      source_url: fixture://be-10/context-geometry
+                      source_item_url: fixture://be-10/context-geometry
+                      license: Synthetic fixture; not a licensed source artifact.
+                      license_url: null
+                      attribution: Synthetic fixture
+                      publisher: Synthetic fixture
+                      retrieved_utc: null
+                      source_item_modified_utc: null
+                      service_layer_crs: null
+                      output_crs: EPSG:4326
+                      native_datum: null
+                      artifact_sha256: null
+                      artifact_sha256_scope: No provider artifact hash is assigned to this fixture.
+        '404':
+          $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
         '500':
@@ -581,6 +790,19 @@ components:
                 - Fixture sintético de la forma 202; no representa un método aprobado ni un cálculo
                   real.
   schemas:
+    GeoJSONPosition:
+      type: array
+      description: Longitude, latitude pair in EPSG:4326 degrees.
+      prefixItems:
+        - type: number
+          minimum: -180
+          maximum: 180
+        - type: number
+          minimum: -90
+          maximum: 90
+      minItems: 2
+      maxItems: 2
+      items: false
     YearMonth:
       type: string
       pattern: '^\d{4}-(0[1-9]|1[0-2])$'

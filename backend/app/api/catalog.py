@@ -13,12 +13,19 @@ from backend.app.schemas.catalog import (
     ProductsResponse,
     RegionsResponse,
 )
+from backend.app.schemas.context_geometry import ContextualGeometryFeatureCollection
 from backend.app.services.catalog import (
     Catalog,
     CatalogNotFound,
     CatalogUnavailable,
     get_catalog,
     products_for_region,
+)
+from backend.app.services.context_geometry import (
+    CONTEXT_REGION_ID,
+    ContextGeometryUnavailableError,
+    get_context_geometry_path,
+    read_context_geometry,
 )
 from backend.app.services.series import (
     SeriesRequestError,
@@ -27,6 +34,10 @@ from backend.app.services.series import (
     read_optional_snapshot,
 )
 from backend.app.services.snapshot_reader import SnapshotUnavailableError
+
+
+class GeoJSONResponse(JSONResponse):
+    media_type = "application/geo+json"
 
 
 def _error_response(
@@ -89,6 +100,13 @@ class CatalogRoute(APIRoute):
                 return await catalog_not_found(request, exc)
             except CatalogUnavailable as exc:
                 return await catalog_unavailable(request, exc)
+            except ContextGeometryUnavailableError:
+                return _error_response(
+                    503,
+                    "SERVICE_UNAVAILABLE",
+                    "El contorno contextual no está disponible temporalmente.",
+                    retryable=True,
+                )
             except SnapshotUnavailableError:
                 return _error_response(
                     503,
@@ -107,6 +125,45 @@ class CatalogRoute(APIRoute):
 
 
 router = APIRouter(prefix="/api/v1", tags=["catalog"], route_class=CatalogRoute)
+
+
+@router.get(
+    "/regions/{region_id}/geometry",
+    operation_id="getContextRegionGeometry",
+    response_class=Response,
+    response_model=ContextualGeometryFeatureCollection,
+    responses={
+        200: {
+            "description": "GeoJSON contextual; no es una máscara científica aprobada.",
+            "content": {
+                "application/geo+json": {
+                    "schema": {
+                        "$ref": "#/components/schemas/ContextualGeometryFeatureCollection"
+                    }
+                }
+            },
+            "headers": {
+                "Cache-Control": {"schema": {"type": "string", "const": "no-store"}}
+            },
+        },
+        404: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+        500: {"model": ErrorResponse},
+    },
+)
+def get_region_geometry(
+    region_id: str,
+    catalog: Annotated[Catalog, Depends(get_catalog)],
+) -> Response:
+    if region_id != CONTEXT_REGION_ID or not any(
+        region.region_id == region_id for region in catalog.regions
+    ):
+        raise CatalogNotFound(region_id)
+    payload = read_context_geometry(get_context_geometry_path())
+    return GeoJSONResponse(
+        content=payload,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get(

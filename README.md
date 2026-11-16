@@ -52,7 +52,7 @@ FastAPI (desde la raíz):
 uv run uvicorn backend.app.main:app --reload
 ```
 
-La API queda en `http://127.0.0.1:8000`; salud en `/health`, catálogos en `/api/v1/regions` y `/api/v1/products?region_id=…`, y documentación interactiva en `/docs`. El catálogo es offline y publica Murray–Darling como región de referencia exploratoria; no dispone todavía de geometría regional validada ni datasets publicados.
+La API queda en `http://127.0.0.1:8000`; salud en `/health`, catálogos en `/api/v1/regions` y `/api/v1/products?region_id=…`, contorno contextual opcional en `/api/v1/regions/murray-darling-basin/geometry` y documentación interactiva en `/docs`. El catálogo es offline y publica Murray–Darling como región de referencia exploratoria. El endpoint de geometría sirve el contorno únicamente si está montado el artefacto aprobado; este no es una máscara o agregación científica aprobada. Consulta [la guía BE-10](docs/be-10-context-geometry.md) para verificar y montar el GeoJSON.
 
 Pruebas y lint:
 

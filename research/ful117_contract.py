@@ -84,6 +84,15 @@ def validate_schema(schema: dict[str, Any], value: Any, spec: dict[str, Any]) ->
 
 
 def assert_scientific_semantics(payload: dict[str, Any], *, production: bool = False) -> None:
+    if payload.get("type") == "FeatureCollection":
+        if not isinstance(payload.get("synthetic"), bool):
+            raise TypeError("Todo ejemplo GeoJSON debe declarar synthetic como boolean")
+        metadata = payload.get("metadata", {})
+        if metadata.get("geometry_use") != "contextual_outline_only":
+            raise ValueError("La geometría contextual no puede declararse como máscara científica")
+        if metadata.get("scientific_approval") != "not_approved":
+            raise ValueError("El contorno contextual no aprueba usos científicos")
+        return
     if payload.get("contract_version") != CONTRACT_VERSION:
         raise ValueError("contract_version incompatible con AZ-04")
     if not isinstance(payload.get("synthetic"), bool):
