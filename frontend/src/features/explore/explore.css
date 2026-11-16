@@ -1,7 +1,9 @@
 /*
   Estilos de /explore. Solo usan los tokens de styles/tokens.css (ningún color ni tamaño nuevo).
-  Mobile primero: una columna con el orden Filtros, estado, gráfico, mapa, tabla, cobertura, calidad,
-  procedencia y análisis. A partir de 64rem gráfico y mapa van lado a lado y las tarjetas en dos columnas.
+  Mobile primero: una columna con el orden Filtros, estado, gráfico, detalle del mes, mapa, tabla, cobertura,
+  calidad, procedencia y análisis. A partir de 64rem los filtros pasan a un panel a la izquierda (plegable);
+  a partir de 80rem, o con los filtros plegados desde 64rem, gráfico y tabla van a la izquierda y detalle del
+  mes y mapa a la derecha. Las tarjetas van en dos columnas desde 64rem.
 */
 
 .explore {
@@ -11,6 +13,7 @@
 .explore > .container {
   display: grid;
   gap: var(--space-5);
+  width: min(100% - 2 * var(--gutter), var(--container-wide));
 }
 
 .explore__header {
@@ -129,14 +132,9 @@
   font-size: var(--step--1);
 }
 
-.explore-cards,
-.explore-results__grid {
+.explore-cards {
   display: grid;
   gap: var(--space-5);
-}
-
-.explore-results__grid > * {
-  min-width: 0;
 }
 
 .explore-idle {
@@ -619,7 +617,6 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
   }
 
-  .explore-results__grid,
   .explore-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
@@ -633,6 +630,251 @@
     height: 24rem;
   }
 }
+/* ---------- Disposición: panel de filtros + resultados ---------- */
+
+.explore-layout {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.explore-layout__aside,
+.explore-layout__main {
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.explore-panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.explore-panel__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.explore-panel__body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.explore-panel__body[hidden] {
+  display: none;
+}
+
+.explore-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.explore-chips li {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--badge-candidate-bg);
+  color: var(--badge-candidate-fg);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+/* ---------- Franja de estado ---------- */
+
+.explore-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  border-left: 0;
+  border-radius: var(--radius);
+}
+
+.explore-status strong {
+  padding: 0.1rem var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+/* ---------- Disposición del resultado ---------- */
+
+.explore-results__layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* En una columna los contenedores no existen y el orden lo fijan los huecos: gráfico, detalle, mapa, tabla. */
+.explore-results__col {
+  display: contents;
+}
+
+.explore-slot {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.explore-slot--chart {
+  order: 1;
+}
+
+.explore-slot--detail {
+  order: 2;
+}
+
+.explore-slot--map {
+  order: 3;
+}
+
+.explore-slot--table {
+  order: 4;
+}
+
+/* ---------- Detalle del mes ---------- */
+
+.explore-detail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  background: var(--color-deep);
+  color: var(--color-on-deep);
+}
+
+.explore-detail p {
+  margin: 0;
+}
+
+.explore-detail__eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-on-deep-muted);
+}
+
+.explore-detail__month {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  line-height: 1.15;
+}
+
+.explore-detail__month::first-letter {
+  text-transform: uppercase;
+}
+
+.explore-detail__value {
+  font-family: var(--font-mono);
+  font-size: var(--step-3);
+  line-height: 1.1;
+  color: var(--color-accent);
+}
+
+.explore-detail__unit {
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  color: var(--color-on-deep-muted);
+}
+
+.explore-detail__state {
+  justify-self: start;
+  padding: 0.15rem var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--badge-candidate-bg);
+  color: var(--badge-candidate-fg);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.explore-detail__state--missing {
+  background: var(--badge-progress-bg);
+  color: var(--badge-progress-fg);
+}
+
+.explore-detail__facts {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-deep-line);
+  font-size: var(--step--1);
+}
+
+.explore-detail__facts > div {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.explore-detail__facts dt {
+  color: var(--color-on-deep-muted);
+}
+
+.explore-detail__facts dd {
+  margin: 0;
+}
+
+@media (min-width: 48rem) {
+  .explore-detail {
+    padding: var(--space-5);
+  }
+}
+
+@media (min-width: 64rem) {
+  .explore-layout {
+    grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr);
+  }
+
+  .explore-layout--collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* El panel es angosto: sus campos van en una sola columna. */
+  .explore-layout__aside .explore-filters__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .explore-layout__aside .explore-source__options {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .explore-layout--collapsed .explore-results__layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+
+  .explore-layout--collapsed .explore-results__col {
+    display: grid;
+    align-content: start;
+    gap: var(--space-5);
+    min-width: 0;
+  }
+}
+
+@media (min-width: 80rem) {
+  .explore-results__layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+
+  .explore-results__col {
+    display: grid;
+    align-content: start;
+    gap: var(--space-5);
+    min-width: 0;
+  }
+}
+
 .explore-site-select {
   display: grid;
   gap: 0.5rem;

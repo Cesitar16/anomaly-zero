@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Badge from '../../components/ui/Badge'
 import ButtonLink from '../../components/ui/ButtonLink'
@@ -11,7 +11,9 @@ import { DataSourceSwitch } from './components/DataSourceSwitch'
 import { DemoScenarios } from './components/DemoScenarios'
 import { ErrorState } from './components/ErrorState'
 import { ExploreFilters } from './components/ExploreFilters'
+import { FiltersPanel } from './components/FiltersPanel'
 import { MapPanel } from './components/MapPanel'
+import { MonthDetail } from './components/MonthDetail'
 import { MockDataNotice } from './components/MockDataNotice'
 import { QualityNotice } from './components/QualityNotice'
 import { SeriesTable } from './components/SeriesTable'
@@ -20,7 +22,7 @@ import { SeriesCsvDownload } from './components/SeriesCsvDownload'
 import { MultivariableComparison } from './components/MultivariableComparison'
 import { SupportNotice } from './components/SupportNotice'
 import { TimeSeriesChart } from './components/TimeSeriesChart'
-import { COPY, DEMO_SCENARIOS } from './content/exploreCopy'
+import { COPY, DEMO_SCENARIOS, productLabel } from './content/exploreCopy'
 import type { DemoScenarioId } from './content/exploreCopy'
 import { createExploreApi, defaultSource } from './data/createExploreApi'
 import { useExplorer } from './hooks/useExplorer'
@@ -46,7 +48,8 @@ function stateLabel(series: SeriesResponse): string {
 }
 
 /**
- * /explore: filtros, serie mensual, mapa (o su ausencia honesta), tabla, cobertura, calidad, procedencia y
+ * /explore: panel de filtros plegable a la izquierda y, a su derecha, la franja de estado, la serie mensual, el
+ * detalle del mes, el mapa (o su ausencia honesta), la tabla, la cobertura, la calidad, la procedencia y el
  * análisis no disponible. Todo pasa por `ExploreApi`; por defecto es el servicio simulado (datos sintéticos).
  */
 export default function ExplorePage() {
@@ -60,6 +63,7 @@ export default function ExplorePage() {
   const explorer = useExplorer(api, scenario)
   const { series, regions } = explorer
   const isMock = api.mode === 'mock'
+  const [filtersOpen, setFiltersOpen] = useState(true)
 
   useDocumentTitle(`${COPY.page.title} | ${SITE.name}`)
 
@@ -83,6 +87,23 @@ export default function ExplorePage() {
 
   const points = series.status === 'success' ? toChartPoints(series.data.series) : []
   const noCatalog = regions.status === 'success' && regions.data.length === 0
+  const regionName =
+    regions.status === 'success'
+      ? (regions.data.find((region) => region.region_id === explorer.draft.regionId)?.name ?? null)
+      : null
+  const productItem =
+    explorer.products.status === 'success'
+      ? explorer.products.data.find((product) => product.product_id === explorer.draft.productId)
+      : undefined
+  const summary = {
+    region: regionName,
+    product: productItem ? productLabel(productItem) : null,
+    range:
+      explorer.draft.start !== '' && explorer.draft.end !== ''
+        ? `${explorer.draft.start} a ${explorer.draft.end}`
+        : null,
+    site: params.get('site_id') ? `Sitio ${params.get('site_id')}` : null,
+  }
 
   return (
     <section className="explore" aria-labelledby="explore-titulo">
@@ -96,80 +117,86 @@ export default function ExplorePage() {
 
         {(isMock || (series.status === 'success' && series.data.synthetic)) && <MockDataNotice />}
 
-        <DataSourceSwitch source={source} onChange={changeSource} />
-
-        {source === 'api' && (
-          <div className="explore-site-select">
-            <label htmlFor="explore-site">Sitio candidato DS-09</label>
-            <select
-              id="explore-site"
-              value={params.get('site_id') ?? ''}
-              onChange={(event) => {
-                const updated = new URLSearchParams(params)
-                if (event.target.value) updated.set('site_id', event.target.value)
-                else updated.delete('site_id')
-                setParams(updated)
-              }}
-            >
-              <option value="">Serie API existente / sitio sin seleccionar</option>
-              <option value="site_west_extent">Extensión oeste (candidato, no aprobado)</option>
-              <option value="site_central_extent">Extensión central (candidato, no aprobado)</option>
-              <option value="site_east_extent">Extensión este (candidato, no aprobado)</option>
-            </select>
-            <p role="note">Las celdas de cada producto son distintas; las relaciones y correlaciones siguen deshabilitadas.</p>
+        <div className={filtersOpen ? 'explore-layout' : 'explore-layout explore-layout--collapsed'}>
+          <div className="explore-layout__aside">
+            <FiltersPanel open={filtersOpen} onToggle={() => setFiltersOpen((open) => !open)} summary={summary}>
+              <ExploreFilters
+                regions={explorer.regions}
+                products={explorer.products}
+                draft={explorer.draft}
+                errors={explorer.fieldErrors}
+                dirty={explorer.dirty}
+                busy={series.status === 'loading'}
+                onRegion={explorer.setRegion}
+                onProduct={explorer.setProduct}
+                onStart={explorer.setStart}
+                onEnd={explorer.setEnd}
+                onSubmit={explorer.submit}
+                onRetryCatalog={explorer.retryCatalog}
+              />
+              {source === 'api' && (
+                <div className="explore-site-select">
+                  <label htmlFor="explore-site">Sitio candidato DS-09</label>
+                  <select
+                    id="explore-site"
+                    value={params.get('site_id') ?? ''}
+                    onChange={(event) => {
+                      const updated = new URLSearchParams(params)
+                      if (event.target.value) updated.set('site_id', event.target.value)
+                      else updated.delete('site_id')
+                      setParams(updated)
+                    }}
+                  >
+                    <option value="">Selecciona un sitio candidato</option>
+                    <option value="site_west_extent">Extensión oeste (no aprobado)</option>
+                    <option value="site_central_extent">Extensión central (no aprobado)</option>
+                    <option value="site_east_extent">Extensión este (no aprobado)</option>
+                  </select>
+                  <p role="note">Las celdas de cada producto son distintas; las relaciones y correlaciones siguen deshabilitadas.</p>
+                </div>
+              )}
+              <DataSourceSwitch source={source} onChange={changeSource} />
+            </FiltersPanel>
           </div>
-        )}
 
-        <ExploreFilters
-          regions={explorer.regions}
-          products={explorer.products}
-          draft={explorer.draft}
-          errors={explorer.fieldErrors}
-          dirty={explorer.dirty}
-          busy={series.status === 'loading'}
-          onRegion={explorer.setRegion}
-          onProduct={explorer.setProduct}
-          onStart={explorer.setStart}
-          onEnd={explorer.setEnd}
-          onSubmit={explorer.submit}
-          onRetryCatalog={explorer.retryCatalog}
-        />
+          <div className="explore-layout__main">
+            {explorer.submitted && <SeriesCsvDownload api={api} series={series} dirty={explorer.dirty} />}
 
-        {explorer.submitted && <SeriesCsvDownload api={api} series={series} dirty={explorer.dirty} />}
+            {noCatalog ? (
+              <div className="explore-placeholder" role="note">
+                <p className="explore-placeholder__title">{COPY.empty.regions}</p>
+                <p>{COPY.empty.regionsNote}</p>
+              </div>
+            ) : !explorer.submitted ? (
+              <p className="explore-idle" role="status">
+                {explorer.draft.regionId === '' ? COPY.filters.needRegion : COPY.filters.idle}
+              </p>
+            ) : series.status === 'loading' || series.status === 'idle' ? (
+              <p className="explore-idle" role="status" aria-busy="true">
+                {COPY.filters.submitBusy}
+              </p>
+            ) : series.status === 'error' ? (
+              <ErrorState failure={series.failure} onRetry={explorer.retrySeries} headingLevel="h2" />
+            ) : (
+              <SeriesResult series={series.data} points={points} explorer={explorer} />
+            )}
 
-        {noCatalog ? (
-          <div className="explore-placeholder" role="note">
-            <p className="explore-placeholder__title">{COPY.empty.regions}</p>
-            <p>{COPY.empty.regionsNote}</p>
+            {source === 'api' && params.get('site_id') && explorer.submitted && !explorer.dirty && series.status === 'success' && series.data.data_state !== 'no_data' && (
+              <MultivariableComparison
+                api={api}
+                query={{
+                  regionId: series.data.region.region_id,
+                  productId: series.data.product.product_id,
+                  start: series.data.requested_coverage.start,
+                  end: series.data.requested_coverage.end,
+                  siteId: params.get('site_id') ?? undefined,
+                }}
+              />
+            )}
+
+            {isMock && <DemoScenarios scenario={scenario} onChange={changeScenario} />}
           </div>
-        ) : !explorer.submitted ? (
-          <p className="explore-idle" role="status">
-            {explorer.draft.regionId === '' ? COPY.filters.needRegion : COPY.filters.idle}
-          </p>
-        ) : series.status === 'loading' || series.status === 'idle' ? (
-          <p className="explore-idle" role="status" aria-busy="true">
-            {COPY.filters.submitBusy}
-          </p>
-        ) : series.status === 'error' ? (
-          <ErrorState failure={series.failure} onRetry={explorer.retrySeries} headingLevel="h2" />
-        ) : (
-          <SeriesResult series={series.data} points={points} explorer={explorer} />
-        )}
-
-        {source === 'api' && params.get('site_id') && explorer.submitted && !explorer.dirty && series.status === 'success' && series.data.data_state !== 'no_data' && (
-          <MultivariableComparison
-            api={api}
-            query={{
-              regionId: series.data.region.region_id,
-              productId: series.data.product.product_id,
-              start: series.data.requested_coverage.start,
-              end: series.data.requested_coverage.end,
-              siteId: params.get('site_id') ?? undefined,
-            }}
-          />
-        )}
-
-        {isMock && <DemoScenarios scenario={scenario} onChange={changeScenario} />}
+        </div>
 
         <div className="explore__actions">
           <ButtonLink to={ROUTES.home} variant="secondary">
@@ -198,7 +225,7 @@ function SeriesResult({
         <h2 id="explore-results-title" className="explore-panel__title">
           Resultado
         </h2>
-        <div className={noData ? 'explore-notice explore-notice--warn' : 'explore-notice'} role="status">
+        <div className={noData ? 'explore-notice explore-status explore-notice--warn' : 'explore-notice explore-status'} role="status">
           <strong>{stateLabel(series)}.</strong>{' '}
           {series.data_state === 'available_with_gaps'
             ? COPY.state.gapsText(series.coverage.missing_periods.length, series.coverage.expected_periods)
@@ -211,28 +238,45 @@ function SeriesResult({
         {!noData && (
           <>
             <SupportNotice support={series.spatial_aggregation} quantity={series.product.quantity} />
-            <div className="explore-results__grid">
-              <TimeSeriesChart
-                points={points}
-                quantity={series.product.quantity}
-                unit={series.product.unit}
-                selectedMonth={month}
-                onSelectMonth={explorer.selectMonth}
-              />
-              <MapPanel
-                layers={series.raster_layers}
-                months={months}
-                month={month}
-                resolver={explorer.api.capabilities.raster}
-                onSelectMonth={explorer.selectMonth}
-                support={series.spatial_aggregation}
-                product={series.product}
-                quality={series.quality}
-                synthetic={series.synthetic}
-              />
+            <div className="explore-results__layout">
+              <div className="explore-results__col">
+                <div className="explore-slot explore-slot--chart">
+                  <TimeSeriesChart
+                    points={points}
+                    quantity={series.product.quantity}
+                    unit={series.product.unit}
+                    selectedMonth={month}
+                    onSelectMonth={explorer.selectMonth}
+                  />
+                </div>
+                <div className="explore-slot explore-slot--table">
+                  <h3 className="explore-chart__title">Datos mes a mes</h3>
+                  <SeriesTable points={points} unit={series.product.unit} selectedMonth={month} />
+                </div>
+              </div>
+              <div className="explore-results__col">
+                <div className="explore-slot explore-slot--detail">
+                  <MonthDetail
+                    point={points.find((point) => point.month === month) ?? null}
+                    unit={series.product.unit}
+                    support={series.spatial_aggregation}
+                  />
+                </div>
+                <div className="explore-slot explore-slot--map">
+                  <MapPanel
+                    layers={series.raster_layers}
+                    months={months}
+                    month={month}
+                    resolver={explorer.api.capabilities.raster}
+                    onSelectMonth={explorer.selectMonth}
+                    support={series.spatial_aggregation}
+                    product={series.product}
+                    quality={series.quality}
+                    synthetic={series.synthetic}
+                  />
+                </div>
+              </div>
             </div>
-            <h3 className="explore-chart__title">Datos mes a mes</h3>
-            <SeriesTable points={points} unit={series.product.unit} selectedMonth={month} />
           </>
         )}
       </section>

@@ -151,7 +151,7 @@ Lo que **no** se puede mostrar como captura: una serie real con `synthetic: fals
 
 ## 6. Pruebas
 
-Total: **197 pruebas** que corren siempre (189 de esta rama y 8 del `ScientificSeriesPanel` de FUL-130), más **6 de integración real** que se activan con `EXPLORE_LIVE_API` (`src/test/`).
+Total: **222 pruebas** que corren siempre (214 que ya estaban en `dev` y 8 del rediseño visual de la sección 13), más **6 de integración real** que se activan con `EXPLORE_LIVE_API` (`src/test/`).
 
 | Archivo | Qué comprueba |
 |---|---|
@@ -162,6 +162,7 @@ Total: **197 pruebas** que corren siempre (189 de esta rama y 8 del `ScientificS
 | `explore/useResource.test.tsx` | Carga, cancelación de peticiones obsoletas |
 | `explore/components.test.tsx` | Cada componente, incluida la ausencia honesta del mapa |
 | `explore/page.test.tsx` | Pantalla completa: flujos, validación, errores, selector de fuente (sin respaldo automático, cambio de fuente descarta lo anterior), modo HTTP con respuestas reales, capas de demostración y `axe` |
+| `explore/redesign.test.tsx` | Rediseño visual: `MonthDetail` (valor, cero, sin dato, coordenadas no informadas), `FiltersPanel` (plegado, etiquetas de resumen, `aria-controls`) y la pantalla con el detalle que sigue al mes elegido |
 | `explore/liveBackend.test.ts` | **Integración real** contra FastAPI en ejecución (se omite sin `EXPLORE_LIVE_API`) |
 | `app.test.tsx` | Navegación desde la landing (CTA, barra y pie) |
 
@@ -217,7 +218,7 @@ frontend/src/features/explore/
   data/                      ExploreApi, simulado, cliente HTTP, fixtures sintéticas
   hooks/                     useResource, useExplorer
   lib/                       meses, formato, modelo del gráfico, resolución del mapa, URL
-  components/                filtros, selector de fuente, gráfico, tabla, mapa, avisos, procedencia, calidad, errores
+  components/                panel de filtros plegable, filtros, selector de fuente, gráfico, detalle del mes, tabla, mapa, avisos, procedencia, calidad, errores
 frontend/src/test/explore/   pruebas
 docs/fe-04/capturas/         capturas escritorio y móvil
 frontend/vite.config.ts      proxy de desarrollo /api/v1 y /health
@@ -246,3 +247,27 @@ Pendiente, a propósito, hasta que lo apruebe quien corresponda:
   - **Conclusión**: la unificación exige tocar el componente de FE-07 (props de selección y de avisos), `ExplorePage` y varias pruebas. No es un cambio chico, así que **queda fuera de esta entrega** y se propone como PR de seguimiento, acordada con César. `/explore` mantiene `TimeSeriesChart` y `SeriesTable`; `ScientificSeriesPanel` sigue sin usarse en la ruta.
 - **César**: UX y ciencia (D2, D9, D10), y la decisión de FUL-130 anterior.
 - **Alaín**: contrato (sección 7) y el proxy de Vite sin CORS abierto en FastAPI.
+
+## 13. Rediseño visual de `/explore` (FUL-109 / FE-02)
+
+César pidió por el grupo tomar como referencia CliMA Scope, Grid4C y DWD Explorer. Esta rama aplica **solo patrones de interfaz**; no agrega ciencia, endpoints ni cálculos. La propuesta de diseño (escritorio, móvil y tabla de decisiones) vive en un lienzo aparte que se comparte desde la tarjeta FUL-109.
+
+**Qué cambia**
+
+- **Panel de filtros plegable** a la izquierda desde 64 rem, con el selector de fuente dentro. Plegado queda una barra con «Mostrar filtros» y etiquetas con lo elegido. En móvil el panel va arriba y se puede plegar igual. El formulario sigue en el documento aunque esté oculto (`hidden`, `aria-expanded`, `aria-controls`).
+- **Franja de estado**: el aviso «Serie con huecos…» pasa a una franja con el estado en una etiqueta. El texto no cambia.
+- **Tarjeta «Detalle del mes»** (`MonthDetail`): repite lo que dice la respuesta para el mes elegido (valor tal cual, cero válido, sin dato, calidad del dato, soporte y coordenadas). No calcula nada. Sigue al mes elegido desde el gráfico, la línea de tiempo o la tabla.
+- **Disposición del resultado**: gráfico y tabla a la izquierda; detalle del mes y mapa a la derecha (desde 80 rem, o desde 64 rem con los filtros plegados). En una columna el orden es gráfico, detalle, mapa y tabla.
+- **Ancho**: `--container-wide` (90 rem) solo para `/explore`, para que el panel y los resultados quepan lado a lado.
+
+**Qué no cambia**: datos, contrato, `ExploreApi`, `useExplorer`, URL, textos científicos, gráfico, mapa, línea de tiempo (con «Reproducir» y control de zoom, que ya existían) y tabla.
+
+**Referencias descartadas a propósito**: pronóstico, matriz de correlación, datos estandarizados, gráfico polar, mapa de calor bivariado, red de estaciones y gráfico de composición. Requieren un método estadístico aprobado o datos que no existen (pendiente P6 del documento de cierre de FE-02, que va en un PR aparte).
+
+**Fuera de esta PR**
+
+- **«Descargar CSV»**: ya está en `dev` (`SeriesCsvDownload`, #40). Se conserva donde está, sobre los resultados; no se movió a la tarjeta del gráfico para no tocar ese trabajo.
+- **Selector de rango arrastrable** bajo el gráfico: cambia la interacción y debe respetar el máximo de 240 meses; falta decidirlo con César.
+- **Estado de «demora»** en cargas lentas, prueba con lector de pantalla real, contraste con el diseño final y pruebas con personas: siguen pendientes (FE-02, P1 a P4).
+
+**Verificación**: `tsc`, `oxlint`, `vite build` y las 222 pruebas pasan. **No se revisó el resultado visual en un navegador** (el entorno de esta rama no tiene uno): conviene abrir `/explore` en escritorio, en 1280 px y en móvil antes de aprobar.

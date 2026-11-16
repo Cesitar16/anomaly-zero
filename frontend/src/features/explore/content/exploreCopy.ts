@@ -37,6 +37,9 @@ export const COPY = {
 
   filters: {
     title: 'Filtros',
+    hide: 'Ocultar filtros',
+    show: 'Mostrar filtros',
+    summary: 'Filtros elegidos',
     region: 'Región',
     product: 'Variable NASA',
     start: 'Desde',
@@ -97,6 +100,23 @@ export const COPY = {
       missing: 'Sin dato',
       unknown: 'Calidad desconocida',
     } satisfies Record<PointQualityState, string>,
+  },
+
+  detail: {
+    title: 'Detalle del mes',
+    state: { value: 'Con valor', zero: 'Cero válido', missing: 'Sin dato' },
+    explain: {
+      value: 'Valor de la muestra de este mes.',
+      zero: 'Hubo medición y el valor es cero. No es un dato faltante.',
+      missing: 'No hay valor para este mes. Se muestra como hueco, no como cero.',
+    },
+    quality: 'Calidad del dato',
+    reason: 'Motivo',
+    support: 'Soporte',
+    coordinates: 'Coordenadas',
+    supportPoint: 'Muestra de un punto, no el promedio de la región',
+    supportMean: 'Promedio descriptivo, sin aprobación',
+    supportRegional: 'Agregado regional aprobado',
   },
 
   chart: {
